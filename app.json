@@ -1,25 +1,43 @@
 {
   "expo": {
-    "name": "Kyrara-Gez",
-    "slug": "Kyrara-Gez",
+    "name": "Kyrara Gez",
+    "slug": "kyrara-gez",
+    "scheme": "kyrara-gez",
+    "owner": "jyohan99",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.kyrara.gez",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0B0F10",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
+    "experiments": {
+      "typedRoutes": true
+    },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-sqlite",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "58217302-01e3-4c24-b615-f9b269fb82fd"
+      }
     }
   }
 }

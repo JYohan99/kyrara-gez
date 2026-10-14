@@ -1,0 +1,261 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  Alert,
+} from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { COLORS, TYPOGRAPHY } from '@/core/theme';
+import { createCategory } from '@/core/database';
+import { triggerSuccess, triggerError, triggerSelection } from '@/shared/utils/haptics';
+
+export interface CategoryModalProps {
+  visible: boolean;
+  flowType: 'EXPENSE' | 'INCOME';
+  onClose: () => void;
+  onSaved?: () => void;
+}
+
+const AVAILABLE_ICONS = [
+  'restaurant',
+  'directions-car',
+  'home',
+  'favorite',
+  'shopping-bag',
+  'school',
+  'movie',
+  'bolt',
+  'fitness-center',
+  'pets',
+];
+
+const AVAILABLE_COLORS = [
+  '#8A4FFF',
+  '#00D2FF',
+  '#57F5AB',
+  'FF8A9E'.replace(/^/, '#'),
+  '#FFB74D',
+  '#55D8E9',
+  '#D1BCFF',
+];
+
+export const CategoryModal: React.FC<CategoryModalProps> = ({
+  visible,
+  flowType,
+  onClose,
+  onSaved,
+}) => {
+  const [name, setName] = useState('');
+  const [icon, setIcon] = useState('shopping-bag');
+  const [color, setColor] = useState('#8A4FFF');
+
+  const handleSave = () => {
+    if (!name.trim()) {
+      triggerError();
+      Alert.alert('Nombre requerido', 'Ingresa un nombre para la categoría.');
+      return;
+    }
+
+    try {
+      createCategory({
+        name: name.trim(),
+        flowType,
+        icon,
+        color,
+      });
+
+      triggerSuccess();
+      setName('');
+      onClose();
+      if (onSaved) onSaved();
+    } catch (err) {
+      console.error('Error creating category:', err);
+      triggerError();
+      Alert.alert('Error', 'No se pudo crear la categoría.');
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalDrawer}>
+          <View style={styles.drawerHandle} />
+          <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
+            Nueva Categoría de {flowType === 'EXPENSE' ? 'Gasto' : 'Ingreso'}
+          </Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nombre</Text>
+            <TextInput
+              style={styles.textInput}
+              value={name}
+              onChangeText={setName}
+              placeholder="Ej. Gimnasio, Mascotas, Cursos"
+              placeholderTextColor={COLORS.outline}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Icono sugerido</Text>
+            <View style={styles.iconChipsRow}>
+              {AVAILABLE_ICONS.map(ic => (
+                <TouchableOpacity
+                  key={ic}
+                  style={[styles.iconChip, icon === ic && styles.iconChipActive]}
+                  onPress={() => {
+                    triggerSelection();
+                    setIcon(ic);
+                  }}
+                >
+                  <MaterialIcons
+                    name={ic as any}
+                    size={20}
+                    color={icon === ic ? '#FFFFFF' : COLORS.onSurfaceVariant}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Color</Text>
+            <View style={styles.colorChipsRow}>
+              {AVAILABLE_COLORS.map(col => (
+                <TouchableOpacity
+                  key={col}
+                  style={[
+                    styles.colorDot,
+                    { backgroundColor: col },
+                    color === col && styles.colorDotActive,
+                  ]}
+                  onPress={() => {
+                    triggerSelection();
+                    setColor(col);
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.modalActionsRow}>
+            <TouchableOpacity
+              style={styles.modalCancelBtn}
+              onPress={onClose}
+            >
+              <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalSaveBtn}
+              onPress={handleSave}
+            >
+              <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>Guardar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(11, 15, 16, 0.8)',
+    justifyContent: 'flex-end',
+  },
+  modalDrawer: {
+    backgroundColor: COLORS.surfaceContainerLow,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 22,
+    gap: 14,
+  },
+  drawerHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.surfaceContainerHighest,
+    alignSelf: 'center',
+    marginBottom: 4,
+  },
+  modalTitle: {
+    color: COLORS.onSurface,
+  },
+  inputGroup: {
+    gap: 6,
+  },
+  inputLabel: {
+    color: COLORS.onSurfaceVariant,
+  },
+  textInput: {
+    backgroundColor: COLORS.surfaceContainerLowest,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: COLORS.onSurface,
+    fontSize: 15,
+  },
+  iconChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  iconChip: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: COLORS.surfaceContainerHigh,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconChipActive: {
+    backgroundColor: COLORS.primaryContainer,
+  },
+  colorChipsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  colorDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  colorDotActive: {
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingTop: 8,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 20,
+    backgroundColor: COLORS.surfaceContainerHigh,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: COLORS.onSurface,
+  },
+  modalSaveBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 20,
+    backgroundColor: COLORS.primaryContainer,
+    alignItems: 'center',
+  },
+  modalSaveText: {
+    color: '#FFFFFF',
+  },
+});
