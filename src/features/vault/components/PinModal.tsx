@@ -7,7 +7,11 @@ import {
   TextInput,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { setSecurityPin, removeSecurityPin } from '@/core/database';
 import { triggerSuccess, triggerError } from '@/shared/utils/haptics';
@@ -30,6 +34,7 @@ const PinModalDrawer: React.FC<PinModalDrawerProps> = ({
   onClose,
   onPinChanged,
 }) => {
+  const insets = useSafeAreaInsets();
   const [newPinInput, setNewPinInput] = useState('');
   const [confirmPinInput, setConfirmPinInput] = useState('');
 
@@ -73,67 +78,73 @@ const PinModalDrawer: React.FC<PinModalDrawerProps> = ({
   };
 
   return (
-    <View style={styles.modalDrawer}>
+    <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
       <View style={styles.drawerHandle} />
-      <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
-        {hasPin ? 'Cambiar Código PIN' : 'Crear Código PIN'}
-      </Text>
-      <Text style={[styles.modalSubtitle, TYPOGRAPHY.bodySm]}>
-        El PIN protegerá el acceso a tu terminal local.
-      </Text>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.drawerScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
+          {hasPin ? 'Cambiar Código PIN' : 'Crear Código PIN'}
+        </Text>
+        <Text style={[styles.modalSubtitle, TYPOGRAPHY.bodySm]}>
+          El PIN protegerá el acceso a tu terminal local.
+        </Text>
 
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nuevo PIN (4 dígitos)</Text>
-        <TextInput
-          style={[styles.textInput, styles.pinInput]}
-          value={newPinInput}
-          onChangeText={setNewPinInput}
-          keyboardType="numeric"
-          maxLength={4}
-          secureTextEntry
-          placeholder="••••"
-          placeholderTextColor={COLORS.outline}
-        />
-      </View>
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nuevo PIN (4 dígitos)</Text>
+          <TextInput
+            style={[styles.textInput, styles.pinInput]}
+            value={newPinInput}
+            onChangeText={setNewPinInput}
+            keyboardType="numeric"
+            maxLength={4}
+            secureTextEntry
+            placeholder="••••"
+            placeholderTextColor={COLORS.outline}
+          />
+        </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Confirmar PIN</Text>
-        <TextInput
-          style={[styles.textInput, styles.pinInput]}
-          value={confirmPinInput}
-          onChangeText={setConfirmPinInput}
-          keyboardType="numeric"
-          maxLength={4}
-          secureTextEntry
-          placeholder="••••"
-          placeholderTextColor={COLORS.outline}
-        />
-      </View>
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Confirmar PIN</Text>
+          <TextInput
+            style={[styles.textInput, styles.pinInput]}
+            value={confirmPinInput}
+            onChangeText={setConfirmPinInput}
+            keyboardType="numeric"
+            maxLength={4}
+            secureTextEntry
+            placeholder="••••"
+            placeholderTextColor={COLORS.outline}
+          />
+        </View>
 
-      <View style={styles.modalActionsRow}>
-        {hasPin && (
+        <View style={styles.modalActionsRow}>
+          {hasPin && (
+            <TouchableOpacity
+              style={[styles.modalCancelBtn, styles.deactivateBtn]}
+              onPress={handleRemovePin}
+            >
+              <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps, { color: COLORS.cashflowExpense }]}>
+                Desactivar
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
-            style={[styles.modalCancelBtn, styles.deactivateBtn]}
-            onPress={handleRemovePin}
+            style={styles.modalCancelBtn}
+            onPress={onClose}
           >
-            <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps, { color: COLORS.cashflowExpense }]}>
-              Desactivar
-            </Text>
+            <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={styles.modalCancelBtn}
-          onPress={onClose}
-        >
-          <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.modalSaveBtn}
-          onPress={handleSavePin}
-        >
-          <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>Guardar PIN</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.modalSaveBtn}
+            onPress={handleSavePin}
+          >
+            <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>Guardar PIN</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -151,7 +162,15 @@ export const PinModal: React.FC<PinModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalOverlay}
+      >
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
         {visible && (
           <PinModalDrawer
             hasPin={hasPin}
@@ -159,7 +178,7 @@ export const PinModal: React.FC<PinModalProps> = ({
             onPinChanged={onPinChanged}
           />
         )}
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -174,8 +193,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLow,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    padding: 22,
+    paddingTop: 16,
+    paddingHorizontal: 22,
+    maxHeight: '85%',
+  },
+  drawerScrollContent: {
     gap: 14,
+    paddingBottom: 8,
   },
   drawerHandle: {
     width: 40,

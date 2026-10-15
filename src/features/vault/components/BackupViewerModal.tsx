@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 
 export interface BackupViewerModalProps {
@@ -22,6 +23,8 @@ export const BackupViewerModal: React.FC<BackupViewerModalProps> = ({
   content,
   onClose,
 }) => {
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal
       visible={visible}
@@ -30,7 +33,12 @@ export const BackupViewerModal: React.FC<BackupViewerModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalDrawer, { maxHeight: '80%' }]}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <View style={[styles.modalDrawer, { maxHeight: '80%', paddingBottom: Math.max(insets.bottom, 22) }]}>
           <View style={styles.drawerHandle} />
           <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>{title}</Text>
           <ScrollView style={styles.backupTextScroll}>

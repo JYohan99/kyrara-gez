@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 
@@ -20,6 +21,8 @@ export const CloneBudgetModal: React.FC<CloneBudgetModalProps> = ({
   onConfirm,
   onClose,
 }) => {
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal
       visible={visible}
@@ -28,7 +31,12 @@ export const CloneBudgetModal: React.FC<CloneBudgetModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalDrawer}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
           <View style={styles.drawerHandle} />
 
           <View style={styles.cloneHeaderRow}>

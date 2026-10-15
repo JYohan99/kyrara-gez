@@ -7,7 +7,11 @@ import {
   TextInput,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { restoreDatabaseFromJson } from '@/core/database';
 import { triggerSuccess, triggerError } from '@/shared/utils/haptics';
@@ -23,6 +27,7 @@ export const RestoreModal: React.FC<RestoreModalProps> = ({
   onClose,
   onRestored,
 }) => {
+  const insets = useSafeAreaInsets();
   const [inputText, setInputText] = useState('');
 
   const handleExecuteRestore = () => {
@@ -57,44 +62,58 @@ export const RestoreModal: React.FC<RestoreModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalDrawer, { maxHeight: '85%' }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalOverlay}
+      >
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <View style={styles.drawerHandle} />
-          <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
-            Restaurar Copia de Seguridad
-          </Text>
-          <Text style={[styles.modalSubtitle, TYPOGRAPHY.bodySm]}>
-            Pega a continuación el contenido de tu archivo .kyrarabez o JSON de respaldo.
-          </Text>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.drawerScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
+              Restaurar Copia de Seguridad
+            </Text>
+            <Text style={[styles.modalSubtitle, TYPOGRAPHY.bodySm]}>
+              Pega a continuación el contenido de tu archivo .kyrarabez o JSON de respaldo.
+            </Text>
 
-          <TextInput
-            style={styles.restoreTextInput}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            numberOfLines={8}
-            placeholder='Pega aquí el contenido JSON {"version": "1.0.4", "data": ...}'
-            placeholderTextColor={COLORS.outline}
-          />
+            <TextInput
+              style={styles.restoreTextInput}
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              numberOfLines={6}
+              placeholder='Pega aquí el contenido JSON {"version": "1.0.4", "data": ...}'
+              placeholderTextColor={COLORS.outline}
+            />
 
-          <View style={styles.modalActionsRow}>
-            <TouchableOpacity
-              style={styles.modalCancelBtn}
-              onPress={onClose}
-            >
-              <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalSaveBtn, { backgroundColor: COLORS.secondaryContainer }]}
-              onPress={handleExecuteRestore}
-            >
-              <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps, { color: '#003543' }]}>
-                Restaurar Ahora
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <View style={styles.modalActionsRow}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={onClose}
+              >
+                <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSaveBtn, { backgroundColor: COLORS.secondaryContainer }]}
+                onPress={handleExecuteRestore}
+              >
+                <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps, { color: '#003543' }]}>
+                  Restaurar Ahora
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -109,8 +128,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLow,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    padding: 22,
+    paddingTop: 16,
+    paddingHorizontal: 22,
+    maxHeight: '85%',
+  },
+  drawerScrollContent: {
     gap: 14,
+    paddingBottom: 8,
   },
   drawerHandle: {
     width: 40,
@@ -133,7 +157,7 @@ const styles = StyleSheet.create({
     color: COLORS.onSurface,
     fontSize: 11,
     fontFamily: 'monospace',
-    height: 140,
+    height: 120,
     textAlignVertical: 'top',
   },
   modalActionsRow: {

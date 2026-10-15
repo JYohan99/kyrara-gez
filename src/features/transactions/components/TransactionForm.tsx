@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { GlowButton } from '@/shared/components/GlowButton';
@@ -35,6 +36,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   onSuccess,
   onCancel,
 }) => {
+  const insets = useSafeAreaInsets();
   const [type, setType] = useState<FlowType>(initialType);
   const [amountStr, setAmountStr] = useState('');
   const [payee, setPayee] = useState('');
@@ -133,10 +135,23 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : (isScreen ? undefined : 'height')}
       style={isScreen ? styles.screenContainer : styles.modalOverlay}
     >
-      <View style={isScreen ? styles.screenContent : styles.modalContent}>
+      {!isScreen && onCancel && (
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onCancel}
+        />
+      )}
+      <View
+        style={
+          isScreen
+            ? [styles.screenContent, { paddingBottom: Math.max(insets.bottom, 20) }]
+            : [styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) }]
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTitleRow}>
@@ -217,7 +232,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.formContent}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.formContent}
+        >
           {/* Amount Hero Input */}
           <View style={styles.amountBox}>
             <Text style={[styles.currencyPrefix, TYPOGRAPHY.headlineSm]}>$</Text>

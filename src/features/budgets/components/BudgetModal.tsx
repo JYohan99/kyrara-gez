@@ -8,7 +8,10 @@ import {
   ScrollView,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { setBudget, deleteBudget } from '@/core/database';
@@ -121,9 +124,17 @@ const BudgetModalDrawer: React.FC<BudgetModalDrawerProps> = ({
     );
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.modalDrawer}>
+    <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
       <View style={styles.drawerHandle} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+        contentContainerStyle={styles.drawerScrollContent}
+      >
 
       <View style={styles.drawerHeader}>
         <View>
@@ -256,6 +267,7 @@ const BudgetModalDrawer: React.FC<BudgetModalDrawerProps> = ({
           </Text>
         </TouchableOpacity>
       </View>
+      </ScrollView>
     </View>
   );
 };
@@ -276,7 +288,15 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalOverlay}
+      >
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
         {visible && (
           <BudgetModalDrawer
             key={editingBudget ? `edit-${editingBudget.id}` : 'new-budget'}
@@ -288,7 +308,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
             onSaved={onSaved}
           />
         )}
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -303,8 +323,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLow,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    padding: 22,
+    paddingTop: 16,
+    paddingHorizontal: 22,
+    maxHeight: '85%',
+  },
+  drawerScrollContent: {
     gap: 16,
+    paddingBottom: 8,
   },
   drawerHandle: {
     width: 40,
@@ -312,7 +337,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: COLORS.surfaceContainerHighest,
     alignSelf: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   drawerHeader: {
     flexDirection: 'row',

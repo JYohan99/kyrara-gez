@@ -9,6 +9,8 @@ import {
   Share,
   Alert,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
@@ -155,7 +157,18 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
         onClose();
       }}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.overlay}
+      >
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={() => {
+            setIsEditing(false);
+            onClose();
+          }}
+        />
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
@@ -176,7 +189,11 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.body}
+          >
             {/* Voucher Ticket Card */}
             <GlassCard variant="surface" style={styles.voucherCard}>
               {/* Type Chip */}
@@ -353,7 +370,7 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
             </View>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -8,6 +8,7 @@ import {
   ScrollView,
   Share,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { GlassCard } from '@/shared/components/GlassCard';
@@ -37,6 +38,7 @@ export function MonthlyReportModal({
   topCategories,
   budgetHealthScore,
 }: MonthlyReportModalProps) {
+  const insets = useSafeAreaInsets();
   if (!visible) return null;
 
   const isSurplus = netSavings >= 0;
@@ -84,7 +86,15 @@ Generado por Kyrara Gez Personal Finance Cockpit`;
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.container}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={() => {
+            triggerSelection();
+            onClose();
+          }}
+        />
+        <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 20) }]}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerBadge}>

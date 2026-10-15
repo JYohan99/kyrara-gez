@@ -7,7 +7,11 @@ import {
   TextInput,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { createAccount, updateAccount, updateAccountBalance } from '@/core/database';
 import { Account, AccountType } from '@/core/database/types';
@@ -32,6 +36,7 @@ const AccountModalDrawer: React.FC<AccountModalDrawerProps> = ({
   onClose,
   onSaved,
 }) => {
+  const insets = useSafeAreaInsets();
   const isEditing = Boolean(editingAccount);
   const [name, setName] = useState(editingAccount?.name ?? '');
   const [accountType, setAccountType] = useState<AccountType>(editingAccount?.type ?? 'BANK');
@@ -74,78 +79,85 @@ const AccountModalDrawer: React.FC<AccountModalDrawerProps> = ({
   };
 
   return (
-    <View style={styles.modalDrawer}>
+    <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
       <View style={styles.drawerHandle} />
-      <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
-        {isEditing ? 'Ajustar Cuenta' : 'Nueva Cuenta'}
-      </Text>
-
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nombre de la cuenta</Text>
-        <TextInput
-          style={styles.textInput}
-          value={name}
-          onChangeText={setName}
-          placeholder="Ej. Banco Santander, Efectivo, Prex"
-          placeholderTextColor={COLORS.outline}
-        />
-      </View>
-
-      {!isEditing && (
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Tipo de cuenta</Text>
-          <View style={styles.typeSelectorRow}>
-            {(['BANK', 'CASH', 'PREPAID', 'VAULT'] as AccountType[]).map(t => (
-              <TouchableOpacity
-                key={t}
-                style={[styles.typeSelectBtn, accountType === t && styles.typeSelectBtnActive]}
-                onPress={() => setAccountType(t)}
-              >
-                <Text
-                  style={[
-                    styles.typeSelectBtnText,
-                    TYPOGRAPHY.labelCaps,
-                    accountType === t && styles.typeSelectBtnTextActive,
-                  ]}
-                >
-                  {t}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
-
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>
-          {isEditing ? 'Saldo Actual ($)' : 'Saldo Inicial ($)'}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+        contentContainerStyle={styles.drawerScrollContent}
+      >
+        <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
+          {isEditing ? 'Ajustar Cuenta' : 'Nueva Cuenta'}
         </Text>
-        <TextInput
-          style={styles.textInput}
-          value={balanceStr}
-          onChangeText={setBalanceStr}
-          keyboardType="numeric"
-          placeholder="0"
-          placeholderTextColor={COLORS.outline}
-        />
-      </View>
 
-      <View style={styles.modalActionsRow}>
-        <TouchableOpacity
-          style={styles.modalCancelBtn}
-          onPress={onClose}
-        >
-          <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.modalSaveBtn}
-          onPress={handleSave}
-        >
-          <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>
-            {isEditing ? 'Guardar Cambios' : 'Crear Cuenta'}
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nombre de la cuenta</Text>
+          <TextInput
+            style={styles.textInput}
+            value={name}
+            onChangeText={setName}
+            placeholder="Ej. Banco Santander, Efectivo, Prex"
+            placeholderTextColor={COLORS.outline}
+          />
+        </View>
+
+        {!isEditing && (
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Tipo de cuenta</Text>
+            <View style={styles.typeSelectorRow}>
+              {(['BANK', 'CASH', 'PREPAID', 'VAULT'] as AccountType[]).map(t => (
+                <TouchableOpacity
+                  key={t}
+                  style={[styles.typeSelectBtn, accountType === t && styles.typeSelectBtnActive]}
+                  onPress={() => setAccountType(t)}
+                >
+                  <Text
+                    style={[
+                      styles.typeSelectBtnText,
+                      TYPOGRAPHY.labelCaps,
+                      accountType === t && styles.typeSelectBtnTextActive,
+                    ]}
+                  >
+                    {t}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>
+            {isEditing ? 'Saldo Actual ($)' : 'Saldo Inicial ($)'}
           </Text>
-        </TouchableOpacity>
-      </View>
+          <TextInput
+            style={styles.textInput}
+            value={balanceStr}
+            onChangeText={setBalanceStr}
+            keyboardType="numeric"
+            placeholder="0"
+            placeholderTextColor={COLORS.outline}
+          />
+        </View>
+
+        <View style={styles.modalActionsRow}>
+          <TouchableOpacity
+            style={styles.modalCancelBtn}
+            onPress={onClose}
+          >
+            <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.modalSaveBtn}
+            onPress={handleSave}
+          >
+            <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>
+              {isEditing ? 'Guardar Cambios' : 'Crear Cuenta'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -163,7 +175,15 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalOverlay}
+      >
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
         {visible && (
           <AccountModalDrawer
             key={editingAccount ? `edit-${editingAccount.id}` : 'new-account'}
@@ -172,7 +192,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             onSaved={onSaved}
           />
         )}
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -187,8 +207,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLow,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    padding: 22,
+    paddingTop: 16,
+    paddingHorizontal: 22,
+    maxHeight: '85%',
+  },
+  drawerScrollContent: {
     gap: 14,
+    paddingBottom: 8,
   },
   drawerHandle: {
     width: 40,
@@ -196,7 +221,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: COLORS.surfaceContainerHighest,
     alignSelf: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   modalTitle: {
     color: COLORS.onSurface,

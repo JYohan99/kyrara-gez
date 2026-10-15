@@ -7,7 +7,11 @@ import {
   TextInput,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { createCategory } from '@/core/database';
@@ -49,6 +53,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   onClose,
   onSaved,
 }) => {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('shopping-bag');
   const [color, setColor] = useState('#8A4FFF');
@@ -86,82 +91,97 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalDrawer}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalOverlay}
+      >
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <View style={styles.drawerHandle} />
-          <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
-            Nueva Categoría de {flowType === 'EXPENSE' ? 'Gasto' : 'Ingreso'}
-          </Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            contentContainerStyle={styles.drawerScrollContent}
+          >
+            <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
+              Nueva Categoría de {flowType === 'EXPENSE' ? 'Gasto' : 'Ingreso'}
+            </Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nombre</Text>
-            <TextInput
-              style={styles.textInput}
-              value={name}
-              onChangeText={setName}
-              placeholder="Ej. Gimnasio, Mascotas, Cursos"
-              placeholderTextColor={COLORS.outline}
-            />
-          </View>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nombre</Text>
+              <TextInput
+                style={styles.textInput}
+                value={name}
+                onChangeText={setName}
+                placeholder="Ej. Gimnasio, Mascotas, Cursos"
+                placeholderTextColor={COLORS.outline}
+              />
+            </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Icono sugerido</Text>
-            <View style={styles.iconChipsRow}>
-              {AVAILABLE_ICONS.map(ic => (
-                <TouchableOpacity
-                  key={ic}
-                  style={[styles.iconChip, icon === ic && styles.iconChipActive]}
-                  onPress={() => {
-                    triggerSelection();
-                    setIcon(ic);
-                  }}
-                >
-                  <MaterialIcons
-                    name={ic as any}
-                    size={20}
-                    color={icon === ic ? '#FFFFFF' : COLORS.onSurfaceVariant}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Icono sugerido</Text>
+              <View style={styles.iconChipsRow}>
+                {AVAILABLE_ICONS.map(ic => (
+                  <TouchableOpacity
+                    key={ic}
+                    style={[styles.iconChip, icon === ic && styles.iconChipActive]}
+                    onPress={() => {
+                      triggerSelection();
+                      setIcon(ic);
+                    }}
+                  >
+                    <MaterialIcons
+                      name={ic as any}
+                      size={20}
+                      color={icon === ic ? '#FFFFFF' : COLORS.onSurfaceVariant}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Color</Text>
+              <View style={styles.colorChipsRow}>
+                {AVAILABLE_COLORS.map(col => (
+                  <TouchableOpacity
+                    key={col}
+                    style={[
+                      styles.colorDot,
+                      { backgroundColor: col },
+                      color === col && styles.colorDotActive,
+                    ]}
+                    onPress={() => {
+                      triggerSelection();
+                      setColor(col);
+                    }}
                   />
-                </TouchableOpacity>
-              ))}
+                ))}
+              </View>
             </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Color</Text>
-            <View style={styles.colorChipsRow}>
-              {AVAILABLE_COLORS.map(col => (
-                <TouchableOpacity
-                  key={col}
-                  style={[
-                    styles.colorDot,
-                    { backgroundColor: col },
-                    color === col && styles.colorDotActive,
-                  ]}
-                  onPress={() => {
-                    triggerSelection();
-                    setColor(col);
-                  }}
-                />
-              ))}
+            <View style={styles.modalActionsRow}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={onClose}
+              >
+                <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSaveBtn}
+                onPress={handleSave}
+              >
+                <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>Guardar</Text>
+              </TouchableOpacity>
             </View>
-          </View>
-
-          <View style={styles.modalActionsRow}>
-            <TouchableOpacity
-              style={styles.modalCancelBtn}
-              onPress={onClose}
-            >
-              <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalSaveBtn}
-              onPress={handleSave}
-            >
-              <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>Guardar</Text>
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -176,8 +196,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLow,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    padding: 22,
+    paddingTop: 16,
+    paddingHorizontal: 22,
+    maxHeight: '85%',
+  },
+  drawerScrollContent: {
     gap: 14,
+    paddingBottom: 8,
   },
   drawerHandle: {
     width: 40,
@@ -185,7 +210,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: COLORS.surfaceContainerHighest,
     alignSelf: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   modalTitle: {
     color: COLORS.onSurface,
