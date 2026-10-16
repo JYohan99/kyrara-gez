@@ -42,6 +42,84 @@ export function HomeScreen() {
     return `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
   }, []);
 
+  const breakdown = useMemo(() => {
+    void summary;
+    try {
+      return getCategoryExpenseBreakdown();
+    } catch {
+      return [];
+    }
+  }, [summary]);
+
+  const smartInsight = useMemo(() => {
+    const hasTransactions = summary.count > 0;
+    if (!hasTransactions) {
+      return {
+        title: 'Bóveda Local Autónoma',
+        body: 'Tus datos residen exclusivamente en este dispositivo. Añade tus primeros ingresos o gastos para generar auditorías y métricas automáticas.',
+        icon: 'shield',
+        iconColor: COLORS.cashflowIncome,
+        tag: 'Modo Seguro',
+        tagColor: COLORS.onSurfaceVariant,
+        canOpenReport: false,
+      };
+    }
+
+    const isSurplus = summary.netSavings >= 0;
+    const topCat = breakdown.length > 0 ? breakdown[0] : null;
+
+    if (summary.totalIncome > 0 && summary.totalExpense > 0) {
+      const savingsRate = Math.round((summary.netSavings / summary.totalIncome) * 100);
+      if (isSurplus) {
+        return {
+          title: `Tasa de Ahorro: ${savingsRate}% del mes`,
+          body: `Has retenido +${formatCurrency(summary.netSavings)}. ${
+            topCat ? `Tu mayor egreso es ${topCat.categoryName} (${topCat.percent.toFixed(0)}%).` : ''
+          } Toca para ver el informe ejecutivo.`,
+          icon: 'savings',
+          iconColor: COLORS.cashflowIncome,
+          tag: 'Salud Óptima',
+          tagColor: COLORS.cashflowIncome,
+          canOpenReport: true,
+        };
+      } else {
+        return {
+          title: `Déficit Detectado: -${formatCurrency(Math.abs(summary.netSavings))}`,
+          body: `Los gastos superan tus ingresos este mes. ${
+            topCat ? `El ${topCat.percent.toFixed(0)}% se fue en ${topCat.categoryName}.` : ''
+          } Toca para revisar el balance detallado.`,
+          icon: 'warning',
+          iconColor: COLORS.cashflowExpense,
+          tag: 'Atención',
+          tagColor: COLORS.cashflowExpense,
+          canOpenReport: true,
+        };
+      }
+    } else if (summary.totalIncome > 0) {
+      return {
+        title: `Ingresos Acumulados: +${formatCurrency(summary.totalIncome)}`,
+        body: 'Excelente inicio de período. Aún no registras gastos este mes. Toca para ver el balance mensual.',
+        icon: 'trending-up',
+        iconColor: COLORS.cashflowIncome,
+        tag: '100% Ahorro',
+        tagColor: COLORS.cashflowIncome,
+        canOpenReport: true,
+      };
+    } else {
+      return {
+        title: `Gastos del Mes: -${formatCurrency(summary.totalExpense)}`,
+        body: `${
+          topCat ? `Tu mayor gasto está en ${topCat.categoryName} (${topCat.percent.toFixed(0)}%).` : ''
+        } Recuerda registrar tus ingresos para calcular tu tasa de ahorro. Toca para ver el informe.`,
+        icon: 'analytics',
+        iconColor: COLORS.secondary,
+        tag: 'Egresos',
+        tagColor: COLORS.secondary,
+        canOpenReport: true,
+      };
+    }
+  }, [summary, breakdown]);
+
   const openModal = (type: FlowType) => {
     triggerSelection();
     setModalType(type);
@@ -348,23 +426,51 @@ export function HomeScreen() {
               <MaterialIcons name="insights" size={18} color={COLORS.tertiary} />
               <Text style={[styles.sectionTitle, TYPOGRAPHY.headlineSm]}>Resumen inteligente</Text>
             </View>
-            <Text style={[styles.sectionActionText, TYPOGRAPHY.labelCaps]}>Modo Seguro</Text>
+            {smartInsight.canOpenReport ? (
+              <TouchableOpacity
+                onPress={() => {
+                  triggerSelection();
+                  setReportModalVisible(true);
+                }}
+              >
+                <View style={styles.viewAllRow}>
+                  <Text style={[styles.sectionActionText, { color: smartInsight.tagColor }, TYPOGRAPHY.labelCaps]}>
+                    {smartInsight.tag} • Ver Informe
+                  </Text>
+                  <MaterialIcons name="chevron-right" size={16} color={smartInsight.tagColor} />
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <Text style={[styles.sectionActionText, TYPOGRAPHY.labelCaps]}>{smartInsight.tag}</Text>
+            )}
           </View>
 
-          <GlassCard variant="low" style={styles.insightCard}>
-            <View style={styles.insightIconBox}>
-              <MaterialIcons name="shield" size={20} color={COLORS.cashflowIncome} />
-            </View>
-            <View style={styles.insightTextContainer}>
-              <Text style={[styles.insightTitle, TYPOGRAPHY.bodyMd]}>
-                Almacenamiento Local Activo
-              </Text>
-              <Text style={[styles.insightBody, TYPOGRAPHY.bodySm]}>
-                Tus datos financieros residen exclusivamente en la base de datos cifrada de este
-                dispositivo. Cero servidores externos.
-              </Text>
-            </View>
-          </GlassCard>
+          <TouchableOpacity
+            activeOpacity={smartInsight.canOpenReport ? 0.7 : 1}
+            onPress={() => {
+              if (smartInsight.canOpenReport) {
+                triggerSelection();
+                setReportModalVisible(true);
+              }
+            }}
+          >
+            <GlassCard variant="low" style={styles.insightCard}>
+              <View style={[styles.insightIconBox, { backgroundColor: `${smartInsight.iconColor}20` }]}>
+                <MaterialIcons name={smartInsight.icon as any} size={20} color={smartInsight.iconColor} />
+              </View>
+              <View style={styles.insightTextContainer}>
+                <Text style={[styles.insightTitle, TYPOGRAPHY.bodyMd]}>
+                  {smartInsight.title}
+                </Text>
+                <Text style={[styles.insightBody, TYPOGRAPHY.bodySm]}>
+                  {smartInsight.body}
+                </Text>
+              </View>
+              {smartInsight.canOpenReport && (
+                <MaterialIcons name="arrow-forward-ios" size={14} color={COLORS.outline} style={{ alignSelf: 'center' }} />
+              )}
+            </GlassCard>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -388,13 +494,19 @@ export function HomeScreen() {
             ? Math.max(0, Math.min(100, Math.round((summary.netSavings / summary.totalIncome) * 1000) / 10))
             : 0
         }
-        topCategories={getCategoryExpenseBreakdown().map(c => ({
+        topCategories={breakdown.map(c => ({
           name: c.categoryName,
           amount: c.totalAmount,
           percentage: c.percent,
           color: c.categoryColor || COLORS.secondary,
         }))}
-        budgetHealthScore={88}
+        budgetHealthScore={
+          summary.totalIncome === 0 && summary.totalExpense === 0
+            ? 100
+            : summary.netSavings >= 0
+              ? Math.min(100, 75 + Math.round((summary.netSavings / (summary.totalIncome || 1)) * 25))
+              : Math.max(30, Math.round(75 - (Math.abs(summary.netSavings) / (summary.totalExpense || 1)) * 40))
+        }
       />
 
       {/* Transaction Detail Voucher Modal */}
