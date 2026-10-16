@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { GlassCard } from '@/shared/components/GlassCard';
 import { useVaultAccounts } from '@/core/state';
@@ -44,16 +45,23 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
         </View>
 
         <TouchableOpacity
-          style={styles.actionBtnPrimary}
+          style={styles.actionBtnWrapper}
           onPress={() => {
             triggerSelection();
             onNewAccount();
           }}
-          activeOpacity={0.75}
+          activeOpacity={0.8}
           accessibilityRole="button"
           accessibilityLabel="Nueva cuenta"
         >
-          <MaterialIcons name="add" size={24} color={COLORS.secondary} />
+          <LinearGradient
+            colors={['#9B5CFF', '#6A1FE8']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.actionBtnGradient}
+          >
+            <MaterialIcons name="add" size={24} color="#FFFFFF" />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -231,20 +239,24 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     marginTop: 2,
   },
-  actionBtnPrimary: {
+  actionBtnWrapper: {
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: COLORS.surfaceContainerHigh,
+    shadowColor: '#8A4FFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  actionBtnGradient: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(209, 188, 255, 0.14)',
-    shadowColor: COLORS.primaryContainer,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-    elevation: 4,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   heroCard: {
     padding: 18,
