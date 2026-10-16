@@ -49,12 +49,11 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({
             triggerSelection();
             onNewAccount();
           }}
-          activeOpacity={0.8}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="Nueva cuenta"
         >
-          <MaterialIcons name="add-circle" size={16} color="#FFFFFF" />
-          <Text style={[styles.actionBtnText, TYPOGRAPHY.labelCaps]}>
-            Nueva Cuenta
-          </Text>
+          <MaterialIcons name="add" size={24} color={COLORS.secondary} />
         </TouchableOpacity>
       </View>
 
@@ -233,16 +232,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   actionBtnPrimary: {
-    flexDirection: 'row',
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: COLORS.surfaceContainerHigh,
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primaryContainer,
-  },
-  actionBtnText: {
-    color: '#FFFFFF',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(209, 188, 255, 0.14)',
+    shadowColor: COLORS.primaryContainer,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 4,
   },
   heroCard: {
     padding: 18,
