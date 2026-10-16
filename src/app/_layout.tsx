@@ -10,6 +10,7 @@ import {
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
 import { initDatabase, getSecuritySettings } from '@/core/database';
+import { useVaultSecurity } from '@/core/state';
 import { COLORS } from '@/core/theme';
 import { LockScreen } from '@/shared/components/LockScreen';
 import { VaultSyncProvider } from '@/core/state/VaultSyncContext';
@@ -22,6 +23,8 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
+  const { security } = useVaultSecurity();
+
   const [isLocked, setIsLocked] = React.useState(() => {
     try {
       initDatabase();
@@ -29,14 +32,6 @@ export default function RootLayout() {
       return sec.hasPin && sec.requirePinOnStartup;
     } catch {
       return false;
-    }
-  });
-
-  const [security] = React.useState(() => {
-    try {
-      return getSecuritySettings();
-    } catch {
-      return { hasPin: false, pinCode: '', biometricsEnabled: false, requirePinOnStartup: false };
     }
   });
 

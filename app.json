@@ -32,7 +32,13 @@
       "expo-router",
       "expo-status-bar",
       "expo-sqlite",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permitir a Kyrara Gez desbloquear tu Bóveda con datos biométricos."
+        }
+      ]
     ],
     "extra": {
       "eas": {

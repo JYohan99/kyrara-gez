@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { KyraraEmblem } from '@/shared/components/KyraraEmblem';
@@ -28,6 +29,9 @@ export function LockScreen({
 }: LockScreenProps) {
   const [pin, setPin] = useState('');
   const [errorText, setErrorText] = useState('');
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [biometricType, setBiometricType] = useState<'fingerprint' | 'facial' | 'biometric'>('biometric');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const handleKeyPress = (digit: string) => {
     if (pin.length >= 4) return;
@@ -58,11 +62,96 @@ export function LockScreen({
     }
   };
 
-  const handleBiometrics = () => {
-    // Quick biometric unlock simulation for native look & feel
-    triggerSuccess();
-    onUnlocked();
-  };
+  const promptBiometricAuth = useCallback(async () => {
+    if (isAuthenticating) return;
+
+    try {
+      setIsAuthenticating(true);
+      setErrorText('');
+
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (!hasHardware || !isEnrolled) {
+        triggerError();
+        setErrorText('Biometría no configurada');
+        return;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Desbloquea tu Bóveda con huella',
+        cancelLabel: 'Ingresar PIN',
+        disableDeviceFallback: true,
+      });
+
+      if (result.success) {
+        triggerSuccess();
+        onUnlocked();
+      } else {
+        if (
+          result.error !== 'user_cancel' &&
+          result.error !== 'app_cancel' &&
+          result.error !== 'system_cancel'
+        ) {
+          triggerError();
+          setErrorText('Identificación no reconocida');
+        }
+      }
+    } catch (err) {
+      console.error('Error during biometric auth:', err);
+      triggerError();
+      setErrorText('Error en sensor biométrico');
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, [isAuthenticating, onUnlocked]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initBiometrics() {
+      if (!allowBiometrics) {
+        setIsBiometricSupported(false);
+        return;
+      }
+
+      try {
+        const hasHardware = await LocalAuthentication.hasHardwareAsync();
+        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+        if (isMounted) {
+          const supported = hasHardware && isEnrolled;
+          setIsBiometricSupported(supported);
+
+          if (supported) {
+            const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+            if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+              setBiometricType('facial');
+            } else if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+              setBiometricType('fingerprint');
+            }
+
+            // Auto prompt on startup after a smooth 350ms delay
+            const timer = setTimeout(() => {
+              if (isMounted) {
+                promptBiometricAuth();
+              }
+            }, 350);
+
+            return () => clearTimeout(timer);
+          }
+        }
+      } catch (err) {
+        console.error('Error initializing biometrics:', err);
+      }
+    }
+
+    initBiometrics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [allowBiometrics, promptBiometricAuth]);
 
   return (
     <View style={styles.overlay}>
@@ -150,13 +239,18 @@ export function LockScreen({
 
           {/* Row 4 */}
           <View style={styles.keypadRow}>
-            {allowBiometrics ? (
+            {allowBiometrics && isBiometricSupported ? (
               <TouchableOpacity
                 style={styles.keyBtnAction}
-                onPress={handleBiometrics}
+                onPress={promptBiometricAuth}
                 activeOpacity={0.7}
+                disabled={isAuthenticating}
               >
-                <MaterialIcons name="fingerprint" size={28} color={COLORS.primary} />
+                <MaterialIcons
+                  name={biometricType === 'facial' ? 'face' : 'fingerprint'}
+                  size={28}
+                  color={COLORS.primary}
+                />
               </TouchableOpacity>
             ) : (
               <View style={styles.keyBtnEmpty} />
