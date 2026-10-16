@@ -14,9 +14,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { GlowButton } from '@/shared/components/GlowButton';
+import { DatePickerModal } from '@/shared/components/DatePickerModal';
 import { FlowType, createTransaction } from '@/core/database';
 import { useVaultAccounts, useVaultCategories } from '@/core/state';
 import { parseAmountToCents, formatCurrency, formatMoneyInput } from '@/shared/utils/currency';
+import {
+  formatFriendlyDate,
+  isToday,
+  isYesterday,
+  createSafeDate,
+} from '@/shared/utils/date';
 import {
   triggerSuccess,
   triggerError,
@@ -41,6 +48,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [amountStr, setAmountStr] = useState('');
   const [payee, setPayee] = useState('');
   const [note, setNote] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Hooks reactivos de la bóveda
@@ -108,6 +117,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         sourceAccountId: activeSourceAccountId,
         targetAccountId: type === 'TRANSFER' ? activeTargetAccountId : undefined,
         categoryId: type !== 'TRANSFER' ? activeCategoryId : undefined,
+        date: selectedDate.getTime(),
         payee: payee.trim() || (type === 'TRANSFER' ? 'Transferencia interna' : undefined),
         note: note.trim() || undefined,
       });
@@ -118,6 +128,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       setAmountStr('');
       setPayee('');
       setNote('');
+      setSelectedDate(new Date());
 
       if (onSuccess) {
         onSuccess();
@@ -255,6 +266,121 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               {formatCurrency(parsedCents)}
             </Text>
           )}
+
+          {/* Selector de Fecha */}
+          <View style={styles.dateSection}>
+            <View style={styles.dateLabelRow}>
+              <Text style={[styles.dateSectionLabel, TYPOGRAPHY.labelCaps]}>Fecha de Operación</Text>
+              <TouchableOpacity
+                style={styles.calendarTriggerButton}
+                onPress={() => {
+                  triggerSelection();
+                  setIsDatePickerVisible(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="edit-calendar" size={15} color={COLORS.primary} />
+                <Text style={styles.calendarTriggerText}>
+                  {formatFriendlyDate(selectedDate)}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.dateChipsRow}>
+              <TouchableOpacity
+                style={[
+                  styles.dateChip,
+                  isToday(selectedDate) && styles.dateChipActive,
+                ]}
+                onPress={() => {
+                  triggerSelection();
+                  setSelectedDate(new Date());
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons
+                  name="today"
+                  size={14}
+                  color={isToday(selectedDate) ? COLORS.primary : COLORS.onSurfaceVariant}
+                />
+                <Text
+                  style={[
+                    styles.dateChipText,
+                    isToday(selectedDate) && styles.dateChipTextActive,
+                  ]}
+                >
+                  Hoy
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.dateChip,
+                  isYesterday(selectedDate) && styles.dateChipActive,
+                ]}
+                onPress={() => {
+                  triggerSelection();
+                  const yesterday = new Date();
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  setSelectedDate(
+                    createSafeDate(
+                      yesterday.getFullYear(),
+                      yesterday.getMonth(),
+                      yesterday.getDate()
+                    )
+                  );
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons
+                  name="history"
+                  size={14}
+                  color={isYesterday(selectedDate) ? COLORS.primary : COLORS.onSurfaceVariant}
+                />
+                <Text
+                  style={[
+                    styles.dateChipText,
+                    isYesterday(selectedDate) && styles.dateChipTextActive,
+                  ]}
+                >
+                  Ayer
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.dateChip,
+                  !isToday(selectedDate) && !isYesterday(selectedDate) && styles.dateChipActive,
+                ]}
+                onPress={() => {
+                  triggerSelection();
+                  setIsDatePickerVisible(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons
+                  name="event"
+                  size={14}
+                  color={
+                    !isToday(selectedDate) && !isYesterday(selectedDate)
+                      ? COLORS.primary
+                      : COLORS.onSurfaceVariant
+                  }
+                />
+                <Text
+                  style={[
+                    styles.dateChipText,
+                    !isToday(selectedDate) && !isYesterday(selectedDate) && styles.dateChipTextActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {!isToday(selectedDate) && !isYesterday(selectedDate)
+                    ? formatFriendlyDate(selectedDate)
+                    : 'Otra fecha...'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* Concept / Payee Input */}
           <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>
@@ -445,6 +571,15 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </View>
         </ScrollView>
       </View>
+
+      {isDatePickerVisible && (
+        <DatePickerModal
+          visible={isDatePickerVisible}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          onClose={() => setIsDatePickerVisible(false)}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 };
@@ -554,6 +689,65 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     textAlign: 'center',
     marginBottom: 12,
+  },
+  dateSection: {
+    marginBottom: 12,
+  },
+  dateLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  dateSectionLabel: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 11,
+  },
+  calendarTriggerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(138, 79, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(138, 79, 255, 0.3)',
+  },
+  calendarTriggerText: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dateChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dateChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    backgroundColor: COLORS.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  dateChipActive: {
+    backgroundColor: 'rgba(138, 79, 255, 0.2)',
+    borderColor: COLORS.primary,
+  },
+  dateChipText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dateChipTextActive: {
+    color: COLORS.primary,
+    fontWeight: '700',
   },
   inputLabel: {
     color: COLORS.onSurfaceVariant,
