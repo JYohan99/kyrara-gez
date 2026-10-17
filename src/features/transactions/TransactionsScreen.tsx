@@ -8,15 +8,17 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { GlassCard } from '@/shared/components/GlassCard';
+import { KyraraEmblem } from '@/shared/components/KyraraEmblem';
 import { NewTransactionModal } from '@/shared/components/NewTransactionModal';
 import { TransactionDetailModal } from '@/shared/components/TransactionDetailModal';
 import { deleteTransaction } from '@/core/database';
 import { EnrichedTransaction } from '@/core/database/types';
 import { useVaultTransactions } from '@/core/state';
 import { formatCurrency } from '@/shared/utils/currency';
-import { triggerSuccess } from '@/shared/utils/haptics';
+import { triggerSuccess, triggerSelection } from '@/shared/utils/haptics';
 
 import { TransactionRow } from './components/TransactionRow';
 import { TransactionsSummaryCard } from './components/TransactionsSummaryCard';
@@ -28,6 +30,15 @@ export function TransactionsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<EnrichedTransaction | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+
+  const currentMonthLabel = useMemo(() => {
+    const monthNames = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+    const now = new Date();
+    return `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  }, []);
 
   // Hook reactivo de transacciones
   const { transactions, summary } = useVaultTransactions({
@@ -90,25 +101,61 @@ export function TransactionsScreen() {
     <View style={styles.screen}>
       {/* Top Header */}
       <View style={styles.topHeader}>
-        <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, TYPOGRAPHY.headlineSm]}>Movimientos</Text>
-          <Text style={[styles.headerSubtitle, TYPOGRAPHY.labelCaps]}>Historial de Bóveda</Text>
+        <View style={styles.brandRow}>
+          <KyraraEmblem size={32} />
+          <View style={styles.brandTextCol}>
+            <Text style={[styles.brandTitle, TYPOGRAPHY.headlineSm]}>Kyrara Gez</Text>
+            <Text style={[styles.brandBadge, TYPOGRAPHY.labelCaps]}>MOVIMIENTOS</Text>
+          </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => setModalVisible(true)}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons name="add" size={18} color="#FFFFFF" />
-          <Text style={[styles.addBtnText, TYPOGRAPHY.labelCaps]}>Nuevo</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <View style={styles.periodPillBadge}>
+            <Text style={[styles.periodPillText, TYPOGRAPHY.labelCaps]}>
+              {currentMonthLabel}
+            </Text>
+          </View>
+          <View style={styles.avatarCircle}>
+            <MaterialIcons name="person" size={18} color={COLORS.onPrimary} />
+          </View>
+        </View>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Section Header Row */}
+        <View style={styles.sectionHeaderRow}>
+          <View>
+            <Text style={[styles.mainSectionTitle, TYPOGRAPHY.headlineLg]}>
+              Movimientos
+            </Text>
+            <Text style={[styles.mainSectionSubtitle, TYPOGRAPHY.bodySm]}>
+              Historial de Bóveda
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.actionBtnWrapper}
+            onPress={() => {
+              triggerSelection();
+              setModalVisible(true);
+            }}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Nuevo movimiento"
+          >
+            <LinearGradient
+              colors={['#00E5FF', '#0097A7']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.actionBtnGradient}
+            >
+              <MaterialIcons name="add" size={24} color="#002022" />
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
         {/* Status Strip */}
         <View style={styles.statusStrip}>
           <Text style={[styles.periodSubtitle, TYPOGRAPHY.bodySm]}>
@@ -223,28 +270,76 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderGlass,
   },
-  headerLeft: {
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  brandTextCol: {
     flexDirection: 'column',
   },
-  headerTitle: {
+  brandTitle: {
     color: COLORS.onSurface,
+    lineHeight: 20,
   },
-  headerSubtitle: {
+  brandBadge: {
     color: COLORS.primary,
     letterSpacing: 1.5,
     marginTop: 2,
   },
-  addBtn: {
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primaryContainer,
+    gap: 8,
   },
-  addBtnText: {
-    color: '#FFFFFF',
+  periodPillBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(49, 53, 54, 0.7)',
+  },
+  periodPillText: {
+    color: COLORS.onSurfaceVariant,
+    letterSpacing: 0.8,
+  },
+  avatarCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  mainSectionTitle: {
+    color: COLORS.onSurface,
+  },
+  mainSectionSubtitle: {
+    color: COLORS.onSurfaceVariant,
+    marginTop: 2,
+  },
+  actionBtnWrapper: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    shadowColor: '#00E5FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  actionBtnGradient: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   scrollContent: {
     paddingHorizontal: 20,
