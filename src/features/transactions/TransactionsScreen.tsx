@@ -147,12 +147,12 @@ export function TransactionsScreen() {
             accessibilityLabel="Nuevo movimiento"
           >
             <LinearGradient
-              colors={['#00E5FF', '#0097A7']}
+              colors={['#9B5CFF', '#6A1FE8']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.actionBtnGradient}
             >
-              <MaterialIcons name="add" size={24} color="#002022" />
+              <MaterialIcons name="add" size={24} color="#FFFFFF" />
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -326,11 +326,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    shadowColor: '#00E5FF',
+    shadowColor: '#8A4FFF',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
   },
   actionBtnGradient: {
     width: 42,
