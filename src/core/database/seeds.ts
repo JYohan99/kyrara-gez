@@ -28,3 +28,12 @@ export function seedDefaultCategories(db: SQLite.SQLiteDatabase = getDatabase())
     );
   }
 }
+
+export function seedDefaultAccounts(db: SQLite.SQLiteDatabase = getDatabase()): void {
+  const id = 'acc_' + Math.random().toString(36).substring(2, 10);
+  const now = Date.now();
+  db.runSync(
+    'INSERT INTO accounts (id, name, type, currency, initial_balance, current_balance, icon, color, is_archived, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)',
+    [id, 'Efectivo en mano', 'CASH', 'UYU', 0, 0, 'payments', '#57F5AB', now]
+  );
+}

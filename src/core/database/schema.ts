@@ -1,5 +1,5 @@
 import { getDatabase } from './connection';
-import { seedDefaultCategories } from './seeds';
+import { seedDefaultCategories, seedDefaultAccounts } from './seeds';
 
 export function initDatabase(): void {
   const db = getDatabase();
@@ -72,5 +72,11 @@ export function initDatabase(): void {
   const countRow = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM categories');
   if (!countRow || countRow.count === 0) {
     seedDefaultCategories(db);
+  }
+
+  // Sembrar cuenta predeterminada si no existe ninguna
+  const accCountRow = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM accounts');
+  if (!accCountRow || accCountRow.count === 0) {
+    seedDefaultAccounts(db);
   }
 }

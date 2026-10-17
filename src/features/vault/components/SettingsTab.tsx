@@ -83,7 +83,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           style: 'destructive',
           onPress: () => {
             resetDatabase();
-            router.replace('/(onboarding)');
+            router.replace('/(tabs)');
           },
         },
       ]

@@ -18,7 +18,7 @@ export function setSetting(key: string, value: string): void {
 }
 
 export function hasCompletedOnboarding(): boolean {
-  return getSetting('has_completed_onboarding') === 'true';
+  return true;
 }
 
 export function completeOnboarding(): void {

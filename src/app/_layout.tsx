@@ -64,7 +64,6 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="index" />
-          <Stack.Screen name="(onboarding)/index" />
           <Stack.Screen name="(tabs)" />
         </Stack>
 
