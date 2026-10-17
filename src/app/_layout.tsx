@@ -43,6 +43,10 @@ export default function RootLayout() {
     }
   }, []);
 
+  const handleUnlocked = React.useCallback(() => {
+    setIsLocked(false);
+  }, []);
+
   if (!fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
@@ -70,7 +74,7 @@ export default function RootLayout() {
         {isLocked && security.hasPin && (
           <LockScreen
             correctPin={security.pinCode}
-            onUnlocked={() => setIsLocked(false)}
+            onUnlocked={handleUnlocked}
             allowBiometrics={security.biometricsEnabled}
           />
         )}

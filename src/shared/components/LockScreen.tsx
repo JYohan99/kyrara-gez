@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -33,6 +33,14 @@ export function LockScreen({
   const [biometricType, setBiometricType] = useState<'fingerprint' | 'facial' | 'biometric'>('biometric');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
+  const isAuthenticatingRef = useRef(false);
+  const hasAutoPromptedRef = useRef(false);
+  const onUnlockedRef = useRef(onUnlocked);
+
+  useEffect(() => {
+    onUnlockedRef.current = onUnlocked;
+  }, [onUnlocked]);
+
   const handleKeyPress = (digit: string) => {
     if (pin.length >= 4) return;
     triggerImpactLight();
@@ -43,7 +51,7 @@ export function LockScreen({
     if (nextPin.length === 4) {
       if (nextPin === correctPin) {
         triggerSuccess();
-        onUnlocked();
+        onUnlockedRef.current();
       } else {
         triggerError();
         setErrorText('Código PIN incorrecto');
@@ -63,9 +71,10 @@ export function LockScreen({
   };
 
   const promptBiometricAuth = useCallback(async () => {
-    if (isAuthenticating) return;
+    if (isAuthenticatingRef.current) return;
 
     try {
+      isAuthenticatingRef.current = true;
       setIsAuthenticating(true);
       setErrorText('');
 
@@ -73,23 +82,26 @@ export function LockScreen({
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
       if (!hasHardware || !isEnrolled) {
-        triggerError();
-        setErrorText('Biometría no configurada');
+        setIsBiometricSupported(false);
         return;
       }
 
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Desbloquea tu Bóveda con huella',
-        cancelLabel: 'Ingresar PIN',
+        promptMessage: 'Desbloquear Bóveda',
+        promptSubtitle: 'Usa tu huella o toca "Ingresar con PIN"',
+        cancelLabel: 'Ingresar con PIN',
         disableDeviceFallback: true,
       });
 
       if (result.success) {
         triggerSuccess();
-        onUnlocked();
+        onUnlockedRef.current();
       } else {
+        // Si el usuario cancela o pulsa "Ingresar con PIN", no mostrar error
+        // para que la pantalla de PIN quede limpia y lista para escribir
         if (
           result.error !== 'user_cancel' &&
+          result.error !== 'user_fallback' &&
           result.error !== 'app_cancel' &&
           result.error !== 'system_cancel'
         ) {
@@ -102,9 +114,10 @@ export function LockScreen({
       triggerError();
       setErrorText('Error en sensor biométrico');
     } finally {
+      isAuthenticatingRef.current = false;
       setIsAuthenticating(false);
     }
-  }, [isAuthenticating, onUnlocked]);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -119,26 +132,27 @@ export function LockScreen({
         const hasHardware = await LocalAuthentication.hasHardwareAsync();
         const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
-        if (isMounted) {
-          const supported = hasHardware && isEnrolled;
-          setIsBiometricSupported(supported);
+        if (!isMounted) return;
 
-          if (supported) {
-            const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-            if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
-              setBiometricType('facial');
-            } else if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
-              setBiometricType('fingerprint');
-            }
+        const supported = hasHardware && isEnrolled;
+        setIsBiometricSupported(supported);
 
-            // Auto prompt on startup after a smooth 350ms delay
-            const timer = setTimeout(() => {
+        if (supported) {
+          const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+          if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+            setBiometricType('facial');
+          } else if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+            setBiometricType('fingerprint');
+          }
+
+          // Auto-prompt sólo UNA vez al inicio
+          if (!hasAutoPromptedRef.current) {
+            hasAutoPromptedRef.current = true;
+            setTimeout(() => {
               if (isMounted) {
                 promptBiometricAuth();
               }
             }, 350);
-
-            return () => clearTimeout(timer);
           }
         }
       } catch (err) {
