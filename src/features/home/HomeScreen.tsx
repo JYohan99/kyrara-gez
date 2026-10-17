@@ -211,20 +211,6 @@ export function HomeScreen() {
                 Traspaso
               </Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionBtnReport}
-              activeOpacity={0.7}
-              onPress={() => {
-                triggerSelection();
-                router.push('/(tabs)/analisis');
-              }}
-            >
-              <MaterialIcons name="assessment" size={17} color={COLORS.secondary} />
-              <Text style={[styles.actionBtnText, { color: COLORS.secondary }, TYPOGRAPHY.labelCaps]}>
-                Informe
-              </Text>
-            </TouchableOpacity>
           </View>
         </GlassCard>
 
@@ -586,15 +572,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 14,
     backgroundColor: 'rgba(138, 79, 255, 0.1)',
-  },
-  actionBtnReport: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0, 210, 255, 0.1)',
   },
   actionBtnText: {
     fontSize: 10,
