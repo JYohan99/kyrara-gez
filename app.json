@@ -38,6 +38,17 @@
         {
           "faceIDPermission": "Permitir a Kyrara Gez desbloquear tu Bóveda con datos biométricos."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": ["arm64-v8a"],
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "useLegacyPackaging": true
+          }
+        }
       ]
     ],
     "extra": {
