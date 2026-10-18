@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, TYPOGRAPHY } from '@/core/theme';
 import { GlassCard } from '@/shared/components/GlassCard';
 import { KyraraEmblem } from '@/shared/components/KyraraEmblem';
@@ -227,28 +228,22 @@ export function BudgetsScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.toolbarActions}>
-            <TouchableOpacity
-              onPress={() => {
-                triggerSelection();
-                setCloneModalVisible(true);
-              }}
-              style={styles.copyMonthBtn}
-              activeOpacity={0.8}
+          <TouchableOpacity
+            style={styles.actionBtnWrapper}
+            onPress={openNewModal}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Nuevo presupuesto"
+          >
+            <LinearGradient
+              colors={['#9B5CFF', '#6A1FE8']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.actionBtnGradient}
             >
-              <MaterialIcons name="content-copy" size={16} color={COLORS.primary} />
-              <Text style={[styles.copyMonthBtnText, TYPOGRAPHY.labelCaps]}>Copiar mes</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={openNewModal}
-              style={styles.newBudgetBtn}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons name="add" size={16} color="#FFFFFF" />
-              <Text style={[styles.newBudgetBtnText, TYPOGRAPHY.labelCaps]}>Nuevo</Text>
-            </TouchableOpacity>
-          </View>
+              <MaterialIcons name="add" size={24} color="#FFFFFF" />
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
         {/* HERO CARD: Presupuesto General */}
@@ -498,36 +493,24 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     fontSize: 9,
   },
-  toolbarActions: {
-    flexDirection: 'row',
+  actionBtnWrapper: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    shadowColor: '#8A4FFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  actionBtnGradient: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     alignItems: 'center',
-    gap: 8,
-  },
-  copyMonthBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(138, 79, 255, 0.12)',
-  },
-  copyMonthBtnText: {
-    color: COLORS.primary,
-    fontSize: 10,
-  },
-  newBudgetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primaryContainer,
-  },
-  newBudgetBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   categoriesHeaderRow: {
     flexDirection: 'row',
