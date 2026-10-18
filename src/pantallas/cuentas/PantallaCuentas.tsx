@@ -9,7 +9,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
-import { useCuentasBoveda as useVaultAccounts, useSeguridadBoveda as useVaultSecurity } from '@/datos/hooks';
+import { useCuentasBoveda as useVaultAccounts } from '@/datos/hooks';
 import { Cuenta } from '@/datos/tipos';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 
@@ -17,21 +17,14 @@ import { PestanaCuentas as AccountsTab } from './PestanaCuentas';
 import { ModalCuenta as AccountModal } from './ModalCuenta';
 import { PestanaCategorias as CategoriesTab } from './PestanaCategorias';
 import { ModalCategoria as CategoryModal } from './ModalCategoria';
-import {
-  PestanaAjustes as SettingsTab,
-} from './PestanaAjustes';
-import { ModalPin as PinModal } from './ModalPin';
-import { ModalRestaurar as RestoreModal } from './ModalRestaurar';
-import { ModalVisorRespaldo as BackupViewerModal } from './ModalVisorRespaldo';
 
-type MainSectionTab = 'CUENTAS' | 'CATEGORIAS' | 'AJUSTES';
+type MainSectionTab = 'CUENTAS' | 'CATEGORIAS';
 
 export function PantallaCuentas() {
   const [activeTab, setActiveTab] = useState<MainSectionTab>('CUENTAS');
 
   // Hooks reactivos de la bóveda
   const { accounts } = useVaultAccounts();
-  const { security } = useVaultSecurity();
 
   // Modales de Cuentas
   const [accountModalVisible, setAccountModalVisible] = useState(false);
@@ -40,13 +33,6 @@ export function PantallaCuentas() {
   // Modales de Categorías
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [categoryFlowType, setCategoryFlowType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
-
-  // Modales de Bóveda / Ajustes
-  const [pinModalVisible, setPinModalVisible] = useState(false);
-  const [restoreModalVisible, setRestoreModalVisible] = useState(false);
-  const [backupModalVisible, setBackupModalVisible] = useState(false);
-  const [backupTitle, setBackupTitle] = useState('');
-  const [backupContent, setBackupContent] = useState('');
 
   const handleOpenNewAccount = () => {
     setEditingAccount(null);
@@ -63,20 +49,14 @@ export function PantallaCuentas() {
     setCategoryModalVisible(true);
   };
 
-  const handleShowBackupContent = (title: string, content: string) => {
-    setBackupTitle(title);
-    setBackupContent(content);
-    setBackupModalVisible(true);
-  };
-
   return (
     <View style={styles.screen}>
       {/* Top Header */}
       <EncabezadoSuperior
-        seccion={activeTab === 'CUENTAS' ? 'CUENTAS' : activeTab === 'CATEGORIAS' ? 'CATEGORÍAS' : 'AJUSTES'}
+        seccion={activeTab === 'CUENTAS' ? 'CUENTAS' : 'CATEGORÍAS'}
       />
 
-      {/* Segmented Top Switcher (Cuentas, Categorías, Ajustes) */}
+      {/* Segmented Top Switcher (Cuentas, Categorías) */}
       <View style={styles.segmentSwitcherContainer}>
         <View style={styles.segmentTrack}>
           <TouchableOpacity
@@ -126,30 +106,6 @@ export function PantallaCuentas() {
               Categorías
             </Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.segmentBtn, activeTab === 'AJUSTES' && styles.segmentBtnActive]}
-            onPress={() => {
-              triggerSelection();
-              setActiveTab('AJUSTES');
-            }}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons
-              name="tune"
-              size={15}
-              color={activeTab === 'AJUSTES' ? COLORS.tertiary : COLORS.onSurfaceVariant}
-            />
-            <Text
-              style={[
-                styles.segmentBtnText,
-                TYPOGRAPHY.labelCaps,
-                activeTab === 'AJUSTES' && styles.segmentBtnTextActive,
-              ]}
-            >
-              Ajustes
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -169,14 +125,6 @@ export function PantallaCuentas() {
             onNewCategory={handleOpenNewCategory}
           />
         )}
-
-        {activeTab === 'AJUSTES' && (
-          <SettingsTab
-            onOpenPinModal={() => setPinModalVisible(true)}
-            onOpenRestoreModal={() => setRestoreModalVisible(true)}
-            onShowBackupContent={handleShowBackupContent}
-          />
-        )}
       </ScrollView>
 
       {/* Modales */}
@@ -190,25 +138,6 @@ export function PantallaCuentas() {
         visible={categoryModalVisible}
         flowType={categoryFlowType}
         onClose={() => setCategoryModalVisible(false)}
-      />
-
-      <PinModal
-        visible={pinModalVisible}
-        hasPin={security.hasPin}
-        onClose={() => setPinModalVisible(false)}
-        onPinChanged={() => {}}
-      />
-
-      <RestoreModal
-        visible={restoreModalVisible}
-        onClose={() => setRestoreModalVisible(false)}
-      />
-
-      <BackupViewerModal
-        visible={backupModalVisible}
-        title={backupTitle}
-        content={backupContent}
-        onClose={() => setBackupModalVisible(false)}
       />
     </View>
   );

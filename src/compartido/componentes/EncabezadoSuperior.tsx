@@ -1,14 +1,17 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '../tema';
 import { EmblemaKyrara as KyraraEmblem } from './EmblemaKyrara';
+import { gatillarSeleccion as triggerSelection } from '../utilidades/hapticos';
 
 export interface PropiedadesEncabezadoSuperior {
   seccion: string;
   etiquetaPeriodo?: string;
   mostrarPeriodo?: boolean;
   tamanoLogo?: number;
+  onPressAjustes?: () => void;
   onPressAvatar?: () => void;
 }
 export type TopHeaderProps = PropiedadesEncabezadoSuperior;
@@ -22,7 +25,8 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
   seccion,
   etiquetaPeriodo,
   mostrarPeriodo = true,
-  tamanoLogo = 46,
+  tamanoLogo = 65,
+  onPressAjustes,
   onPressAvatar,
 }) => {
   const textoPeriodo = useMemo(() => {
@@ -30,6 +34,17 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
     const ahora = new Date();
     return `${MESES_CORTOS[ahora.getMonth()]} ${ahora.getFullYear()}`;
   }, [etiquetaPeriodo]);
+
+  const handlePressAjustes = () => {
+    triggerSelection();
+    if (onPressAjustes) {
+      onPressAjustes();
+    } else if (onPressAvatar) {
+      onPressAvatar();
+    } else {
+      router.push('/ajustes');
+    }
+  };
 
   return (
     <View style={styles.topHeader}>
@@ -50,12 +65,13 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
           </View>
         )}
         <TouchableOpacity
-          style={styles.avatarCircle}
-          onPress={onPressAvatar}
-          activeOpacity={onPressAvatar ? 0.8 : 1}
-          disabled={!onPressAvatar}
+          style={styles.botonAjustes}
+          onPress={handlePressAjustes}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Ajustes"
         >
-          <MaterialIcons name="person" size={18} color={COLORS.onPrimary} />
+          <MaterialIcons name="settings" size={20} color={COLORS.onSurface} />
         </TouchableOpacity>
       </View>
     </View>
@@ -66,9 +82,9 @@ export const TopHeader = EncabezadoSuperior;
 
 const styles = StyleSheet.create({
   topHeader: {
-    paddingTop: 52,
+    paddingTop: 5,
     paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingBottom: 5,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -108,11 +124,13 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     letterSpacing: 0.8,
   },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
+  botonAjustes: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
