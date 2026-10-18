@@ -13,6 +13,9 @@ export interface PropiedadesEncabezadoSuperior {
   tamanoLogo?: number;
   onPressAjustes?: () => void;
   onPressAvatar?: () => void;
+  modoVolver?: boolean;
+  onPressVolver?: () => void;
+  paddingInferior?: number;
 }
 export type TopHeaderProps = PropiedadesEncabezadoSuperior;
 
@@ -28,12 +31,28 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
   tamanoLogo = 65,
   onPressAjustes,
   onPressAvatar,
+  modoVolver,
+  onPressVolver,
+  paddingInferior,
 }) => {
   const textoPeriodo = useMemo(() => {
     if (etiquetaPeriodo) return etiquetaPeriodo;
     const ahora = new Date();
     return `${MESES_CORTOS[ahora.getMonth()]} ${ahora.getFullYear()}`;
   }, [etiquetaPeriodo]);
+
+  const esModoVolver = modoVolver ?? (seccion.toUpperCase() === 'AJUSTES');
+
+  const handlePressVolver = () => {
+    triggerSelection();
+    if (onPressVolver) {
+      onPressVolver();
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
 
   const handlePressAjustes = () => {
     triggerSelection();
@@ -47,7 +66,12 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
   };
 
   return (
-    <View style={styles.topHeader}>
+    <View
+      style={[
+        styles.topHeader,
+        paddingInferior !== undefined && { paddingBottom: paddingInferior },
+      ]}
+    >
       <View style={styles.brandRow}>
         <KyraraEmblem size={tamanoLogo} />
         <View style={styles.brandTextCol}>
@@ -65,13 +89,17 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
           </View>
         )}
         <TouchableOpacity
-          style={styles.botonAjustes}
-          onPress={handlePressAjustes}
+          style={styles.botonAccion}
+          onPress={esModoVolver ? handlePressVolver : handlePressAjustes}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel="Ajustes"
+          accessibilityLabel={esModoVolver ? 'Volver' : 'Ajustes'}
         >
-          <MaterialIcons name="settings" size={20} color={COLORS.onSurface} />
+          <MaterialIcons
+            name={esModoVolver ? 'arrow-back' : 'settings'}
+            size={20}
+            color={COLORS.onSurface}
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -84,7 +112,7 @@ const styles = StyleSheet.create({
   topHeader: {
     paddingTop: 5,
     paddingHorizontal: 20,
-    paddingBottom: 5,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -123,6 +151,16 @@ const styles = StyleSheet.create({
   periodPillText: {
     color: COLORS.onSurfaceVariant,
     letterSpacing: 0.8,
+  },
+  botonAccion: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   botonAjustes: {
     width: 36,
