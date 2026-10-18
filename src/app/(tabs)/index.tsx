@@ -1,6 +1,6 @@
 import React from 'react';
-import { HomeScreen } from '@/features/home';
+import { PantallaInicio } from '@/pantallas/inicio';
 
 export default function HomeRoute() {
-  return <HomeScreen />;
+  return <PantallaInicio />;
 }

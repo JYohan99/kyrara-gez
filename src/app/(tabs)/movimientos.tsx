@@ -1,6 +1,6 @@
 import React from 'react';
-import { TransactionsScreen } from '@/features/transactions';
+import { PantallaMovimientos } from '@/pantallas/movimientos';
 
 export default function MovimientosRoute() {
-  return <TransactionsScreen />;
+  return <PantallaMovimientos />;
 }

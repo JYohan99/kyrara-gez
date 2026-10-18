@@ -1,6 +1,6 @@
 import React from 'react';
-import { AccountsVaultScreen } from '@/features/accounts';
+import { PantallaCuentas } from '@/pantallas/cuentas';
 
 export default function CuentasRoute() {
-  return <AccountsVaultScreen />;
+  return <PantallaCuentas />;
 }

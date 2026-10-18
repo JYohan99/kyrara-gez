@@ -9,11 +9,14 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import { initDatabase, getSecuritySettings } from '@/core/database';
-import { useVaultSecurity } from '@/core/state';
-import { COLORS } from '@/core/theme';
-import { LockScreen } from '@/shared/components/LockScreen';
-import { VaultSyncProvider } from '@/core/state/VaultSyncContext';
+import {
+  inicializarBaseDatos as initDatabase,
+  obtenerAjustesSeguridad as getSecuritySettings,
+  useSeguridadBoveda as useVaultSecurity,
+} from '@/datos';
+import { COLORES as COLORS } from '@/compartido/tema';
+import { PantallaBloqueo as LockScreen } from '@/compartido/componentes/PantallaBloqueo';
+import { ProveedorSincronizacionBoveda as VaultSyncProvider } from '@/datos/sincronizacion';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

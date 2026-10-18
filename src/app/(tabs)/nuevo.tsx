@@ -1,10 +1,10 @@
 import React from 'react';
 import { router } from 'expo-router';
-import { TransactionForm } from '@/features/transactions';
+import { FormularioMovimiento } from '@/pantallas/movimientos';
 
 export default function NuevoMovimientoScreen() {
   return (
-    <TransactionForm
+    <FormularioMovimiento
       isScreen
       onSuccess={() => {
         router.replace('/(tabs)/movimientos');

@@ -1,6 +1,6 @@
 import React from 'react';
-import { BudgetsScreen } from '@/features/budgets';
+import { PantallaPresupuestos } from '@/pantallas/presupuestos';
 
 export default function PresupuestosRoute() {
-  return <BudgetsScreen />;
+  return <PantallaPresupuestos />;
 }
