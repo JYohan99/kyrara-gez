@@ -72,7 +72,6 @@ export default function RootLayout() {
         >
           <Stack.Screen name="index" />
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="ajustes" options={{ animation: 'slide_from_right' }} />
         </Stack>
 
         {isLocked && security.hasPin && (

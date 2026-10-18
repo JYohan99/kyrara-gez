@@ -61,7 +61,7 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
     } else if (onPressAvatar) {
       onPressAvatar();
     } else {
-      router.push('/ajustes');
+      router.push('/(tabs)/ajustes');
     }
   };
 
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   topHeader: {
     paddingTop: 5,
     paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingBottom: 5,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

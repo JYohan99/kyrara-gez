@@ -70,6 +70,12 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="ajustes"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
