@@ -4,3 +4,5 @@ export * from './PantallaBloqueo';
 export * from './ModalSelectorFecha';
 export * from './BotonBrillante';
 export * from './IlustracionBoveda';
+export * from './EncabezadoSuperior';
+

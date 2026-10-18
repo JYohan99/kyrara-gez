@@ -11,7 +11,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
-import { EmblemaKyrara as KyraraEmblem } from '@/compartido/componentes/EmblemaKyrara';
+import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
 import { clonarPresupuestos as cloneBudgets, sembrarPresupuestosRecomendados as seedRecommendedBudgets } from '@/datos/consultas/presupuestos';
 import { PresupuestoEnriquecido } from '@/datos/tipos';
 import { usePresupuestosBoveda as useVaultBudgets, useCuentasBoveda as useVaultAccounts, useCategoriasBoveda as useVaultCategories } from '@/datos/hooks';
@@ -171,26 +171,10 @@ export function PantallaPresupuestos() {
   return (
     <View style={styles.screen}>
       {/* Top Header */}
-      <View style={styles.topHeader}>
-        <View style={styles.brandRow}>
-          <KyraraEmblem size={32} />
-          <View style={styles.brandTextCol}>
-            <Text style={[styles.brandTitle, TYPOGRAPHY.headlineSm]}>Kyrara Gez</Text>
-            <Text style={[styles.brandBadge, TYPOGRAPHY.labelCaps]}>PRESUPUESTOS</Text>
-          </View>
-        </View>
-
-        <View style={styles.headerRight}>
-          <View style={styles.periodPillBadge}>
-            <Text style={[styles.periodPillText, TYPOGRAPHY.labelCaps]}>
-              {monthName.substring(0, 3)} {year}
-            </Text>
-          </View>
-          <View style={styles.avatarCircle}>
-            <MaterialIcons name="person" size={18} color={COLORS.onPrimary} />
-          </View>
-        </View>
-      </View>
+      <EncabezadoSuperior
+        seccion="PRESUPUESTOS"
+        etiquetaPeriodo={`${monthName.substring(0, 3)} ${year}`}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -395,57 +379,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: COLORS.surfaceBase,
-  },
-  topHeader: {
-    paddingTop: 52,
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(16, 20, 21, 0.85)',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderGlass,
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  brandTextCol: {
-    flexDirection: 'column',
-  },
-  brandTitle: {
-    color: COLORS.onSurface,
-    lineHeight: 20,
-  },
-  brandBadge: {
-    color: COLORS.primary,
-    letterSpacing: 1.5,
-    marginTop: 2,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  periodPillBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: 'rgba(49, 53, 54, 0.7)',
-  },
-  periodPillText: {
-    color: COLORS.onSurfaceVariant,
-    letterSpacing: 0.8,
-  },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scrollContent: {
     paddingHorizontal: 20,

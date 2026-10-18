@@ -10,7 +10,7 @@ import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
-import { EmblemaKyrara as KyraraEmblem } from '@/compartido/componentes/EmblemaKyrara';
+import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
 import { ModalNuevoMovimiento as NewTransactionModal } from '@/pantallas/movimientos/ModalNuevoMovimiento';
 import { ModalDetalleMovimiento as TransactionDetailModal } from '@/pantallas/movimientos/ModalDetalleMovimiento';
 import { vibracionSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
@@ -48,26 +48,8 @@ export function PantallaInicio() {
 
   return (
     <View style={styles.screen}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <KyraraEmblem size={36} />
-          <View style={styles.headerTitles}>
-            <Text style={[styles.brandName, TYPOGRAPHY.headlineSm]}>Kyrara Gez</Text>
-            <Text style={[styles.screenSubtitle, TYPOGRAPHY.labelCaps]}>Inicio</Text>
-          </View>
-        </View>
-
-        <View style={styles.headerRight}>
-          <View style={styles.monthBadge}>
-            <Text style={[styles.monthText, TYPOGRAPHY.labelCaps]}>{currentMonthLabel}</Text>
-            <MaterialIcons name="expand-more" size={16} color={COLORS.secondary} />
-          </View>
-          <View style={styles.avatarCircle}>
-            <MaterialIcons name="person" size={18} color="#FFFFFF" />
-          </View>
-        </View>
-      </View>
+      {/* Top Header */}
+      <EncabezadoSuperior seccion="INICIO" />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -350,57 +332,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: COLORS.surfaceBase,
-  },
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(16, 20, 21, 0.85)',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderGlass,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  headerTitles: {
-    flexDirection: 'column',
-  },
-  brandName: {
-    color: COLORS.onSurface,
-  },
-  screenSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    letterSpacing: 1.2,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  monthBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    backgroundColor: COLORS.surfaceContainerHighest,
-  },
-  monthText: {
-    color: COLORS.onSurfaceVariant,
-  },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scrollContent: {
     paddingHorizontal: 20,

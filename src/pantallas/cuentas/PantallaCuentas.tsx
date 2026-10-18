@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { EmblemaKyrara as KyraraEmblem } from '@/compartido/componentes/EmblemaKyrara';
+import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
 import { useCuentasBoveda as useVaultAccounts, useSeguridadBoveda as useVaultSecurity } from '@/datos/hooks';
 import { Cuenta } from '@/datos/tipos';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
@@ -72,23 +72,9 @@ export function PantallaCuentas() {
   return (
     <View style={styles.screen}>
       {/* Top Header */}
-      <View style={styles.topHeader}>
-        <View style={styles.brandRow}>
-          <KyraraEmblem size={32} />
-          <View style={styles.brandTextCol}>
-            <View style={styles.brandTitleRow}>
-              <Text style={[styles.brandTitle, TYPOGRAPHY.headlineSm]}>Kyrara Gez</Text>
-              <Text style={[styles.brandSubTitle, TYPOGRAPHY.labelCaps]}>
-                {activeTab === 'CUENTAS' ? 'CUENTAS' : activeTab === 'CATEGORIAS' ? 'CATEGORÍAS' : 'AJUSTES'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.avatarCircle}>
-          <MaterialIcons name="person" size={18} color={COLORS.onPrimary} />
-        </View>
-      </View>
+      <EncabezadoSuperior
+        seccion={activeTab === 'CUENTAS' ? 'CUENTAS' : activeTab === 'CATEGORIAS' ? 'CATEGORÍAS' : 'AJUSTES'}
+      />
 
       {/* Segmented Top Switcher (Cuentas, Categorías, Ajustes) */}
       <View style={styles.segmentSwitcherContainer}>
@@ -234,44 +220,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: COLORS.surfaceBase,
-  },
-  topHeader: {
-    paddingTop: 52,
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(16, 20, 21, 0.85)',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderGlass,
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  brandTextCol: {
-    flexDirection: 'column',
-  },
-  brandTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  brandTitle: {
-    color: COLORS.onSurface,
-  },
-  brandSubTitle: {
-    color: COLORS.onSurfaceVariant,
-  },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   segmentSwitcherContainer: {
     paddingHorizontal: 20,
