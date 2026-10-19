@@ -311,11 +311,9 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
             </View>
             <View style={styles.backupTitles}>
               <Text style={[styles.backupMainTitle, TYPOGRAPHY.bodyLg]}>
-                Copias y Portabilidad
+                Copias de Seguridad
               </Text>
-              <Text style={[styles.backupSubtitle, TYPOGRAPHY.bodySm]}>
-                Archivos autónomos bajo tu custodia
-              </Text>
+
             </View>
           </View>
 
@@ -329,7 +327,6 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
               <MaterialIcons name="file-download" size={22} color={COLORS.primary} />
               <View>
                 <Text style={[styles.backupBtnTitle, TYPOGRAPHY.bodySm]}>Crear Respaldo</Text>
-                <Text style={[styles.backupBtnSub, TYPOGRAPHY.labelCaps]}>Guardar .json</Text>
               </View>
             </TouchableOpacity>
 
@@ -344,7 +341,6 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
               <MaterialIcons name="file-upload" size={22} color={COLORS.secondary} />
               <View>
                 <Text style={[styles.backupBtnTitle, TYPOGRAPHY.bodySm]}>Restaurar</Text>
-                <Text style={[styles.backupBtnSub, TYPOGRAPHY.labelCaps]}>Cargar .json</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -374,7 +370,7 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
           <View style={styles.backupInfoRow}>
             <MaterialIcons name="info" size={16} color={COLORS.secondary} />
             <Text style={[styles.backupInfoText, TYPOGRAPHY.bodySm]}>
-              Los archivos se generan y guardan directamente en tu teléfono sin internet.
+              Los archivos se generan y guardan directamente en tu teléfono.
             </Text>
           </View>
         </GlassCard>

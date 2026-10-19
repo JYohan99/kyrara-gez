@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar as RNStatusBar } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '../tema';
 import { EmblemaKyrara as KyraraEmblem } from './EmblemaKyrara';
 import { gatillarSeleccion as triggerSelection } from '../utilidades/hapticos';
@@ -16,6 +17,7 @@ export interface PropiedadesEncabezadoSuperior {
   modoVolver?: boolean;
   onPressVolver?: () => void;
   paddingInferior?: number;
+  paddingSuperior?: number;
 }
 export type TopHeaderProps = PropiedadesEncabezadoSuperior;
 
@@ -34,7 +36,12 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
   modoVolver,
   onPressVolver,
   paddingInferior,
+  paddingSuperior,
 }) => {
+  const insets = useSafeAreaInsets();
+  const topInset = insets.top > 0 ? insets.top : (RNStatusBar.currentHeight || 0);
+  const paddingTopCalculado = paddingSuperior ?? Math.max(topInset + 6, 12);
+
   const textoPeriodo = useMemo(() => {
     if (etiquetaPeriodo) return etiquetaPeriodo;
     const ahora = new Date();
@@ -69,6 +76,7 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
     <View
       style={[
         styles.topHeader,
+        { paddingTop: paddingTopCalculado },
         paddingInferior !== undefined && { paddingBottom: paddingInferior },
       ]}
     >
@@ -110,7 +118,6 @@ export const TopHeader = EncabezadoSuperior;
 
 const styles = StyleSheet.create({
   topHeader: {
-    paddingTop: 5,
     paddingHorizontal: 20,
     paddingBottom: 5,
     flexDirection: 'row',
