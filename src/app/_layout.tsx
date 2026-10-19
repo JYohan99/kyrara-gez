@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
   Inter_400Regular,
@@ -17,6 +18,9 @@ import {
 import { COLORES as COLORS } from '@/compartido/tema';
 import { PantallaBloqueo as LockScreen } from '@/compartido/componentes/PantallaBloqueo';
 import { ProveedorSincronizacionBoveda as VaultSyncProvider } from '@/datos/sincronizacion';
+
+// Prevenir que la pantalla de inicio se oculte antes de que las fuentes y datos estén listos
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -46,17 +50,18 @@ export default function RootLayout() {
     }
   }, []);
 
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded]);
+
   const handleUnlocked = React.useCallback(() => {
     setIsLocked(false);
   }, []);
 
   if (!fontsLoaded) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primaryContainer} />
-        <StatusBar style="light" />
-      </View>
-    );
+    return null;
   }
 
   return (
@@ -90,11 +95,5 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: COLORS.surfaceBase,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.surfaceBase,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
