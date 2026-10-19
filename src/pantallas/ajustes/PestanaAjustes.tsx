@@ -6,10 +6,11 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-  Share,
 } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
 import { useSeguridadBoveda as useVaultSecurity } from '@/datos/hooks';
@@ -51,27 +52,55 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
 
   const handleExportBackup = async () => {
     triggerSelection();
-    const json = exportDatabaseToJson();
     try {
-      await Share.share({
-        title: 'Respaldo Kyrara Gez (.kyrarabez)',
-        message: json,
+      const json = exportDatabaseToJson();
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const fileName = `kyrara_respaldo_${dateStr}.json`;
+      const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+
+      await FileSystem.writeAsStringAsync(fileUri, json, {
+        encoding: FileSystem.EncodingType.UTF8,
       });
-    } catch {
-      onShowBackupContent('Respaldo .kyrarabez (JSON Autónomo)', json);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Guardar respaldo de Kyrara Gez',
+          UTI: 'public.json',
+        });
+      } else {
+        onShowBackupContent('Respaldo JSON', json);
+      }
+    } catch (err: any) {
+      console.error('Error al exportar respaldo JSON:', err);
+      Alert.alert('Error', 'No se pudo generar el archivo de respaldo.');
     }
   };
 
   const handleExportCsv = async () => {
     triggerSelection();
-    const csv = exportTransactionsToCsv();
     try {
-      await Share.share({
-        title: 'Movimientos Kyrara Gez.csv',
-        message: csv,
+      const csv = exportTransactionsToCsv();
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const fileName = `kyrara_movimientos_${dateStr}.csv`;
+      const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+
+      await FileSystem.writeAsStringAsync(fileUri, csv, {
+        encoding: FileSystem.EncodingType.UTF8,
       });
-    } catch {
-      onShowBackupContent('Exportación CSV / Excel', csv);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: 'Exportar movimientos para Excel',
+          UTI: 'public.comma-separated-values-text',
+        });
+      } else {
+        onShowBackupContent('Exportación CSV / Excel', csv);
+      }
+    } catch (err: any) {
+      console.error('Error al exportar archivo para Excel:', err);
+      Alert.alert('Error', 'No se pudo generar el archivo para Excel.');
     }
   };
 
@@ -105,11 +134,6 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
             Control absoluto y almacenamiento local en tu terminal
           </Text>
         </View>
-
-        <View style={styles.offlineBadge}>
-          <MaterialIcons name="offline-bolt" size={14} color={COLORS.tertiary} />
-          <Text style={[styles.offlineText, TYPOGRAPHY.labelCaps]}>OFFLINE</Text>
-        </View>
       </View>
 
       {/* Bóveda Cero Nube Hero Banner */}
@@ -134,10 +158,7 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
             <MaterialIcons name="verified-user" size={14} color={COLORS.cashflowIncome} />
             <Text style={[styles.safePillText, TYPOGRAPHY.labelCaps]}>100% Offline & Privado</Text>
           </View>
-          <View style={styles.cipherPill}>
-            <MaterialIcons name="lock" size={13} color={COLORS.onSurfaceVariant} />
-            <Text style={[styles.cipherPillText, TYPOGRAPHY.labelCaps]}>SQLite Local</Text>
-          </View>
+
         </View>
       </GlassCard>
 
@@ -189,51 +210,17 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
         </View>
       </View>
 
-      {/* Moneda y Formato */}
+      {/* Seguridad y Acceso */}
       <View style={styles.settingsSection}>
         <View style={styles.settingsSectionHeader}>
           <View style={styles.settingsSectionLeft}>
-            <MaterialIcons name="payments" size={18} color={COLORS.primary} />
-            <Text style={[styles.settingsSectionTitle, TYPOGRAPHY.headlineSm]}>Moneda y Formato</Text>
+            <MaterialIcons name="shield" size={18} color={COLORS.secondary} />
+            <Text style={[styles.settingsSectionTitle, TYPOGRAPHY.headlineSm]}>Seguridad y Acceso</Text>
           </View>
-          <Text style={[styles.settingsSectionRightTag, TYPOGRAPHY.labelCaps]}>CONTABILIDAD</Text>
+          <Text style={[styles.settingsSectionRightTag, TYPOGRAPHY.labelCaps]}>PROTECCIÓN FÍSICA</Text>
         </View>
 
         <GlassCard style={styles.settingsGroup}>
-          <View style={styles.settingItemRow}>
-            <View style={styles.settingItemLeft}>
-              <View style={styles.settingIconBox}>
-                <MaterialIcons name="euro-symbol" size={18} color={COLORS.primary} />
-              </View>
-              <View>
-                <Text style={[styles.settingItemTitle, TYPOGRAPHY.bodyMd]}>Moneda base</Text>
-                <Text style={[styles.settingItemSubtitle, TYPOGRAPHY.bodySm]}>
-                  UYU ($) • Peso Uruguayo
-                </Text>
-              </View>
-            </View>
-            <View style={styles.settingValuePill}>
-              <Text style={[styles.settingValueText, TYPOGRAPHY.labelCaps]}>UYU</Text>
-            </View>
-          </View>
-
-          <View style={styles.settingItemRow}>
-            <View style={styles.settingItemLeft}>
-              <View style={styles.settingIconBox}>
-                <MaterialIcons name="pin" size={18} color={COLORS.secondary} />
-              </View>
-              <View>
-                <Text style={[styles.settingItemTitle, TYPOGRAPHY.bodyMd]}>Separadores numéricos</Text>
-                <Text style={[styles.settingItemSubtitle, TYPOGRAPHY.numericTable]}>
-                  142.850,00
-                </Text>
-              </View>
-            </View>
-            <View style={styles.settingValuePill}>
-              <Text style={[styles.settingValueText, TYPOGRAPHY.labelCaps]}>1.000,00</Text>
-            </View>
-          </View>
-
           <View style={styles.settingItemRow}>
             <View style={styles.settingItemLeft}>
               <View style={styles.settingIconBox}>
@@ -255,20 +242,7 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
               thumbColor="#FFFFFF"
             />
           </View>
-        </GlassCard>
-      </View>
 
-      {/* Seguridad y Acceso */}
-      <View style={styles.settingsSection}>
-        <View style={styles.settingsSectionHeader}>
-          <View style={styles.settingsSectionLeft}>
-            <MaterialIcons name="shield" size={18} color={COLORS.secondary} />
-            <Text style={[styles.settingsSectionTitle, TYPOGRAPHY.headlineSm]}>Seguridad y Acceso</Text>
-          </View>
-          <Text style={[styles.settingsSectionRightTag, TYPOGRAPHY.labelCaps]}>PROTECCIÓN FÍSICA</Text>
-        </View>
-
-        <GlassCard style={styles.settingsGroup}>
           <View style={styles.settingItemRow}>
             <View style={styles.settingItemLeft}>
               <View style={styles.settingIconBox}>
@@ -345,7 +319,7 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
             </View>
           </View>
 
-          {/* 2 Big Action Buttons */}
+          {/* 2 Big Action Buttons: Crear Respaldo y Restaurar */}
           <View style={styles.backupGridBtns}>
             <TouchableOpacity
               style={styles.backupBtn}
@@ -355,7 +329,7 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
               <MaterialIcons name="file-download" size={22} color={COLORS.primary} />
               <View>
                 <Text style={[styles.backupBtnTitle, TYPOGRAPHY.bodySm]}>Crear Respaldo</Text>
-                <Text style={[styles.backupBtnSub, TYPOGRAPHY.labelCaps]}>.kyrarabez</Text>
+                <Text style={[styles.backupBtnSub, TYPOGRAPHY.labelCaps]}>Guardar .json</Text>
               </View>
             </TouchableOpacity>
 
@@ -370,38 +344,37 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
               <MaterialIcons name="file-upload" size={22} color={COLORS.secondary} />
               <View>
                 <Text style={[styles.backupBtnTitle, TYPOGRAPHY.bodySm]}>Restaurar</Text>
-                <Text style={[styles.backupBtnSub, TYPOGRAPHY.labelCaps]}>Cargar copia</Text>
+                <Text style={[styles.backupBtnSub, TYPOGRAPHY.labelCaps]}>Cargar .json</Text>
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* Free Formats Sub-Panel */}
-          <View style={styles.freeExportSubPanel}>
-            <Text style={[styles.freeExportLabel, TYPOGRAPHY.labelCaps]}>
-              FORMATOS DE EXPORTACIÓN LIBRE
-            </Text>
-            <View style={styles.freeExportRow}>
-              <TouchableOpacity
-                style={styles.freeExportBtn}
-                onPress={handleExportCsv}
-              >
-                <MaterialIcons name="table-view" size={16} color={COLORS.cashflowIncome} />
-                <Text style={[styles.freeExportBtnText, TYPOGRAPHY.bodySm]}>CSV / Excel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.freeExportBtn}
-                onPress={handleExportBackup}
-              >
-                <MaterialIcons name="data-object" size={16} color={COLORS.primary} />
-                <Text style={[styles.freeExportBtnText, TYPOGRAPHY.bodySm]}>JSON Estructurado</Text>
-              </TouchableOpacity>
+          {/* Botón destacado para exportar archivo de Excel */}
+          <TouchableOpacity
+            style={styles.excelExportCardBtn}
+            onPress={handleExportCsv}
+            activeOpacity={0.8}
+          >
+            <View style={styles.excelBtnLeft}>
+              <View style={styles.excelIconBox}>
+                <MaterialIcons name="table-view" size={22} color={COLORS.cashflowIncome} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.excelBtnTitle, TYPOGRAPHY.bodyMd]}>
+                  Exportar archivo Excel
+                </Text>
+                <Text style={[styles.excelBtnSubtitle, TYPOGRAPHY.bodySm]}>
+                  Planilla .csv para abrir y leer en Excel
+                </Text>
+              </View>
             </View>
-          </View>
+            <MaterialIcons name="file-download" size={20} color={COLORS.cashflowIncome} />
+          </TouchableOpacity>
 
           <View style={styles.backupInfoRow}>
             <MaterialIcons name="info" size={16} color={COLORS.secondary} />
             <Text style={[styles.backupInfoText, TYPOGRAPHY.bodySm]}>
-              Las copias se procesan localmente sin intermediarios.
+              Los archivos se generan y guardan directamente en tu teléfono sin internet.
             </Text>
           </View>
         </GlassCard>
@@ -659,30 +632,37 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     marginTop: 2,
   },
-  freeExportSubPanel: {
-    gap: 8,
-    paddingTop: 4,
-  },
-  freeExportLabel: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 9,
-  },
-  freeExportRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  freeExportBtn: {
-    flex: 1,
+  excelExportCardBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(52, 211, 153, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+    borderRadius: 14,
+    padding: 12,
   },
-  freeExportBtnText: {
+  excelBtnLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  excelIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  excelBtnTitle: {
     color: COLORS.onSurface,
+    fontWeight: '600',
+  },
+  excelBtnSubtitle: {
+    color: COLORS.onSurfaceVariant,
+    marginTop: 2,
   },
   backupInfoRow: {
     flexDirection: 'row',

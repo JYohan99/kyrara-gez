@@ -12,9 +12,16 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialIcons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { restaurarBaseDatosDesdeJson as restoreDatabaseFromJson } from '@/datos/consultas/respaldos';
-import { gatillarExito as triggerSuccess, gatillarError as triggerError } from '@/compartido/utilidades/hapticos';
+import {
+  gatillarExito as triggerSuccess,
+  gatillarError as triggerError,
+  gatillarSeleccion as triggerSelection,
+} from '@/compartido/utilidades/hapticos';
 
 export interface PropiedadesModalRestaurar {
   visible: boolean;
@@ -31,10 +38,65 @@ export const ModalRestaurar: React.FC<PropiedadesModalRestaurar> = ({
   const insets = useSafeAreaInsets();
   const [inputText, setInputText] = useState('');
 
+  const handlePickFile = async () => {
+    try {
+      triggerSelection();
+      const res = await DocumentPicker.getDocumentAsync({
+        type: ['application/json', 'text/*', '*/*'],
+        copyToCacheDirectory: true,
+      });
+
+      if (!res.canceled && res.assets && res.assets[0]) {
+        const asset = res.assets[0];
+        const fileContent = await FileSystem.readAsStringAsync(asset.uri, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+
+        setInputText(fileContent);
+
+        Alert.alert(
+          'Archivo Seleccionado',
+          `Se cargó "${asset.name}". ¿Deseas restaurar la bóveda ahora?`,
+          [
+            { text: 'Revisar primero', style: 'cancel' },
+            {
+              text: 'Restaurar Ahora',
+              style: 'default',
+              onPress: () => {
+                try {
+                  const result = restoreDatabaseFromJson(fileContent);
+                  triggerSuccess();
+                  setInputText('');
+                  onClose();
+                  if (onRestored) onRestored();
+
+                  Alert.alert(
+                    'Bóveda Restaurada con Éxito',
+                    `Se importaron correctamente:\n• ${result.accounts} cuentas\n• ${result.categories} categorías\n• ${result.transactions} transacciones\n• ${result.budgets} presupuestos.`
+                  );
+                } catch (err: any) {
+                  triggerError();
+                  Alert.alert(
+                    'Error al restaurar',
+                    err.message || 'Verifica que el archivo sea un respaldo válido de Kyrara Gez.'
+                  );
+                }
+              },
+            },
+          ]
+        );
+      }
+    } catch (err: any) {
+      console.error('Error al seleccionar archivo:', err);
+      triggerError();
+      Alert.alert('Error', 'No se pudo leer el archivo seleccionado.');
+    }
+  };
+
   const handleExecuteRestore = () => {
     if (!inputText.trim()) {
       triggerError();
-      Alert.alert('Datos requeridos', 'Pega el texto JSON de tu respaldo.');
+      Alert.alert('Datos requeridos', 'Selecciona un archivo .json o pega el texto de tu respaldo.');
       return;
     }
 
@@ -47,12 +109,15 @@ export const ModalRestaurar: React.FC<PropiedadesModalRestaurar> = ({
 
       Alert.alert(
         'Bóveda Restaurada con Éxito',
-        `Se importaron:\n• ${result.accounts} cuentas\n• ${result.categories} categorías\n• ${result.transactions} transacciones\n• ${result.budgets} presupuestos.`
+        `Se importaron correctamente:\n• ${result.accounts} cuentas\n• ${result.categories} categorías\n• ${result.transactions} transacciones\n• ${result.budgets} presupuestos.`
       );
     } catch (err: any) {
       console.error('Error executing restore:', err);
       triggerError();
-      Alert.alert('Error al restaurar', err.message || 'Verifica que el texto sea un JSON de Kyrara Gez válido.');
+      Alert.alert(
+        'Error al restaurar',
+        err.message || 'Verifica que el texto sea un JSON de Kyrara Gez válido.'
+      );
     }
   };
 
@@ -83,15 +148,40 @@ export const ModalRestaurar: React.FC<PropiedadesModalRestaurar> = ({
               Restaurar Bóveda Local
             </Text>
             <Text style={[styles.modalSubtitle, TYPOGRAPHY.bodySm]}>
-              Pega a continuación la copia de seguridad en formato JSON. Esta acción combinará o actualizará los registros existentes.
+              Puedes seleccionar un archivo de respaldo guardado en tu teléfono o pegar el texto JSON directamente.
             </Text>
+
+            {/* Botón principal para seleccionar archivo del móvil */}
+            <TouchableOpacity
+              style={styles.pickFileBtn}
+              onPress={handlePickFile}
+              activeOpacity={0.8}
+            >
+              <View style={styles.pickFileIconBox}>
+                <MaterialIcons name="folder-open" size={24} color="#FFFFFF" />
+              </View>
+              <View style={styles.pickFileTextCol}>
+                <Text style={[styles.pickFileTitle, TYPOGRAPHY.bodyMd]}>
+                  Seleccionar archivo del teléfono
+                </Text>
+                <Text style={[styles.pickFileSubtitle, TYPOGRAPHY.labelCaps]}>
+                  BUSCAR ARCHIVO .JSON O .KYRARABEZ
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={[styles.dividerText, TYPOGRAPHY.labelCaps]}>O PEGA EL TEXTO</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
             <TextInput
               style={styles.restoreTextInput}
               value={inputText}
               onChangeText={setInputText}
               multiline
-              placeholder='{"version": 1, "exportedAt": "...", "accounts": [...]}'
+              placeholder='{"version": "1.0.4", "data": { ... }}'
               placeholderTextColor={COLORS.outline}
               autoCapitalize="none"
               autoCorrect={false}
@@ -132,7 +222,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     paddingTop: 16,
     paddingHorizontal: 22,
-    maxHeight: '85%',
+    maxHeight: '88%',
   },
   drawerScrollContent: {
     gap: 14,
@@ -151,6 +241,52 @@ const styles = StyleSheet.create({
   },
   modalSubtitle: {
     color: COLORS.onSurfaceVariant,
+    lineHeight: 18,
+  },
+  pickFileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceContainerHigh,
+    borderRadius: 16,
+    padding: 14,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: COLORS.primaryContainer,
+  },
+  pickFileIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickFileTextCol: {
+    flex: 1,
+  },
+  pickFileTitle: {
+    color: COLORS.onSurface,
+    fontWeight: '600',
+  },
+  pickFileSubtitle: {
+    color: COLORS.primary,
+    marginTop: 2,
+    letterSpacing: 0.8,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.borderGlass,
+  },
+  dividerText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 10,
   },
   restoreTextInput: {
     backgroundColor: COLORS.surfaceContainerLowest,
@@ -159,8 +295,10 @@ const styles = StyleSheet.create({
     color: COLORS.onSurface,
     fontSize: 11,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    height: 120,
+    height: 100,
     textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   modalActionsRow: {
     flexDirection: 'row',

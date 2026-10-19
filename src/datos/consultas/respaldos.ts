@@ -34,26 +34,32 @@ export function exportarMovimientosACsv(): string {
     'ID',
     'Fecha',
     'Tipo',
-    'Monto_Centavos',
+    'Monto',
     'Cuenta_Origen',
     'Cuenta_Destino',
     'Categoria',
     'Beneficiario',
     'Nota',
   ];
-  const rows = transactions.map(t => [
-    t.id,
-    new Date(t.date).toISOString(),
-    t.type,
-    t.amount,
-    `"${t.sourceAccountName}"`,
-    t.targetAccountName ? `"${t.targetAccountName}"` : '""',
-    `"${t.categoryName || ''}"`,
-    `"${t.payee || ''}"`,
-    `"${t.note || ''}"`,
-  ]);
+  const rows = transactions.map(t => {
+    const fecha = new Date(t.date).toISOString().slice(0, 19).replace('T', ' ');
+    const monto = (t.amount / 100).toFixed(2);
+    const tipo = t.type === 'EXPENSE' ? 'Gasto' : t.type === 'INCOME' ? 'Ingreso' : 'Transferencia';
+    return [
+      t.id,
+      `"${fecha}"`,
+      `"${tipo}"`,
+      monto,
+      `"${(t.sourceAccountName || '').replace(/"/g, '""')}"`,
+      t.targetAccountName ? `"${t.targetAccountName.replace(/"/g, '""')}"` : '""',
+      `"${(t.categoryName || '').replace(/"/g, '""')}"`,
+      `"${(t.payee || '').replace(/"/g, '""')}"`,
+      `"${(t.note || '').replace(/"/g, '""')}"`,
+    ];
+  });
 
-  return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  // \uFEFF asegura que Excel reconozca codificación UTF-8
+  return '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
 }
 
 export function restaurarBaseDatosDesdeJson(jsonString: string): {
