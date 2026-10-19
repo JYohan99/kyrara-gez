@@ -111,9 +111,24 @@ export function obtenerSaldoTotalDisponible(): number {
   return cuentas.reduce((acc, a) => acc + a.currentBalance, 0);
 }
 
+export function eliminarCuenta(id: string): void {
+  const db = obtenerBaseDatos();
+  const countRow = db.getFirstSync<{ total: number }>('SELECT COUNT(*) as total FROM accounts WHERE is_archived = 0');
+  if (countRow && countRow.total <= 1) {
+    throw new Error('No puedes eliminar la única cuenta activa. Debe existir al menos una cuenta en la bóveda.');
+  }
+
+  db.withTransactionSync(() => {
+    db.runSync('DELETE FROM transactions WHERE source_account_id = ? OR target_account_id = ?', [id, id]);
+    db.runSync('DELETE FROM accounts WHERE id = ?', [id]);
+  });
+  emitirCambioBoveda();
+}
+
 // Alias compatibles
 export const getAccounts = obtenerCuentas;
 export const createAccount = crearCuenta;
 export const updateAccountBalance = actualizarSaldoCuenta;
 export const updateAccount = actualizarCuenta;
 export const getTotalAvailableBalance = obtenerSaldoTotalDisponible;
+export const deleteAccount = eliminarCuenta;

@@ -12,11 +12,21 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { crearCuenta as createAccount, actualizarCuenta as updateAccount, actualizarSaldoCuenta as updateAccountBalance } from '@/datos/consultas/cuentas';
+import {
+  crearCuenta as createAccount,
+  actualizarCuenta as updateAccount,
+  actualizarSaldoCuenta as updateAccountBalance,
+  eliminarCuenta as deleteAccount,
+} from '@/datos/consultas/cuentas';
 import { Cuenta, TipoCuenta } from '@/datos/tipos';
 import { convertirMontoACentavos as parseAmountToCents } from '@/compartido/utilidades/moneda';
-import { gatillarExito as triggerSuccess, gatillarError as triggerError } from '@/compartido/utilidades/hapticos';
+import {
+  gatillarExito as triggerSuccess,
+  gatillarError as triggerError,
+  gatillarSeleccion as triggerSelection,
+} from '@/compartido/utilidades/hapticos';
 
 export interface PropiedadesModalCuenta {
   visible: boolean;
@@ -79,6 +89,35 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
     }
   };
 
+  const handleDelete = () => {
+    if (!editingAccount) return;
+
+    triggerSelection();
+    Alert.alert(
+      'Eliminar Cuenta',
+      `¿Estás seguro de que deseas eliminar "${editingAccount.name}"?\n\nEsta acción eliminará la cuenta y sus movimientos asociados de forma permanente.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar Cuenta',
+          style: 'destructive',
+          onPress: () => {
+            try {
+              deleteAccount(editingAccount.id);
+              triggerSuccess();
+              onClose();
+              if (onSaved) onSaved();
+            } catch (err: any) {
+              console.error('Error al eliminar cuenta:', err);
+              triggerError();
+              Alert.alert('No se pudo eliminar', err.message || 'Error al eliminar la cuenta.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
       <View style={styles.drawerHandle} />
@@ -88,9 +127,21 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
         bounces={false}
         contentContainerStyle={styles.drawerScrollContent}
       >
-        <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
-          {isEditing ? 'Ajustar Cuenta' : 'Nueva Cuenta'}
-        </Text>
+        <View style={styles.modalHeaderRow}>
+          <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
+            {isEditing ? 'Ajustar Cuenta' : 'Nueva Cuenta'}
+          </Text>
+          {isEditing && (
+            <TouchableOpacity
+              style={styles.deleteHeaderBtn}
+              onPress={handleDelete}
+              activeOpacity={0.7}
+              accessibilityLabel="Eliminar cuenta"
+            >
+              <MaterialIcons name="delete-outline" size={20} color={COLORS.cashflowExpense} />
+            </TouchableOpacity>
+          )}
+        </View>
 
         <View style={styles.inputGroup}>
           <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nombre de la cuenta</Text>
@@ -141,6 +192,19 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
             placeholderTextColor={COLORS.outline}
           />
         </View>
+
+        {isEditing && (
+          <TouchableOpacity
+            style={styles.deleteAccountBtn}
+            onPress={handleDelete}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="delete-outline" size={18} color={COLORS.cashflowExpense} />
+            <Text style={[styles.deleteAccountText, TYPOGRAPHY.labelCaps]}>
+              Eliminar esta cuenta
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.modalActionsRow}>
           <TouchableOpacity
@@ -226,6 +290,21 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 8,
   },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  deleteHeaderBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 138, 158, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 138, 158, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modalTitle: {
     color: COLORS.onSurface,
   },
@@ -264,10 +343,26 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
   },
+  deleteAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 11,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 138, 158, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 138, 158, 0.22)',
+    marginTop: 4,
+  },
+  deleteAccountText: {
+    color: COLORS.cashflowExpense,
+    letterSpacing: 0.8,
+  },
   modalActionsRow: {
     flexDirection: 'row',
     gap: 12,
-    paddingTop: 8,
+    paddingTop: 4,
   },
   modalCancelBtn: {
     flex: 1,
