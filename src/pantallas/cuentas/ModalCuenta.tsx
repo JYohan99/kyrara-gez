@@ -193,18 +193,6 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
           />
         </View>
 
-        {isEditing && (
-          <TouchableOpacity
-            style={styles.deleteAccountBtn}
-            onPress={handleDelete}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="delete-outline" size={18} color={COLORS.cashflowExpense} />
-            <Text style={[styles.deleteAccountText, TYPOGRAPHY.labelCaps]}>
-              Eliminar esta cuenta
-            </Text>
-          </TouchableOpacity>
-        )}
 
         <View style={styles.modalActionsRow}>
           <TouchableOpacity
@@ -342,22 +330,6 @@ const styles = StyleSheet.create({
   typeSelectBtnTextActive: {
     color: '#FFFFFF',
     fontWeight: '700',
-  },
-  deleteAccountBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 11,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 138, 158, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 138, 158, 0.22)',
-    marginTop: 4,
-  },
-  deleteAccountText: {
-    color: COLORS.cashflowExpense,
-    letterSpacing: 0.8,
   },
   modalActionsRow: {
     flexDirection: 'row',
