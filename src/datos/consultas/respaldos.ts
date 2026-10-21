@@ -1,6 +1,7 @@
 import { obtenerBaseDatos } from '../conexion';
 import { obtenerMovimientos } from './movimientos';
 import { emitirCambioBoveda } from '../sincronizacion';
+import { sincronizarNotificacionesPendientes } from './agenda';
 
 export function exportarBaseDatosAJson(): string {
   const db = obtenerBaseDatos();
@@ -9,10 +10,13 @@ export function exportarBaseDatosAJson(): string {
   const transactions = db.getAllSync('SELECT * FROM transactions');
   const budgets = db.getAllSync('SELECT * FROM budgets');
   const settings = db.getAllSync('SELECT * FROM settings');
+  const commitments = db.getAllSync('SELECT * FROM commitments');
+  const reminders = db.getAllSync('SELECT * FROM reminders');
+  const recurrence_exceptions = db.getAllSync('SELECT * FROM recurrence_exceptions');
 
   return JSON.stringify(
     {
-      version: '1.0.4',
+      version: '1.1.0',
       exportDate: new Date().toISOString(),
       generator: 'Kyrara Gez Local Vault',
       data: {
@@ -21,6 +25,9 @@ export function exportarBaseDatosAJson(): string {
         transactions,
         budgets,
         settings,
+        commitments,
+        reminders,
+        recurrence_exceptions,
       },
     },
     null,
@@ -67,6 +74,7 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
   transactions: number;
   budgets: number;
   categories: number;
+  commitments: number;
 } {
   const parsed = JSON.parse(jsonString);
   const data = parsed.data || parsed;
@@ -79,6 +87,7 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
   let txCount = 0;
   let bgtCount = 0;
   let catCount = 0;
+  let comCount = 0;
 
   db.withTransactionSync(() => {
     db.execSync(`
@@ -86,6 +95,9 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
       DELETE FROM budgets;
       DELETE FROM accounts;
       DELETE FROM categories;
+      DELETE FROM reminders;
+      DELETE FROM recurrence_exceptions;
+      DELETE FROM commitments;
     `);
 
     if (Array.isArray(data.categories)) {
@@ -158,15 +170,75 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
         bgtCount++;
       }
     }
+
+    if (Array.isArray(data.commitments)) {
+      for (const cm of data.commitments) {
+        db.runSync(
+          `INSERT INTO commitments (id, title, date, time, description, related_person, recurrence_type, series_id, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            cm.id,
+            cm.title,
+            cm.date,
+            cm.time || null,
+            cm.description || null,
+            cm.related_person || cm.relatedPerson || null,
+            cm.recurrence_type || cm.recurrenceType || 'SINGLE',
+            cm.series_id || cm.seriesId || null,
+            cm.status || 'PENDING',
+            cm.created_at || cm.createdAt || Date.now(),
+            cm.updated_at || cm.updatedAt || Date.now(),
+          ]
+        );
+        comCount++;
+      }
+    }
+
+    if (Array.isArray(data.reminders)) {
+      for (const rm of data.reminders) {
+        db.runSync(
+          `INSERT INTO reminders (id, commitment_id, days_before, time, notification_id, created_at)
+           VALUES (?, ?, ?, ?, NULL, ?)`,
+          [
+            rm.id,
+            rm.commitment_id || rm.commitmentId,
+            rm.days_before ?? rm.daysBefore ?? 0,
+            rm.time || '09:00',
+            rm.created_at || rm.createdAt || Date.now(),
+          ]
+        );
+      }
+    }
+
+    if (Array.isArray(data.recurrence_exceptions)) {
+      for (const ex of data.recurrence_exceptions) {
+        db.runSync(
+          `INSERT INTO recurrence_exceptions (id, series_id, original_date, status, modified_commitment_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            ex.id,
+            ex.series_id || ex.seriesId,
+            ex.original_date || ex.originalDate,
+            ex.status,
+            ex.modified_commitment_id || ex.modifiedCommitmentId || null,
+            ex.created_at || ex.createdAt || Date.now(),
+          ]
+        );
+      }
+    }
   });
 
   emitirCambioBoveda();
+
+  // Reprogramar notificaciones de los compromisos restaurados
+  sincronizarNotificacionesPendientes().catch(() => {});
 
   return {
     accounts: accCount,
     transactions: txCount,
     budgets: bgtCount,
     categories: catCount,
+    commitments: comCount,
   };
 }
 

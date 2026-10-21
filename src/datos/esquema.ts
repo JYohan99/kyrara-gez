@@ -59,6 +59,44 @@ export function inicializarBaseDatos(): void {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS commitments (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      date TEXT NOT NULL,
+      time TEXT,
+      description TEXT,
+      related_person TEXT,
+      recurrence_type TEXT NOT NULL DEFAULT 'SINGLE',
+      series_id TEXT,
+      status TEXT NOT NULL DEFAULT 'PENDING',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS reminders (
+      id TEXT PRIMARY KEY,
+      commitment_id TEXT NOT NULL,
+      days_before INTEGER NOT NULL,
+      time TEXT NOT NULL,
+      notification_id TEXT,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY(commitment_id) REFERENCES commitments(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS recurrence_exceptions (
+      id TEXT PRIMARY KEY,
+      series_id TEXT NOT NULL,
+      original_date TEXT NOT NULL,
+      status TEXT NOT NULL,
+      modified_commitment_id TEXT,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_commitments_date ON commitments(date);
+    CREATE INDEX IF NOT EXISTS idx_commitments_series ON commitments(series_id);
+    CREATE INDEX IF NOT EXISTS idx_reminders_commitment ON reminders(commitment_id);
+    CREATE INDEX IF NOT EXISTS idx_exceptions_series_date ON recurrence_exceptions(series_id, original_date);
   `);
 
   // Migraciones no destructivas

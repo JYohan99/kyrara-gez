@@ -69,6 +69,12 @@
           },
           "imageWidth": 200
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#8A4FFF"
+        }
       ]
     ],
     "extra": {

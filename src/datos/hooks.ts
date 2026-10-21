@@ -11,6 +11,8 @@ import {
   obtenerHistoricoAhorroMensual,
   obtenerLineaTiempoLiquidez,
   obtenerAjustesSeguridad,
+  obtenerOcurrenciasPorMes,
+  obtenerProximosCompromisos,
 } from './consultas';
 import { TipoFlujo } from './tipos';
 
@@ -246,6 +248,63 @@ export function useSeguridadBoveda() {
   };
 }
 
+/**
+ * Hook reactivo para el módulo de Agenda (compromisos por mes, día seleccionado y próximos).
+ */
+export function useAgendaBoveda(opciones?: {
+  year?: number;
+  month?: number;
+  selectedDate?: string;
+}) {
+  const version = useSyncExternalStore(suscribirCambiosBoveda, obtenerVersionBoveda);
+
+  const optYear = opciones?.year;
+  const optMonth = opciones?.month;
+  const optSelectedDate = opciones?.selectedDate;
+
+  const { year, month } = useMemo(() => {
+    if (optYear !== undefined && optMonth !== undefined) {
+      return { year: optYear, month: optMonth };
+    }
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth() + 1 };
+  }, [optYear, optMonth]);
+
+  const monthOccurrences = useMemo(() => {
+    void version;
+    try {
+      return obtenerOcurrenciasPorMes(year, month);
+    } catch {
+      return [];
+    }
+  }, [version, year, month]);
+
+  const selectedDayOccurrences = useMemo(() => {
+    if (!optSelectedDate) return [];
+    return monthOccurrences.filter(o => o.occurrenceDate === optSelectedDate);
+  }, [monthOccurrences, optSelectedDate]);
+
+  const upcomingCommitments = useMemo(() => {
+    void version;
+    try {
+      return obtenerProximosCompromisos(30);
+    } catch {
+      return [];
+    }
+  }, [version]);
+
+  const reloadAgenda = useCallback(() => {
+    emitirCambioBoveda();
+  }, []);
+
+  return {
+    monthOccurrences,
+    selectedDayOccurrences,
+    upcomingCommitments,
+    reloadAgenda,
+  };
+}
+
 // Alias compatibles
 export const useVaultAccounts = useCuentasBoveda;
 export const useVaultTransactions = useMovimientosBoveda;
@@ -253,3 +312,4 @@ export const useVaultBudgets = usePresupuestosBoveda;
 export const useVaultAnalytics = useAnaliticasBoveda;
 export const useVaultCategories = useCategoriasBoveda;
 export const useVaultSecurity = useSeguridadBoveda;
+export const useVaultAgenda = useAgendaBoveda;

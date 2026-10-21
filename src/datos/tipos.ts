@@ -99,6 +99,49 @@ export interface PuntoLineaTiempo {
   displayAmount: string;
 }
 
+// Módulo de Agenda
+export type TipoProgramacionCompromiso = 'SINGLE' | 'MONTHLY';
+export type EstadoCompromiso = 'PENDING' | 'COMPLETED' | 'CANCELLED';
+
+export interface Compromiso {
+  id: string;
+  title: string;
+  date: string; // 'YYYY-MM-DD' en hora local
+  time?: string; // 'HH:mm' en hora local (opcional)
+  description?: string;
+  relatedPerson?: string;
+  recurrenceType: TipoProgramacionCompromiso;
+  seriesId?: string;
+  status: EstadoCompromiso;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Recordatorio {
+  id: string;
+  commitmentId: string;
+  daysBefore: number; // 0 = mismo día, 1 = 1 día antes, etc.
+  time: string; // 'HH:mm'
+  notificationId?: string;
+  createdAt: number;
+}
+
+export interface ExcepcionRecurrencia {
+  id: string;
+  seriesId: string;
+  originalDate: string; // 'YYYY-MM-DD'
+  status: 'COMPLETED' | 'CANCELLED' | 'MODIFIED';
+  modifiedCommitmentId?: string;
+  createdAt: number;
+}
+
+export interface OcurrenciaCompromiso extends Compromiso {
+  occurrenceDate: string; // Fecha concreta calculada 'YYYY-MM-DD'
+  isRecurrent: boolean;
+  isException?: boolean;
+  reminders?: Recordatorio[];
+}
+
 // Alias compatibles
 export type AccountType = TipoCuenta;
 export type Account = Cuenta;
@@ -112,3 +155,9 @@ export type UserSettings = AjustesUsuario;
 export type CategorySpendBreakdown = DesgloseGastoCategoria;
 export type MonthlySavingsStat = EstadisticaAhorroMensual;
 export type TimelineDataPoint = PuntoLineaTiempo;
+export type CommitmentRecurrenceType = TipoProgramacionCompromiso;
+export type CommitmentStatus = EstadoCompromiso;
+export type Commitment = Compromiso;
+export type CommitmentReminder = Recordatorio;
+export type RecurrenceException = ExcepcionRecurrencia;
+export type CommitmentOccurrence = OcurrenciaCompromiso;

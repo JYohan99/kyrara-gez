@@ -14,7 +14,9 @@ import {
   inicializarBaseDatos as initDatabase,
   obtenerAjustesSeguridad as getSecuritySettings,
   useSeguridadBoveda as useVaultSecurity,
+  sincronizarNotificacionesPendientes,
 } from '@/datos';
+import { inicializarCanalNotificaciones } from '@/compartido/servicios/notificaciones';
 import { COLORES as COLORS } from '@/compartido/tema';
 import { PantallaBloqueo as LockScreen } from '@/compartido/componentes/PantallaBloqueo';
 import { ProveedorSincronizacionBoveda as VaultSyncProvider } from '@/datos/sincronizacion';
@@ -45,6 +47,8 @@ export default function RootLayout() {
   useEffect(() => {
     try {
       initDatabase();
+      inicializarCanalNotificaciones().catch(() => {});
+      sincronizarNotificacionesPendientes().catch(() => {});
     } catch (err) {
       console.error('Error initializing database:', err);
     }

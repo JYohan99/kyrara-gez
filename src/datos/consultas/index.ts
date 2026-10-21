@@ -5,3 +5,4 @@ export * from './categorias';
 export * from './seguridad';
 export * from './respaldos';
 export * from './analiticas';
+export * from './agenda';
