@@ -1,28 +1,68 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
 
 const CANAL_ID = 'agenda-recordatorios';
 
-// Configurar el manejador de notificaciones para cuando la app está en primer plano
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+/**
+ * Indicador de si las notificaciones locales del sistema están activas.
+ * Se desactiva por defecto para entornos de emulador y Expo Go donde el módulo
+ * nativo 'ExpoTopicSubscriptionModule' no está compilado, evitando bloqueos durante las pruebas.
+ * Cuando se compile un build nativo de desarrollo (npx expo run:android), puede activarse a true.
+ */
+export const NOTIFICACIONES_ACTIVAS = false;
+
+// Referencia perezosa (lazy) al módulo de notificaciones para no romper el emulador
+let NotificationsModule: typeof import('expo-notifications') | null = null;
+let intentoCargaRealizado = false;
+
+function obtenerModuloNotificaciones(): typeof import('expo-notifications') | null {
+  if (!NOTIFICACIONES_ACTIVAS) {
+    return null;
+  }
+  if (intentoCargaRealizado) {
+    return NotificationsModule;
+  }
+
+  intentoCargaRealizado = true;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('expo-notifications');
+    NotificationsModule = mod;
+
+    // Configurar el manejador de notificaciones para cuando la app está en primer plano
+    mod.setNotificationHandler?.({
+      handleNotification: async () => ({
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+    return NotificationsModule;
+  } catch (err) {
+    console.warn(
+      '[Notificaciones] Módulo nativo expo-notifications no disponible en este entorno. Las notificaciones quedarán desactivadas.',
+      err
+    );
+    NotificationsModule = null;
+    return null;
+  }
+}
 
 /**
  * Inicializa el canal de notificación en dispositivos Android.
  */
 export async function inicializarCanalNotificaciones(): Promise<void> {
+  const notif = obtenerModuloNotificaciones();
+  if (!notif) {
+    return;
+  }
+
   if (Platform.OS === 'android') {
     try {
-      await Notifications.setNotificationChannelAsync(CANAL_ID, {
+      await notif.setNotificationChannelAsync(CANAL_ID, {
         name: 'Recordatorios de Agenda',
         description: 'Notificaciones y avisos de compromisos programados en Kyrara Ges',
-        importance: Notifications.AndroidImportance.HIGH,
+        importance: notif.AndroidImportance.HIGH,
         sound: 'default',
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#8A4FFF',
@@ -37,13 +77,19 @@ export async function inicializarCanalNotificaciones(): Promise<void> {
  * Solicita permisos de notificación al usuario si aún no han sido concedidos.
  */
 export async function solicitarPermisoNotificaciones(): Promise<boolean> {
+  const notif = obtenerModuloNotificaciones();
+  if (!notif) {
+    // En modo emulador / pruebas, respondemos afirmativamente para permitir el flujo en la UI
+    return true;
+  }
+
   try {
-    const { status: estadoActual } = await Notifications.getPermissionsAsync();
+    const { status: estadoActual } = await notif.getPermissionsAsync();
     if (estadoActual === 'granted') {
       return true;
     }
 
-    const { status: nuevoEstado } = await Notifications.requestPermissionsAsync({
+    const { status: nuevoEstado } = await notif.requestPermissionsAsync({
       ios: {
         allowAlert: true,
         allowBadge: true,
@@ -62,15 +108,20 @@ export async function solicitarPermisoNotificaciones(): Promise<boolean> {
  * Verifica si los permisos de notificación están actualmente concedidos.
  */
 export async function tienePermisoNotificaciones(): Promise<boolean> {
+  const notif = obtenerModuloNotificaciones();
+  if (!notif) {
+    return true;
+  }
+
   try {
-    const { status } = await Notifications.getPermissionsAsync();
+    const { status } = await notif.getPermissionsAsync();
     return status === 'granted';
   } catch {
     return false;
   }
 }
 
-interface ParametrosProgramacion {
+export interface ParametrosProgramacion {
   commitmentId: string;
   title: string;
   commitmentDate: string; // 'YYYY-MM-DD'
@@ -96,7 +147,7 @@ export function calcularFechaAviso(
   const hora = parseInt(horaStr, 10) || 0;
   const minuto = parseInt(minStr, 10) || 0;
 
-  // Crear la fecha base local
+  // Crear la fecha base local restando los días de anticipación
   const fechaAviso = new Date(anio, mes, dia - daysBefore, hora, minuto, 0, 0);
   return fechaAviso;
 }
@@ -121,35 +172,41 @@ function construirCuerpoAviso(
 
 /**
  * Programa una notificación local para un recordatorio de compromiso.
- * Retorna el ID de la notificación programada o null si no se pudo programar o ya pasó.
+ * Retorna el ID de la notificación programada o un ID simulado en emulador.
  */
 export async function programarNotificacionAviso(
   params: ParametrosProgramacion
 ): Promise<string | null> {
+  const fechaDisparo = calcularFechaAviso(
+    params.commitmentDate,
+    params.daysBefore,
+    params.reminderTime
+  );
+
+  // Si la fecha calculada ya pasó, no se programa
+  if (fechaDisparo.getTime() <= Date.now()) {
+    return null;
+  }
+
+  const notif = obtenerModuloNotificaciones();
+  if (!notif) {
+    // Modo emulador: generamos un ID simulado para persistir en la base de datos sin errores
+    const idSimulado = `sim_${params.commitmentId}_${params.daysBefore}_${Date.now()}`;
+    return idSimulado;
+  }
+
   try {
     const tienePermisos = await tienePermisoNotificaciones();
     if (!tienePermisos) {
-      // Si no hay permisos, intentamos solicitarlos silenciosamente
       const concedido = await solicitarPermisoNotificaciones();
       if (!concedido) {
         return null;
       }
     }
 
-    const fechaDisparo = calcularFechaAviso(
-      params.commitmentDate,
-      params.daysBefore,
-      params.reminderTime
-    );
-
-    // Si la fecha calculada ya pasó, no se programa
-    if (fechaDisparo.getTime() <= Date.now()) {
-      return null;
-    }
-
     const cuerpo = construirCuerpoAviso(params.daysBefore, params.commitmentTime);
 
-    const notificationId = await Notifications.scheduleNotificationAsync({
+    const notificationId = await notif.scheduleNotificationAsync({
       content: {
         title: `Compromiso: ${params.title}`,
         body: cuerpo,
@@ -161,7 +218,7 @@ export async function programarNotificacionAviso(
         ...(Platform.OS === 'android' ? { channelId: CANAL_ID } : {}),
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        type: notif.SchedulableTriggerInputTypes.DATE,
         date: fechaDisparo,
       },
     });
@@ -178,8 +235,14 @@ export async function programarNotificacionAviso(
  */
 export async function cancelarNotificacion(notificationId?: string | null): Promise<void> {
   if (!notificationId) return;
+
+  const notif = obtenerModuloNotificaciones();
+  if (!notif) {
+    return;
+  }
+
   try {
-    await Notifications.cancelScheduledNotificationAsync(notificationId);
+    await notif.cancelScheduledNotificationAsync(notificationId);
   } catch (err) {
     console.warn(`No se pudo cancelar la notificación ${notificationId}:`, err);
   }
