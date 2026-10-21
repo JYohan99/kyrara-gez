@@ -191,6 +191,35 @@ export function PantallaAgenda() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Main Title Row */}
+        <View style={styles.mainTitleRow}>
+          <View>
+            <Text style={[styles.mainSectionTitle, TYPOGRAPHY.headlineLg]}>
+              Agenda
+            </Text>
+            <Text style={[styles.mainSectionSubtitle, TYPOGRAPHY.bodySm]}>
+              Compromisos y Recordatorios
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.actionBtnWrapper}
+            onPress={handleOpenNew}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Nuevo compromiso"
+          >
+            <LinearGradient
+              colors={['#9B5CFF', '#6A1FE8']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.actionBtnGradient}
+            >
+              <MaterialIcons name="add" size={24} color="#FFFFFF" />
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
         {/* Selector de Mes y Control de Hoy */}
         <View style={styles.monthHeaderRow}>
           <View style={styles.monthTitleBox}>
@@ -323,18 +352,19 @@ export function PantallaAgenda() {
           </View>
 
           <TouchableOpacity
-            style={styles.newCommitmentHeaderBtn}
+            style={styles.actionBtnWrapper}
             onPress={handleOpenNew}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Nuevo compromiso"
           >
             <LinearGradient
               colors={['#9B5CFF', '#6A1FE8']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.newCommitmentGradient}
+              style={styles.actionBtnGradient}
             >
-              <MaterialIcons name="add" size={16} color="#FFFFFF" />
-              <Text style={[styles.newCommitmentHeaderBtnText, TYPOGRAPHY.labelCaps]}>Nuevo</Text>
+              <MaterialIcons name="add" size={24} color="#FFFFFF" />
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -660,26 +690,36 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     fontSize: 10,
   },
-  newCommitmentHeaderBtn: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: COLORS.primaryContainer,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  newCommitmentGradient: {
+  mainTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    justifyContent: 'space-between',
   },
-  newCommitmentHeaderBtnText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '700',
+  mainSectionTitle: {
+    color: COLORS.onSurface,
+  },
+  mainSectionSubtitle: {
+    color: COLORS.onSurfaceVariant,
+    marginTop: 2,
+  },
+  actionBtnWrapper: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    shadowColor: '#8A4FFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  actionBtnGradient: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   emptyDayCard: {
     alignItems: 'center',
