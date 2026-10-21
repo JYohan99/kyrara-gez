@@ -197,7 +197,7 @@ export const ModalDetalleCompromiso: React.FC<PropiedadesModalDetalleCompromiso>
                       ? COLORS.cashflowIncome
                       : esCancelado
                         ? COLORS.cashflowExpense
-                        : COLORS.secondary
+                        : COLORS.primary
                   }
                 />
                 <Text
@@ -209,7 +209,7 @@ export const ModalDetalleCompromiso: React.FC<PropiedadesModalDetalleCompromiso>
                         ? COLORS.cashflowIncome
                         : esCancelado
                           ? COLORS.cashflowExpense
-                          : COLORS.secondary,
+                          : COLORS.primary,
                     },
                   ]}
                 >
@@ -226,7 +226,7 @@ export const ModalDetalleCompromiso: React.FC<PropiedadesModalDetalleCompromiso>
                   style={styles.iconBtn}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <MaterialIcons name="edit" size={18} color={COLORS.onSurface} />
+                  <MaterialIcons name="edit" size={18} color={COLORS.primary} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -257,7 +257,7 @@ export const ModalDetalleCompromiso: React.FC<PropiedadesModalDetalleCompromiso>
               {/* Fecha y Hora */}
               <View style={styles.infoRow}>
                 <View style={styles.infoIconBox}>
-                  <MaterialIcons name="calendar-today" size={16} color={COLORS.secondary} />
+                  <MaterialIcons name="calendar-today" size={16} color={COLORS.primary} />
                 </View>
                 <View style={styles.infoContent}>
                   <Text style={[styles.infoLabel, TYPOGRAPHY.labelCaps]}>Fecha y Hora</Text>
@@ -289,7 +289,7 @@ export const ModalDetalleCompromiso: React.FC<PropiedadesModalDetalleCompromiso>
                   <MaterialIcons
                     name={esRecurrente ? 'update' : 'event-available'}
                     size={16}
-                    color={COLORS.tertiary}
+                    color={COLORS.primary}
                   />
                 </View>
                 <View style={styles.infoContent}>
@@ -322,7 +322,7 @@ export const ModalDetalleCompromiso: React.FC<PropiedadesModalDetalleCompromiso>
                 <View style={styles.remindersList}>
                   {commitment.reminders.map((rem, idx) => (
                     <View key={rem.id || idx} style={styles.reminderRow}>
-                      <MaterialIcons name="notifications-active" size={16} color={COLORS.secondary} />
+                      <MaterialIcons name="notifications-active" size={16} color={COLORS.primary} />
                       <Text style={[styles.reminderText, TYPOGRAPHY.bodySm]}>
                         {rem.daysBefore === 0
                           ? `El mismo día a las ${rem.time} hs`
@@ -423,22 +423,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   statusBadgePending: {
-    backgroundColor: 'rgba(139, 224, 226, 0.12)',
+    backgroundColor: 'rgba(138, 79, 255, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(139, 224, 226, 0.3)',
+    borderColor: 'rgba(138, 79, 255, 0.35)',
   },
   statusBadgeCompleted: {
-    backgroundColor: 'rgba(0, 230, 118, 0.12)',
+    backgroundColor: 'rgba(87, 245, 171, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 230, 118, 0.3)',
+    borderColor: 'rgba(87, 245, 171, 0.35)',
   },
   statusBadgeCancelled: {
-    backgroundColor: 'rgba(255, 82, 82, 0.12)',
+    backgroundColor: 'rgba(255, 138, 158, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 82, 82, 0.3)',
+    borderColor: 'rgba(255, 138, 158, 0.35)',
   },
   statusBadgeText: {
     fontSize: 10,
+    fontWeight: '700',
   },
   headerActionBtns: {
     flexDirection: 'row',
@@ -467,6 +468,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerHigh,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderGlass,
   },
   infoContent: {
     flex: 1,
@@ -532,10 +535,15 @@ const styles = StyleSheet.create({
   },
   toggleCompleteBtnReopen: {
     backgroundColor: COLORS.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: COLORS.borderGlass,
   },
   toggleCompleteBtnText: {
     color: '#0B0F10',
     fontWeight: '700',
+  },
+  toggleCompleteBtnTextReopen: {
+    color: COLORS.onSurface,
   },
   cancelActionBtn: {
     flexDirection: 'row',
@@ -544,9 +552,9 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 12,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 82, 82, 0.08)',
+    backgroundColor: 'rgba(255, 138, 158, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 82, 82, 0.25)',
+    borderColor: 'rgba(255, 138, 158, 0.3)',
   },
   cancelActionBtnText: {
     color: COLORS.cashflowExpense,

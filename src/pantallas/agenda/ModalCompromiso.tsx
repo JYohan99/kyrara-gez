@@ -13,6 +13,7 @@ import {
   Switch,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { ModalSelectorFecha } from '@/compartido/componentes/ModalSelectorFecha';
@@ -222,7 +223,7 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
         {/* Header */}
         <View style={styles.modalHeaderRow}>
           <View style={styles.modalTitleBox}>
-            <MaterialIcons name="event" size={22} color={COLORS.secondary} />
+            <MaterialIcons name="event" size={22} color={COLORS.primary} />
             <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
               {isEditing ? 'Editar Compromiso' : 'Nuevo Compromiso'}
             </Text>
@@ -255,7 +256,7 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
               onPress={() => setDatePickerVisible(true)}
               activeOpacity={0.8}
             >
-              <MaterialIcons name="calendar-today" size={16} color={COLORS.secondary} />
+              <MaterialIcons name="calendar-today" size={16} color={COLORS.primary} />
               <Text style={[styles.dateSelectorText, TYPOGRAPHY.numericTable]}>{date}</Text>
             </TouchableOpacity>
           </View>
@@ -270,8 +271,8 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
                   triggerSelection();
                   setHasTime(v);
                 }}
-                trackColor={{ false: COLORS.surfaceContainerHigh, true: COLORS.secondaryContainer }}
-                thumbColor={hasTime ? COLORS.secondary : COLORS.outline}
+                trackColor={{ false: COLORS.surfaceContainerHigh, true: COLORS.primaryContainer }}
+                thumbColor={hasTime ? COLORS.primary : COLORS.outline}
                 style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
               />
             </View>
@@ -418,7 +419,7 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
               {reminders.map(rem => (
                 <View key={rem.id} style={styles.reminderCard}>
                   <View style={styles.reminderCardLeft}>
-                    <MaterialIcons name="alarm" size={16} color={COLORS.secondary} />
+                    <MaterialIcons name="alarm" size={16} color={COLORS.primary} />
                     <View style={styles.daysBeforePillsRow}>
                       {OPCIONES_ANTICIPACION.map(opc => {
                         const selected = rem.daysBefore === opc.value;
@@ -470,11 +471,18 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
             style={styles.saveBtn}
             onPress={() => handleSave()}
             disabled={saving}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.saveBtnText, TYPOGRAPHY.labelCaps]}>
-              {saving ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Crear Compromiso'}
-            </Text>
+            <LinearGradient
+              colors={['#9B5CFF', '#6A1FE8']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.saveBtnGradient}
+            >
+              <Text style={[styles.saveBtnText, TYPOGRAPHY.labelCaps]}>
+                {saving ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Crear Compromiso'}
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -584,7 +592,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   textInput: {
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: COLORS.surfaceContainerLowest,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.borderGlass,
@@ -603,7 +611,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: COLORS.surfaceContainerLowest,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.borderGlass,
@@ -651,7 +659,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   recurrenceOptionActive: {
-    backgroundColor: COLORS.secondaryContainer,
+    backgroundColor: COLORS.primaryContainer,
   },
   recurrenceOptionText: {
     color: COLORS.onSurfaceVariant,
@@ -670,7 +678,7 @@ const styles = StyleSheet.create({
   inputWithIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: COLORS.surfaceContainerLowest,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.borderGlass,
@@ -699,13 +707,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: 'rgba(138, 79, 255, 0.12)',
+    backgroundColor: 'rgba(138, 79, 255, 0.16)',
     borderWidth: 1,
-    borderColor: 'rgba(138, 79, 255, 0.28)',
+    borderColor: 'rgba(138, 79, 255, 0.35)',
   },
   addReminderPillText: {
     color: COLORS.primary,
     fontSize: 10,
+    fontWeight: '600',
   },
   noRemindersBox: {
     backgroundColor: COLORS.surfaceContainerLow,
@@ -751,7 +760,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerHigh,
   },
   daysPillSelected: {
-    backgroundColor: COLORS.secondaryContainer,
+    backgroundColor: COLORS.primaryContainer,
   },
   daysPillText: {
     fontSize: 9,
@@ -772,16 +781,25 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: COLORS.surfaceContainerHigh,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   cancelBtnText: {
     color: COLORS.onSurface,
   },
   saveBtn: {
     flex: 2,
-    paddingVertical: 14,
     borderRadius: 20,
-    backgroundColor: COLORS.secondaryContainer,
+    overflow: 'hidden',
+    shadowColor: COLORS.primaryContainer,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  saveBtnGradient: {
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   saveBtnText: {
     color: '#FFFFFF',

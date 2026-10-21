@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
 import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
@@ -181,7 +182,10 @@ export function PantallaAgenda() {
 
   return (
     <View style={styles.screen}>
-      <EncabezadoSuperior seccion="AGENDA" />
+      <EncabezadoSuperior
+        seccion="AGENDA"
+        etiquetaPeriodo={`${MESES[currentMonth - 1].substring(0, 3)} ${currentYear}`}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -204,8 +208,20 @@ export function PantallaAgenda() {
               ]}
               activeOpacity={0.7}
             >
-              <MaterialIcons name="today" size={14} color={COLORS.secondary} />
-              <Text style={[styles.todayBtnText, TYPOGRAPHY.labelCaps]}>Hoy</Text>
+              <MaterialIcons
+                name="today"
+                size={14}
+                color={selectedDate === hoyStr ? COLORS.primary : COLORS.onSurfaceVariant}
+              />
+              <Text
+                style={[
+                  styles.todayBtnText,
+                  selectedDate === hoyStr && styles.todayBtnTextActive,
+                  TYPOGRAPHY.labelCaps,
+                ]}
+              >
+                Hoy
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -311,8 +327,15 @@ export function PantallaAgenda() {
             onPress={handleOpenNew}
             activeOpacity={0.8}
           >
-            <MaterialIcons name="add" size={16} color="#FFFFFF" />
-            <Text style={[styles.newCommitmentHeaderBtnText, TYPOGRAPHY.labelCaps]}>Nuevo</Text>
+            <LinearGradient
+              colors={['#9B5CFF', '#6A1FE8']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.newCommitmentGradient}
+            >
+              <MaterialIcons name="add" size={16} color="#FFFFFF" />
+              <Text style={[styles.newCommitmentHeaderBtnText, TYPOGRAPHY.labelCaps]}>Nuevo</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -525,11 +548,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderGlass,
   },
   todayBtnActive: {
-    borderColor: COLORS.secondary,
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(138, 79, 255, 0.16)',
   },
   todayBtnText: {
-    color: COLORS.secondary,
+    color: COLORS.onSurfaceVariant,
     fontSize: 10,
+  },
+  todayBtnTextActive: {
+    color: COLORS.primary,
+    fontWeight: '700',
   },
   navArrowBtn: {
     width: 32,
@@ -575,18 +603,24 @@ const styles = StyleSheet.create({
     marginVertical: 1,
   },
   dayCellToday: {
-    borderWidth: 1,
-    borderColor: COLORS.secondary,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(138, 79, 255, 0.08)',
   },
   dayCellSelected: {
-    backgroundColor: COLORS.secondaryContainer,
+    backgroundColor: COLORS.primaryContainer,
+    shadowColor: COLORS.primaryContainer,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 4,
   },
   dayNumberText: {
     color: COLORS.onSurface,
     fontSize: 13,
   },
   dayNumberTextToday: {
-    color: COLORS.secondary,
+    color: COLORS.primary,
     fontWeight: '700',
   },
   dayNumberTextSelected: {
@@ -600,7 +634,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   commitmentDotPending: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.primary,
   },
   commitmentDotPendingSelected: {
     backgroundColor: '#FFFFFF',
@@ -627,17 +661,25 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   newCommitmentHeaderBtn: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: COLORS.primaryContainer,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  newCommitmentGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 14,
-    backgroundColor: COLORS.secondaryContainer,
   },
   newCommitmentHeaderBtnText: {
     color: '#FFFFFF',
     fontSize: 10,
+    fontWeight: '700',
   },
   emptyDayCard: {
     alignItems: 'center',
@@ -654,8 +696,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   emptyDayActionText: {
-    color: COLORS.secondary,
+    color: COLORS.primary,
     fontSize: 11,
+    fontWeight: '600',
   },
   commitmentsList: {
     gap: 10,
@@ -684,7 +727,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 1.5,
-    borderColor: COLORS.outline,
+    borderColor: COLORS.bordeContornoVariante,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -694,6 +737,7 @@ const styles = StyleSheet.create({
   },
   checkboxCircleCancelled: {
     borderColor: COLORS.cashflowExpense,
+    backgroundColor: 'rgba(255, 138, 158, 0.15)',
   },
   commitmentCardContent: {
     flex: 1,
@@ -733,11 +777,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: 'rgba(208, 188, 255, 0.12)',
+    backgroundColor: 'rgba(138, 79, 255, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(209, 188, 255, 0.22)',
   },
   chipPillMonthlyText: {
     fontSize: 9,
     color: COLORS.primary,
+    fontWeight: '600',
   },
   upcomingSection: {
     gap: 10,
@@ -772,6 +819,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerHigh,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderGlass,
   },
   upcomingDateDay: {
     color: COLORS.onSurface,
@@ -780,8 +829,9 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   upcomingDateMonth: {
-    color: COLORS.secondary,
+    color: COLORS.primary,
     fontSize: 9,
+    fontWeight: '700',
   },
   upcomingContent: {
     flex: 1,
