@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
+import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY, COMMON_STYLES } from '@/compartido/tema';
+import { EncabezadoSuperior, BotonFlotanteAccion } from '@/compartido/componentes';
 import { useCuentasBoveda as useVaultAccounts } from '@/datos/hooks';
 import { Cuenta } from '@/datos/tipos';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
@@ -23,6 +23,7 @@ type MainSectionTab = 'CUENTAS' | 'CATEGORIAS' | 'PRODUCTOS';
 
 export function PantallaCuentas() {
   const [activeTab, setActiveTab] = useState<MainSectionTab>('CUENTAS');
+  const newProductRef = useRef<(() => void) | null>(null);
 
   // Hooks reactivos de la bóveda
   const { accounts } = useVaultAccounts();
@@ -51,7 +52,7 @@ export function PantallaCuentas() {
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={COMMON_STYLES.screen}>
       {/* Top Header */}
       <EncabezadoSuperior
         seccion={
@@ -144,7 +145,7 @@ export function PantallaCuentas() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={COMMON_STYLES.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {activeTab === 'CUENTAS' && (
@@ -161,9 +162,29 @@ export function PantallaCuentas() {
         )}
 
         {activeTab === 'PRODUCTOS' && (
-          <PestanaPreciosFotos />
+          <PestanaPreciosFotos onNewProductRef={newProductRef} />
         )}
       </ScrollView>
+
+      {/* Botón Circular Flotante (FAB) contextual */}
+      {activeTab === 'CUENTAS' && (
+        <BotonFlotanteAccion
+          onPress={handleOpenNewAccount}
+          accessibilityLabel="Nueva cuenta"
+        />
+      )}
+      {activeTab === 'CATEGORIAS' && (
+        <BotonFlotanteAccion
+          onPress={() => handleOpenNewCategory('EXPENSE')}
+          accessibilityLabel="Nueva categoría"
+        />
+      )}
+      {activeTab === 'PRODUCTOS' && (
+        <BotonFlotanteAccion
+          onPress={() => newProductRef.current?.()}
+          accessibilityLabel="Nuevo producto"
+        />
+      )}
 
       {/* Modales */}
       <AccountModal
@@ -184,10 +205,6 @@ export function PantallaCuentas() {
 export const AccountsVaultScreen = PantallaCuentas;
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.surfaceBase,
-  },
   segmentSwitcherContainer: {
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -223,10 +240,5 @@ const styles = StyleSheet.create({
   segmentBtnTextActive: {
     color: COLORS.onSurface,
     fontWeight: '700',
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 110,
   },
 });

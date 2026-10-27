@@ -7,7 +7,6 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
 import { useCategoriasBoveda as useVaultCategories } from '@/datos/hooks';
@@ -129,26 +128,6 @@ export const PestanaCategorias: React.FC<PropiedadesPestanaCategorias> = ({ onNe
             </Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={styles.actionBtnWrapper}
-          onPress={() => {
-            triggerSelection();
-            onNewCategory(filterType);
-          }}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel="Nueva categoría"
-        >
-          <LinearGradient
-            colors={['#9B5CFF', '#6A1FE8']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.actionBtnGradient}
-          >
-            <MaterialIcons name="add" size={24} color="#FFFFFF" />
-          </LinearGradient>
-        </TouchableOpacity>
       </View>
 
       {/* Hero: Categoría más activa este mes (si estamos en Gastos) */}
@@ -265,25 +244,6 @@ const styles = StyleSheet.create({
   filterPillTextActive: {
     color: '#FFFFFF',
     fontWeight: '700',
-  },
-  actionBtnWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    shadowColor: '#8A4FFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.55,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  actionBtnGradient: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   frequentCard: {
     padding: 16,

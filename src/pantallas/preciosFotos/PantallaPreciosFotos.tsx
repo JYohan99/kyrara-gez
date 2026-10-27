@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { COLORES as COLORS } from '@/compartido/tema';
-import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
+import { EncabezadoSuperior, BotonFlotanteAccion } from '@/compartido/componentes';
 import { PestanaPreciosFotos } from './PestanaPreciosFotos';
 
 export function PantallaPreciosFotos() {
+  const newProductRef = useRef<(() => void) | null>(null);
+
   return (
     <View style={styles.screen}>
       <EncabezadoSuperior
@@ -15,8 +17,14 @@ export function PantallaPreciosFotos() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <PestanaPreciosFotos />
+        <PestanaPreciosFotos onNewProductRef={newProductRef} />
       </ScrollView>
+
+      {/* Botón Circular Flotante (FAB) - Nuevo Producto */}
+      <BotonFlotanteAccion
+        onPress={() => newProductRef.current?.()}
+        accessibilityLabel="Nuevo producto"
+      />
     </View>
   );
 }

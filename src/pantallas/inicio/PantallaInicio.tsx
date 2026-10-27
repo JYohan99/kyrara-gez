@@ -9,8 +9,7 @@ import {
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
-import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
+import { TarjetaVidrio as GlassCard, EncabezadoSuperior, BotonFlotanteAccion } from '@/compartido/componentes';
 import { ModalNuevoMovimiento as NewTransactionModal } from '@/pantallas/movimientos/ModalNuevoMovimiento';
 import { ModalDetalleMovimiento as TransactionDetailModal } from '@/pantallas/movimientos/ModalDetalleMovimiento';
 import { vibracionSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
@@ -307,6 +306,12 @@ export function PantallaInicio() {
           )}
         </View>
       </ScrollView>
+
+      {/* Botón Circular Flotante (FAB) - Nuevo Movimiento */}
+      <BotonFlotanteAccion
+        onPress={() => openModal('EXPENSE')}
+        accessibilityLabel="Nuevo movimiento"
+      />
 
       {/* New Transaction Modal */}
       <NewTransactionModal

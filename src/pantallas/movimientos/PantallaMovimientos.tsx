@@ -4,22 +4,15 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
-import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
+import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY, COMMON_STYLES } from '@/compartido/tema';
+import { EncabezadoSuperior, BotonFlotanteAccion, EstadoVacio } from '@/compartido/componentes';
 import { eliminarMovimiento as deleteTransaction } from '@/datos';
 import { MovimientoEnriquecido as EnrichedTransaction } from '@/datos/tipos';
 import { useMovimientosBoveda as useVaultTransactions } from '@/datos/hooks';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
-import {
-  vibracionExito as triggerSuccess,
-  vibracionSeleccion as triggerSelection,
-} from '@/compartido/utilidades/hapticos';
+import { vibracionExito as triggerSuccess } from '@/compartido/utilidades/hapticos';
 
 import { FilaMovimiento as TransactionRow } from './FilaMovimiento';
 import { TarjetaResumenMovimientos as TransactionsSummaryCard } from './TarjetaResumenMovimientos';
@@ -96,44 +89,24 @@ export function PantallaMovimientos() {
   }, [transactions]);
 
   return (
-    <View style={styles.screen}>
+    <View style={COMMON_STYLES.screen}>
       {/* Top Header */}
       <EncabezadoSuperior seccion="MOVIMIENTOS" />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={COMMON_STYLES.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Section Header Row */}
-        <View style={styles.sectionHeaderRow}>
+        <View style={COMMON_STYLES.sectionHeaderRow}>
           <View>
-            <Text style={[styles.mainSectionTitle, TYPOGRAPHY.headlineLg]}>
+            <Text style={[COMMON_STYLES.mainSectionTitle, TYPOGRAPHY.headlineLg]}>
               Movimientos
             </Text>
-            <Text style={[styles.mainSectionSubtitle, TYPOGRAPHY.bodySm]}>
+            <Text style={[COMMON_STYLES.mainSectionSubtitle, TYPOGRAPHY.bodySm]}>
               Historial de Bóveda
             </Text>
           </View>
-
-          <TouchableOpacity
-            style={styles.actionBtnWrapper}
-            onPress={() => {
-              triggerSelection();
-              setModalVisible(true);
-            }}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Nuevo movimiento"
-          >
-            <LinearGradient
-              colors={['#9B5CFF', '#6A1FE8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionBtnGradient}
-            >
-              <MaterialIcons name="add" size={24} color="#FFFFFF" />
-            </LinearGradient>
-          </TouchableOpacity>
         </View>
         {/* Status Strip */}
         <View style={styles.statusStrip}>
@@ -164,24 +137,13 @@ export function PantallaMovimientos() {
 
         {/* Grouped Transaction List */}
         {Object.keys(groupedTransactions).length === 0 ? (
-          <GlassCard style={styles.emptyCard}>
-            <View style={styles.emptyIconBox}>
-              <MaterialIcons name="receipt-long" size={32} color={COLORS.secondary} />
-            </View>
-            <Text style={[styles.emptyTitle, TYPOGRAPHY.headlineSm]}>Sin movimientos</Text>
-            <Text style={[styles.emptyBody, TYPOGRAPHY.bodySm]}>
-              No hay transacciones registradas que coincidan con los filtros seleccionados.
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyAddBtn}
-              onPress={() => setModalVisible(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.emptyAddBtnText, TYPOGRAPHY.labelCaps]}>
-                + Registrar primera operación
-              </Text>
-            </TouchableOpacity>
-          </GlassCard>
+          <EstadoVacio
+            icono="receipt-long"
+            titulo="Sin movimientos"
+            descripcion="No hay transacciones registradas que coincidan con los filtros seleccionados."
+            textoBoton="+ Registrar primera operación"
+            onBotonPress={() => setModalVisible(true)}
+          />
         ) : (
           <View style={styles.feedContainer}>
             {Object.entries(groupedTransactions).map(([dateGroup, items]) => (
@@ -214,6 +176,12 @@ export function PantallaMovimientos() {
         )}
       </ScrollView>
 
+      {/* Botón Circular Flotante (FAB) */}
+      <BotonFlotanteAccion
+        onPress={() => setModalVisible(true)}
+        accessibilityLabel="Nuevo movimiento"
+      />
+
       {/* New Transaction Modal */}
       <NewTransactionModal
         visible={modalVisible}
@@ -234,47 +202,6 @@ export function PantallaMovimientos() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.surfaceBase,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  mainSectionTitle: {
-    color: COLORS.onSurface,
-  },
-  mainSectionSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
-  actionBtnWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    shadowColor: '#8A4FFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.55,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  actionBtnGradient: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 110,
-    gap: 16,
-  },
   statusStrip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -315,42 +242,6 @@ const styles = StyleSheet.create({
   },
   itemsStack: {
     gap: 8,
-  },
-  emptyCard: {
-    padding: 32,
-    borderRadius: 20,
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 20,
-  },
-  emptyIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    color: COLORS.onSurface,
-    textAlign: 'center',
-  },
-  emptyBody: {
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 280,
-  },
-  emptyAddBtn: {
-    marginTop: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 16,
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  emptyAddBtnText: {
-    color: COLORS.secondary,
   },
 });
 

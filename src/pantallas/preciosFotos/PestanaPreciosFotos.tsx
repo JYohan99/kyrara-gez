@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
-import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import { EstadoVacio, BotonBrillante } from '@/compartido/componentes';
 import { useProductosBoveda } from '@/datos/hooks';
 import {
   alternarEstadoProductoFoto,
@@ -35,11 +33,12 @@ export type SeccionModuloFotos = SeccionModuloProductos;
 
 export interface PropiedadesPestanaProductos {
   onNewProduct?: () => void;
+  onNewProductRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 export type PropiedadesPestanaPreciosFotos = PropiedadesPestanaProductos;
 
-export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = () => {
+export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewProduct, onNewProductRef }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<FiltroEstadoProducto>('TODOS');
   const [selectedCategory, setSelectedCategory] = useState<string>('TODAS');
@@ -74,9 +73,19 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = () => {
 
   const handleOpenNew = () => {
     triggerSelection();
+    if (onNewProduct) {
+      onNewProduct();
+      return;
+    }
     setEditingProduct(null);
     setModalVisible(true);
   };
+
+  useEffect(() => {
+    if (onNewProductRef) {
+      onNewProductRef.current = handleOpenNew;
+    }
+  });
 
   const handleOpenEdit = (product: Producto) => {
     triggerSelection();
@@ -298,23 +307,6 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = () => {
                 Precios, costos, formatos y rentabilidad estimada
               </Text>
             </View>
-
-            <TouchableOpacity
-              style={styles.actionBtnWrapper}
-              onPress={handleOpenNew}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Nuevo producto"
-            >
-              <LinearGradient
-                colors={['#57F5AB', '#00D2FF']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.actionBtnGradient}
-              >
-                <MaterialIcons name="add" size={24} color="#06120D" />
-              </LinearGradient>
-            </TouchableOpacity>
           </View>
 
           {/* Buscador de productos */}
@@ -452,18 +444,16 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = () => {
 
           {/* Lista de Productos */}
           {allProducts.length === 0 ? (
-            <GlassCard variant="surface" style={styles.emptyCard}>
-              <View style={styles.emptyIconCircle}>
-                <MaterialIcons name="inventory-2" size={32} color={COLORS.secondary} />
-              </View>
-              <Text style={[styles.emptyTitle, TYPOGRAPHY.titularPequeno]}>
-                {search ? 'Sin coincidencias' : 'Sin productos en el catálogo'}
-              </Text>
-              <Text style={[styles.emptySubtitle, TYPOGRAPHY.cuerpoMedio]}>
-                {search
+            <EstadoVacio
+              icono="inventory-2"
+              colorIcono={COLORS.secondary}
+              titulo={search ? 'Sin coincidencias' : 'Sin productos en el catálogo'}
+              descripcion={
+                search
                   ? 'No se encontraron productos que coincidan con los filtros seleccionados.'
-                  : 'Agrega los primeros productos, servicios o artículos de tu negocio.'}
-              </Text>
+                  : 'Agrega los primeros productos, servicios o artículos de tu negocio.'
+              }
+            >
               {!search && (
                 <View style={styles.emptyBtnWrapper}>
                   <BotonBrillante
@@ -473,7 +463,7 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = () => {
                   />
                 </View>
               )}
-            </GlassCard>
+            </EstadoVacio>
           ) : (
             <View style={styles.productsList}>
               {allProducts.map(product => (
@@ -564,16 +554,6 @@ const styles = StyleSheet.create({
   mainSectionSubtitle: {
     color: COLORS.onSurfaceVariant,
   },
-  actionBtnWrapper: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  actionBtnGradient: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   searchBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -656,27 +636,6 @@ const styles = StyleSheet.create({
   categoryChipTextActive: {
     color: COLORS.secondary,
     fontWeight: '600',
-  },
-  emptyCard: {
-    padding: 32,
-    borderRadius: 24,
-    alignItems: 'center',
-    gap: 12,
-  },
-  emptyIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(87, 245, 171, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: {
-    color: COLORS.onSurface,
-  },
-  emptySubtitle: {
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
   },
   emptyBtnWrapper: {
     marginTop: 8,

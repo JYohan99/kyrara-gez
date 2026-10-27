@@ -6,8 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY, COMMON_STYLES } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
 import { useCuentasBoveda as useVaultAccounts } from '@/datos/hooks';
 import { Cuenta } from '@/datos/tipos';
@@ -35,35 +34,15 @@ export const PestanaCuentas: React.FC<PropiedadesPestanaCuentas> = ({
   return (
     <View style={styles.container}>
       {/* Header row */}
-      <View style={styles.sectionHeaderRow}>
+      <View style={COMMON_STYLES.sectionHeaderRow}>
         <View>
-          <Text style={[styles.mainSectionTitle, TYPOGRAPHY.headlineLg]}>
+          <Text style={[COMMON_STYLES.mainSectionTitle, TYPOGRAPHY.headlineLg]}>
             Mis Cuentas
           </Text>
-          <Text style={[styles.mainSectionSubtitle, TYPOGRAPHY.bodySm]}>
+          <Text style={[COMMON_STYLES.mainSectionSubtitle, TYPOGRAPHY.bodySm]}>
             Dónde está tu dinero
           </Text>
         </View>
-
-        <TouchableOpacity
-          style={styles.actionBtnWrapper}
-          onPress={() => {
-            triggerSelection();
-            onNewAccount();
-          }}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel="Nueva cuenta"
-        >
-          <LinearGradient
-            colors={['#9B5CFF', '#6A1FE8']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.actionBtnGradient}
-          >
-            <MaterialIcons name="add" size={24} color="#FFFFFF" />
-          </LinearGradient>
-        </TouchableOpacity>
       </View>
 
       {/* Hero Card: Total Consolidado */}
@@ -199,39 +178,6 @@ export const AccountsTab = PestanaCuentas;
 const styles = StyleSheet.create({
   container: {
     gap: 16,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
-    marginTop: 4,
-  },
-  mainSectionTitle: {
-    color: COLORS.onSurface,
-  },
-  mainSectionSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
-  actionBtnWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    shadowColor: '#8A4FFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.55,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  actionBtnGradient: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   heroCard: {
     padding: 20,

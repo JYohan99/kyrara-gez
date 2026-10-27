@@ -8,10 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
-import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
+import { TarjetaVidrio as GlassCard, EncabezadoSuperior, BotonFlotanteAccion } from '@/compartido/componentes';
 import { useAgendaBoveda } from '@/datos/hooks';
 import { OcurrenciaCompromiso, Compromiso } from '@/datos/tipos';
 import {
@@ -201,23 +199,6 @@ export function PantallaAgenda() {
               Compromisos y Recordatorios
             </Text>
           </View>
-
-          <TouchableOpacity
-            style={styles.actionBtnWrapper}
-            onPress={handleOpenNew}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Nuevo compromiso"
-          >
-            <LinearGradient
-              colors={['#9B5CFF', '#6A1FE8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionBtnGradient}
-            >
-              <MaterialIcons name="add" size={24} color="#FFFFFF" />
-            </LinearGradient>
-          </TouchableOpacity>
         </View>
 
         {/* Selector de Mes y Control de Hoy */}
@@ -498,6 +479,12 @@ export function PantallaAgenda() {
         )}
       </ScrollView>
 
+      {/* Botón Circular Flotante (FAB) - Nuevo Compromiso */}
+      <BotonFlotanteAccion
+        onPress={handleOpenNew}
+        accessibilityLabel="Nuevo compromiso"
+      />
+
       {/* Modal para Crear y Editar Compromiso */}
       <ModalCompromiso
         visible={modalCompromisoVisible}
@@ -686,25 +673,6 @@ const styles = StyleSheet.create({
   mainSectionSubtitle: {
     color: COLORS.onSurfaceVariant,
     marginTop: 2,
-  },
-  actionBtnWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    shadowColor: '#8A4FFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.55,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  actionBtnGradient: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   emptyDayCard: {
     alignItems: 'center',

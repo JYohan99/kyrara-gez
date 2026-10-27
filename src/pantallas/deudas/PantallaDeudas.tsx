@@ -9,12 +9,10 @@ import {
   RefreshControl,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY, COMMON_STYLES } from '@/compartido/tema';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
-import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
-import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { EncabezadoSuperior, TarjetaVidrio as GlassCard, BotonFlotanteAccion, EstadoVacio } from '@/compartido/componentes';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 import { useDeudasBoveda } from '@/datos/hooks';
 import { Deuda, TipoDeuda, FiltroEstadoDeuda } from '@/datos/tipos';
@@ -79,7 +77,7 @@ export const PantallaDeudas: React.FC = () => {
   const esCobro = tipoActivo === 'RECEIVABLE';
 
   return (
-    <View style={styles.screen}>
+    <View style={COMMON_STYLES.screen}>
       <EncabezadoSuperior seccion="DEUDAS" />
 
       <ScrollView
@@ -104,23 +102,6 @@ export const PantallaDeudas: React.FC = () => {
               Control de préstamos y obligaciones
             </Text>
           </View>
-
-          <TouchableOpacity
-            style={styles.actionBtnWrapper}
-            onPress={handleAbrirCrear}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Nueva deuda"
-          >
-            <LinearGradient
-              colors={['#9B5CFF', '#6A1FE8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionBtnGradient}
-            >
-              <MaterialIcons name="add" size={24} color="#FFFFFF" />
-            </LinearGradient>
-          </TouchableOpacity>
         </View>
 
         {/* Resumen Hero Card */}
@@ -322,29 +303,24 @@ export const PantallaDeudas: React.FC = () => {
         {/* Listado de Deudas */}
         <View style={styles.listContainer}>
           {debts.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconCircle}>
-                <MaterialIcons
-                  name={esCobro ? 'sentiment-satisfied-alt' : 'sentiment-very-satisfied'}
-                  size={36}
-                  color={COLORS.primary}
-                />
-              </View>
-              <Text style={[styles.emptyTitle, TYPOGRAPHY.headlineSm]}>
-                {terminoBusqueda
+            <EstadoVacio
+              icono={esCobro ? 'sentiment-satisfied-alt' : 'sentiment-very-satisfied'}
+              colorIcono={COLORS.primary}
+              titulo={
+                terminoBusqueda
                   ? 'No se encontraron coincidencias'
                   : esCobro
                     ? 'No tienes cobros pendientes'
-                    : 'No tienes deudas registradas'}
-              </Text>
-              <Text style={[styles.emptySubtitle, TYPOGRAPHY.bodySm]}>
-                {terminoBusqueda
+                    : 'No tienes deudas registradas'
+              }
+              descripcion={
+                terminoBusqueda
                   ? 'Intenta con otro término de búsqueda o limpia los filtros.'
                   : esCobro
                     ? 'Toca el botón + para registrar a alguien que te debe dinero.'
-                    : 'Toca el botón + para anotar un pago u obligación pendiente.'}
-              </Text>
-            </View>
+                    : 'Toca el botón + para anotar un pago u obligación pendiente.'
+              }
+            />
           ) : (
             debts.map(deuda => (
               <TarjetaDeuda
@@ -357,6 +333,12 @@ export const PantallaDeudas: React.FC = () => {
           )}
         </View>
       </ScrollView>
+
+      {/* Botón Circular Flotante (FAB) - Nueva Deuda */}
+      <BotonFlotanteAccion
+        onPress={handleAbrirCrear}
+        accessibilityLabel="Nueva deuda"
+      />
 
       {/* Modal Crear / Editar Deuda */}
       <ModalDeuda
@@ -384,10 +366,6 @@ export const PantallaDeudas: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.surfaceBase,
-  },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -404,23 +382,6 @@ const styles = StyleSheet.create({
   mainSectionSubtitle: {
     color: COLORS.onSurfaceVariant,
     marginTop: 2,
-  },
-  actionBtnWrapper: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    elevation: 6,
-    shadowColor: '#8A4FFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-  },
-  actionBtnGradient: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   summaryHeroCard: {
     padding: 16,
@@ -575,35 +536,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     gap: 12,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    paddingHorizontal: 20,
-    gap: 10,
-  },
-  emptyIconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(138, 79, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    color: COLORS.onSurface,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-    lineHeight: 18,
   },
 });
 

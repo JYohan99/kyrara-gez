@@ -8,10 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
-import { EncabezadoSuperior } from '@/compartido/componentes/EncabezadoSuperior';
+import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY, COMMON_STYLES } from '@/compartido/tema';
+import { EncabezadoSuperior, BotonFlotanteAccion, EstadoVacio } from '@/compartido/componentes';
 import { clonarPresupuestos as cloneBudgets, sembrarPresupuestosRecomendados as seedRecommendedBudgets } from '@/datos/consultas/presupuestos';
 import { PresupuestoEnriquecido } from '@/datos/tipos';
 import { usePresupuestosBoveda as useVaultBudgets, useCuentasBoveda as useVaultAccounts, useCategoriasBoveda as useVaultCategories } from '@/datos/hooks';
@@ -169,7 +167,7 @@ export function PantallaPresupuestos() {
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={COMMON_STYLES.screen}>
       {/* Top Header */}
       <EncabezadoSuperior
         seccion="PRESUPUESTOS"
@@ -177,7 +175,7 @@ export function PantallaPresupuestos() {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={COMMON_STYLES.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Month Navigator Toolbar */}
@@ -212,22 +210,6 @@ export function PantallaPresupuestos() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={styles.actionBtnWrapper}
-            onPress={openNewModal}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Nuevo presupuesto"
-          >
-            <LinearGradient
-              colors={['#9B5CFF', '#6A1FE8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionBtnGradient}
-            >
-              <MaterialIcons name="add" size={24} color="#FFFFFF" />
-            </LinearGradient>
-          </TouchableOpacity>
         </View>
 
         {/* HERO CARD: Presupuesto General */}
@@ -272,17 +254,12 @@ export function PantallaPresupuestos() {
 
         {/* Empty state or Budget List */}
         {sortedBudgets.length === 0 ? (
-          <GlassCard style={styles.emptyCard}>
-            <View style={styles.emptyIconBox}>
-              <MaterialIcons name="donut-large" size={32} color={COLORS.primary} />
-            </View>
-            <Text style={[styles.emptyTitle, TYPOGRAPHY.headlineSm]}>
-              Define tus topes mensuales
-            </Text>
-            <Text style={[styles.emptyBody, TYPOGRAPHY.bodySm]}>
-              Asigna un límite de gasto a categorías como Alimentación o Transporte para recibir alertas visuales antes de superarlo.
-            </Text>
-
+          <EstadoVacio
+            icono="donut-large"
+            colorIcono={COLORS.primary}
+            titulo="Define tus topes mensuales"
+            descripcion="Asigna un límite de gasto a categorías como Alimentación o Transporte para recibir alertas visuales antes de superarlo."
+          >
             <View style={styles.emptyActionsRow}>
               <TouchableOpacity
                 style={styles.emptySeedBtn}
@@ -306,7 +283,7 @@ export function PantallaPresupuestos() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </GlassCard>
+          </EstadoVacio>
         ) : (
           <View style={styles.budgetList}>
             {sortedBudgets.map(b => (
@@ -352,6 +329,12 @@ export function PantallaPresupuestos() {
         )}
       </ScrollView>
 
+      {/* Botón Circular Flotante (FAB) - Nuevo Presupuesto */}
+      <BotonFlotanteAccion
+        onPress={openNewModal}
+        accessibilityLabel="Nuevo presupuesto"
+      />
+
       {/* MODAL: EDIT / CREATE BUDGET */}
       <BudgetModal
         visible={modalVisible}
@@ -376,16 +359,6 @@ export function PantallaPresupuestos() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: COLORS.surfaceBase,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 110,
-    gap: 18,
-  },
   navToolbar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -426,25 +399,6 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     fontSize: 9,
   },
-  actionBtnWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    shadowColor: '#8A4FFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.55,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  actionBtnGradient: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-  },
   categoriesHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -475,31 +429,6 @@ const styles = StyleSheet.create({
   },
   budgetList: {
     gap: 12,
-  },
-  emptyCard: {
-    padding: 24,
-    borderRadius: 20,
-    alignItems: 'center',
-    gap: 12,
-  },
-  emptyIconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 20,
-    backgroundColor: 'rgba(138, 79, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    color: COLORS.onSurface,
-    textAlign: 'center',
-  },
-  emptyBody: {
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 280,
   },
   emptyActionsRow: {
     flexDirection: 'row',
