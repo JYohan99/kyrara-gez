@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,23 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { ModalSelectorFecha as DatePickerModal } from '@/compartido/componentes/ModalSelectorFecha';
-import { TipoFlujo as FlowType, TipoCuenta, crearMovimiento as createTransaction } from '@/datos';
-import { useCuentasBoveda as useVaultAccounts, useCategoriasBoveda as useVaultCategories } from '@/datos/hooks';
+import {
+  TipoFlujo as FlowType,
+  TipoCuenta,
+  crearMovimiento as createTransaction,
+  Cuenta as Account,
+  Categoria as Category,
+} from '@/datos';
+import {
+  useCuentasBoveda as useVaultAccounts,
+  useCategoriasBoveda as useVaultCategories,
+} from '@/datos/hooks';
 import {
   convertirMontoACentavos as parseAmountToCents,
   formatearMoneda as formatCurrency,
@@ -40,6 +50,10 @@ export interface PropiedadesFormularioMovimiento {
   onSuccess?: () => void;
   onCancel?: () => void;
 }
+
+// ==========================================
+// UTILIDADES DE ICONOS Y COLORES
+// ==========================================
 
 function getAccountIcon(accType?: TipoCuenta): keyof typeof MaterialIcons.glyphMap {
   switch (accType) {
@@ -71,6 +85,304 @@ function getAccountColor(accType?: TipoCuenta): string {
   }
 }
 
+function getActionColor(type: FlowType): string {
+  switch (type) {
+    case 'EXPENSE':
+      return COLORS.cashflowExpense;
+    case 'INCOME':
+      return COLORS.cashflowIncome;
+    case 'TRANSFER':
+    default:
+      return COLORS.primaryContainer;
+  }
+}
+
+function getDynamicFontSize(length: number): number {
+  if (length <= 7) return 50;
+  if (length <= 9) return 42;
+  if (length <= 11) return 32;
+  if (length <= 14) return 24;
+  return 20;
+}
+
+// ==========================================
+// SUBCOMPONENTE: CURSOR PARPADEANTE NATIVO
+// ==========================================
+
+interface PropiedadesCursor {
+  visible: boolean;
+  height: number;
+  color: string;
+}
+
+const CursorParpadeante: React.FC<PropiedadesCursor> = React.memo(({ visible, height, color }) => {
+  const [animOpacity] = useState(() => new Animated.Value(1));
+
+  useEffect(() => {
+    if (!visible) {
+      animOpacity.setValue(0);
+      return;
+    }
+    animOpacity.setValue(1);
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animOpacity, {
+          toValue: 0,
+          duration: 90,
+          delay: 480,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animOpacity, {
+          toValue: 1,
+          duration: 90,
+          delay: 480,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [visible, animOpacity]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.cursorBar,
+        {
+          height,
+          backgroundColor: color,
+          opacity: visible ? animOpacity : 0,
+        },
+      ]}
+    />
+  );
+});
+CursorParpadeante.displayName = 'CursorParpadeante';
+
+// ==========================================
+// SUBCOMPONENTE: MODAL SELECTOR DE CUENTAS
+// ==========================================
+
+interface PropiedadesModalCuentas {
+  visible: boolean;
+  title: string;
+  accounts: Account[];
+  selectedAccountId: string;
+  onSelect: (id: string) => void;
+  onClose: () => void;
+}
+
+const ModalSelectorCuentas: React.FC<PropiedadesModalCuentas> = React.memo(
+  ({ visible, title, accounts, selectedAccountId, onSelect, onClose }) => {
+    return (
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+        <View style={styles.pickerModalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+          <View style={styles.pickerModalCard}>
+            <View style={styles.pickerModalHeader}>
+              <Text style={[styles.pickerModalTitle, TYPOGRAPHY.titularPequeno]}>{title}</Text>
+              <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <MaterialIcons name="close" size={20} color={COLORS.outline} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.modalAccountScroll}>
+              {accounts.map(acc => {
+                const isSelected = selectedAccountId === acc.id;
+                return (
+                  <TouchableOpacity
+                    key={acc.id}
+                    style={[styles.accountOptionItem, isSelected && styles.accountOptionItemSelected]}
+                    onPress={() => {
+                      triggerSelection();
+                      onSelect(acc.id);
+                      onClose();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={[
+                        styles.accountOptionIconBox,
+                        { backgroundColor: `${getAccountColor(acc.type)}20` },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={getAccountIcon(acc.type)}
+                        size={20}
+                        color={getAccountColor(acc.type)}
+                      />
+                    </View>
+                    <View style={styles.accountOptionInfo}>
+                      <Text style={styles.accountOptionName}>{acc.name}</Text>
+                      <Text style={styles.accountOptionBalance}>
+                        {formatCurrency(acc.currentBalance)}
+                      </Text>
+                    </View>
+                    {isSelected && <MaterialIcons name="check" size={20} color={COLORS.secondary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+);
+ModalSelectorCuentas.displayName = 'ModalSelectorCuentas';
+
+// ==========================================
+// SUBCOMPONENTE: MODAL TODAS LAS CATEGORÍAS
+// ==========================================
+
+interface PropiedadesModalCategorias {
+  visible: boolean;
+  categories: Category[];
+  selectedCategoryId: string;
+  onSelect: (id: string) => void;
+  onClose: () => void;
+}
+
+const ModalSelectorCategorias: React.FC<PropiedadesModalCategorias> = React.memo(
+  ({ visible, categories, selectedCategoryId, onSelect, onClose }) => {
+    return (
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+        <View style={styles.pickerModalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+          <View style={styles.pickerModalCard}>
+            <View style={styles.pickerModalHeader}>
+              <Text style={[styles.pickerModalTitle, TYPOGRAPHY.titularPequeno]}>
+                Todas las categorías
+              </Text>
+              <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <MaterialIcons name="close" size={20} color={COLORS.outline} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.modalCategoryScroll}>
+              <View style={styles.categoriesGridInModal}>
+                {categories.map(cat => {
+                  const isSelected = selectedCategoryId === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.categoryPill,
+                        styles.categoryPillInModal,
+                        isSelected && {
+                          borderColor: cat.color,
+                          backgroundColor: `${cat.color}24`,
+                        },
+                      ]}
+                      onPress={() => {
+                        triggerSelection();
+                        onSelect(cat.id);
+                        onClose();
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.categoryPillDot, { backgroundColor: cat.color }]} />
+                      <Text
+                        style={[
+                          styles.categoryPillText,
+                          isSelected && { color: '#FFFFFF', fontWeight: '700' },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {cat.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+);
+ModalSelectorCategorias.displayName = 'ModalSelectorCategorias';
+
+// ==========================================
+// SUBCOMPONENTE: CÁPSULA SELECTORA DE TIPO
+// ==========================================
+
+interface PropiedadesSegmentedType {
+  type: FlowType;
+  onChangeType: (type: FlowType) => void;
+}
+
+const ControlSegmentadoTipo: React.FC<PropiedadesSegmentedType> = React.memo(
+  ({ type, onChangeType }) => {
+    return (
+      <View style={styles.segmentedCapsule}>
+        {/* Ingreso */}
+        <TouchableOpacity
+          style={[
+            styles.segmentedItem,
+            type === 'INCOME' ? styles.segmentedItemActiveIncome : styles.segmentedItemInactive,
+          ]}
+          onPress={() => onChangeType('INCOME')}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons
+            name="arrow-downward"
+            size={16}
+            color={type === 'INCOME' ? COLORS.cashflowIncome : COLORS.onSurfaceVariant}
+          />
+          {type === 'INCOME' && (
+            <Text style={[styles.segmentedLabel, { color: COLORS.cashflowIncome }]}>Ingreso</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Gasto */}
+        <TouchableOpacity
+          style={[
+            styles.segmentedItem,
+            type === 'EXPENSE' ? styles.segmentedItemActiveExpense : styles.segmentedItemInactive,
+          ]}
+          onPress={() => onChangeType('EXPENSE')}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons
+            name="arrow-upward"
+            size={16}
+            color={type === 'EXPENSE' ? COLORS.cashflowExpense : COLORS.onSurfaceVariant}
+          />
+          {type === 'EXPENSE' && (
+            <Text style={[styles.segmentedLabel, { color: COLORS.cashflowExpense }]}>Gasto</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Traspaso */}
+        <TouchableOpacity
+          style={[
+            styles.segmentedItem,
+            type === 'TRANSFER' ? styles.segmentedItemActiveTransfer : styles.segmentedItemInactive,
+          ]}
+          onPress={() => onChangeType('TRANSFER')}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons
+            name="swap-horiz"
+            size={18}
+            color={type === 'TRANSFER' ? COLORS.cashflowTransfer : COLORS.onSurfaceVariant}
+          />
+          {type === 'TRANSFER' && (
+            <Text style={[styles.segmentedLabel, { color: COLORS.cashflowTransfer }]}>
+              Traspaso
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  }
+);
+ControlSegmentadoTipo.displayName = 'ControlSegmentadoTipo';
+
+// ==========================================
+// COMPONENTE PRINCIPAL: FORMULARIO MOVIMIENTO
+// ==========================================
+
 export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = ({
   initialType = 'EXPENSE',
   isScreen = false,
@@ -80,55 +392,71 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
   const insets = useSafeAreaInsets();
   const amountInputRef = useRef<TextInput>(null);
 
+  // Estados del formulario
   const [type, setType] = useState<FlowType>(initialType);
   const [amountStr, setAmountStr] = useState('');
   const [payee, setPayee] = useState('');
   const [note, setNote] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [loading, setLoading] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  // Estados de modales
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [isSourceAccountModalVisible, setIsSourceAccountModalVisible] = useState(false);
   const [isTargetAccountModalVisible, setIsTargetAccountModalVisible] = useState(false);
   const [isCategoryPickerVisible, setIsCategoryPickerVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   // Hooks reactivos de la bóveda
   const { accounts } = useVaultAccounts();
   const { categories } = useVaultCategories(type === 'TRANSFER' ? 'EXPENSE' : type);
 
+  // Selección manual del usuario
   const [userSelectedSourceAccountId, setUserSelectedSourceAccountId] = useState<string | null>(null);
   const [userSelectedTargetAccountId, setUserSelectedTargetAccountId] = useState<string | null>(null);
   const [userSelectedCategoryId, setUserSelectedCategoryId] = useState<string | null>(null);
 
-  // Derivar IDs activos dinámicamente evitando desajustes
-  const activeSourceAccountId =
-    (userSelectedSourceAccountId && accounts.some(a => a.id === userSelectedSourceAccountId))
-      ? userSelectedSourceAccountId
-      : (accounts[0]?.id ?? '');
+  // Derivación optimizada y memoizada de cuentas y categoría activas
+  const activeSourceAccount = useMemo(() => {
+    if (userSelectedSourceAccountId) {
+      const match = accounts.find(a => a.id === userSelectedSourceAccountId);
+      if (match) return match;
+    }
+    return accounts[0] || undefined;
+  }, [accounts, userSelectedSourceAccountId]);
 
-  const activeTargetAccountId =
-    (userSelectedTargetAccountId && accounts.some(a => a.id === userSelectedTargetAccountId))
-      ? userSelectedTargetAccountId
-      : (accounts.length > 1 ? accounts[1]?.id : (accounts[0]?.id ?? ''));
+  const activeTargetAccount = useMemo(() => {
+    if (userSelectedTargetAccountId) {
+      const match = accounts.find(a => a.id === userSelectedTargetAccountId);
+      if (match) return match;
+    }
+    return accounts.length > 1 ? accounts[1] : accounts[0] || undefined;
+  }, [accounts, userSelectedTargetAccountId]);
 
-  const activeCategoryId =
-    (userSelectedCategoryId && categories.some(c => c.id === userSelectedCategoryId))
-      ? userSelectedCategoryId
-      : (categories[0]?.id ?? '');
+  const activeCategory = useMemo(() => {
+    if (userSelectedCategoryId) {
+      const match = categories.find(c => c.id === userSelectedCategoryId);
+      if (match) return match;
+    }
+    return categories[0] || undefined;
+  }, [categories, userSelectedCategoryId]);
 
-  const activeSourceAccount = accounts.find(a => a.id === activeSourceAccountId) || accounts[0];
-  const activeTargetAccount = accounts.find(a => a.id === activeTargetAccountId) || accounts[1] || accounts[0];
+  const activeSourceAccountId = activeSourceAccount?.id ?? '';
+  const activeTargetAccountId = activeTargetAccount?.id ?? '';
+  const activeCategoryId = activeCategory?.id ?? '';
 
-  const handleTypeChange = (newType: FlowType) => {
+  // Controladores de eventos
+  const handleTypeChange = useCallback((newType: FlowType) => {
     triggerSelection();
     setType(newType);
-  };
+  }, []);
 
-  const handleAmountChange = (text: string) => {
+  const handleAmountChange = useCallback((text: string) => {
     const formatted = formatMoneyInput(text);
     setAmountStr(formatted);
-  };
+  }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     const cents = parseAmountToCents(amountStr);
     if (cents <= 0) {
       triggerError();
@@ -182,49 +510,45 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    amountStr,
+    activeSourceAccountId,
+    activeTargetAccountId,
+    activeCategoryId,
+    type,
+    selectedDate,
+    payee,
+    note,
+    onSuccess,
+  ]);
 
-  const actionColor =
-    type === 'EXPENSE'
-      ? COLORS.cashflowExpense
-      : type === 'INCOME'
-        ? COLORS.cashflowIncome
-        : COLORS.primaryContainer;
-
-  const amountLength = amountStr.length || 1;
-  const dynamicFontSize =
-    amountLength <= 5
-      ? 46
-      : amountLength <= 7
-        ? 38
-        : amountLength <= 9
-          ? 30
-          : amountLength <= 11
-            ? 24
-            : 20;
+  const actionColor = useMemo(() => getActionColor(type), [type]);
+  const dynamicFontSize = useMemo(() => getDynamicFontSize(amountStr.length), [amountStr.length]);
   const dynamicCurrencySize = Math.max(dynamicFontSize - 4, 18);
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : (isScreen ? undefined : 'height')}
+      behavior={Platform.OS === 'ios' ? 'padding' : isScreen ? undefined : 'height'}
       style={isScreen ? styles.screenContainer : styles.modalOverlay}
     >
       {!isScreen && onCancel && (
-        <TouchableOpacity
-          style={StyleSheet.absoluteFill}
-          activeOpacity={1}
-          onPress={onCancel}
-        />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onCancel} />
       )}
 
       <View
         style={
           isScreen
-            ? [styles.screenContent, { paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 20) }]
+            ? [
+                styles.screenContent,
+                {
+                  paddingTop: Math.max(insets.top, 16),
+                  paddingBottom: Math.max(insets.bottom, 20),
+                },
+              ]
             : [styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) }]
         }
       >
-        {/* Top Bar: Botón Cerrar (X) + Segmented Capsule de Tipos */}
+        {/* Barra Superior: Cerrar (X) + Selector de Tipo */}
         <View style={styles.topBar}>
           {onCancel ? (
             <TouchableOpacity
@@ -239,76 +563,12 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
             <View style={styles.topBarSpacer} />
           )}
 
-          {/* Segmented Capsule: Ingreso, Gasto, Traspaso */}
-          <View style={styles.segmentedCapsule}>
-            {/* Ingreso */}
-            <TouchableOpacity
-              style={[
-                styles.segmentedItem,
-                type === 'INCOME' ? styles.segmentedItemActiveIncome : styles.segmentedItemInactive,
-              ]}
-              onPress={() => handleTypeChange('INCOME')}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="arrow-downward"
-                size={16}
-                color={type === 'INCOME' ? COLORS.cashflowIncome : COLORS.onSurfaceVariant}
-              />
-              {type === 'INCOME' && (
-                <Text style={[styles.segmentedLabel, { color: COLORS.cashflowIncome }]}>
-                  Ingreso
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Gasto */}
-            <TouchableOpacity
-              style={[
-                styles.segmentedItem,
-                type === 'EXPENSE' ? styles.segmentedItemActiveExpense : styles.segmentedItemInactive,
-              ]}
-              onPress={() => handleTypeChange('EXPENSE')}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="arrow-upward"
-                size={16}
-                color={type === 'EXPENSE' ? COLORS.cashflowExpense : COLORS.onSurfaceVariant}
-              />
-              {type === 'EXPENSE' && (
-                <Text style={[styles.segmentedLabel, { color: COLORS.cashflowExpense }]}>
-                  Gasto
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Traspaso */}
-            <TouchableOpacity
-              style={[
-                styles.segmentedItem,
-                type === 'TRANSFER' ? styles.segmentedItemActiveTransfer : styles.segmentedItemInactive,
-              ]}
-              onPress={() => handleTypeChange('TRANSFER')}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="swap-horiz"
-                size={18}
-                color={type === 'TRANSFER' ? COLORS.cashflowTransfer : COLORS.onSurfaceVariant}
-              />
-              {type === 'TRANSFER' && (
-                <Text style={[styles.segmentedLabel, { color: COLORS.cashflowTransfer }]}>
-                  Traspaso
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          <ControlSegmentadoTipo type={type} onChangeType={handleTypeChange} />
 
           <View style={styles.topBarSpacer} />
         </View>
 
-        {/* Scrollable Form Body */}
+        {/* Cuerpo del Formulario con Desplazamiento */}
         <ScrollView
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
@@ -316,7 +576,7 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
           style={styles.scrollArea}
           contentContainerStyle={styles.formScrollContent}
         >
-          {/* Hero Amount Input */}
+          {/* Monto Principal con Cursor Nativo Inmóvil */}
           <View style={styles.heroAmountContainer}>
             <TouchableOpacity
               style={styles.heroAmountRow}
@@ -324,22 +584,36 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
               onPress={() => amountInputRef.current?.focus()}
             >
               <Text style={[styles.heroCurrencySymbol, { fontSize: dynamicCurrencySize }]}>$</Text>
-              <TextInput
-                ref={amountInputRef}
-                style={[styles.heroAmountInput, { fontSize: dynamicFontSize }]}
-                value={amountStr}
-                onChangeText={handleAmountChange}
-                placeholder="0"
-                placeholderTextColor="rgba(255, 255, 255, 0.28)"
-                keyboardType="decimal-pad"
-                autoFocus={!isScreen}
-                cursorColor={actionColor}
-                scrollEnabled={false}
+              <Text
+                style={[
+                  styles.heroAmountText,
+                  { fontSize: dynamicFontSize },
+                  !amountStr && styles.heroAmountPlaceholder,
+                ]}
+              >
+                {amountStr || '0'}
+              </Text>
+              <CursorParpadeante
+                visible={isInputFocused}
+                height={dynamicFontSize * 0.82}
+                color={actionColor}
               />
             </TouchableOpacity>
+
+            <TextInput
+              ref={amountInputRef}
+              style={styles.hiddenAmountInput}
+              value={amountStr}
+              onChangeText={handleAmountChange}
+              keyboardType="decimal-pad"
+              autoFocus={!isScreen}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
+              caretHidden
+            />
           </View>
 
-          {/* Date Capsule Pill */}
+          {/* Selector de Fecha Estilo Cápsula */}
           <View style={styles.dateRow}>
             <TouchableOpacity
               style={styles.dateCapsule}
@@ -360,7 +634,7 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
             </TouchableOpacity>
           </View>
 
-          {/* Account Selector Pill */}
+          {/* Selector de Cuentas: Píldora individual o 50/50 Symmetrical Traspaso */}
           {type !== 'TRANSFER' ? (
             <View style={styles.accountRow}>
               <TouchableOpacity
@@ -399,39 +673,52 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
           ) : (
             <View style={styles.transferRow}>
               {/* Origen */}
-              <TouchableOpacity
-                style={styles.transferCard}
-                onPress={() => {
-                  triggerSelection();
-                  setIsSourceAccountModalVisible(true);
-                }}
-                activeOpacity={0.75}
-              >
-                <View
-                  style={[
-                    styles.transferIconBox,
-                    { backgroundColor: `${getAccountColor(activeSourceAccount?.type)}18` },
-                  ]}
+              <View style={styles.transferCol}>
+                <TouchableOpacity
+                  style={styles.transferCard}
+                  onPress={() => {
+                    triggerSelection();
+                    setIsSourceAccountModalVisible(true);
+                  }}
+                  activeOpacity={0.75}
                 >
-                  <MaterialIcons
-                    name={getAccountIcon(activeSourceAccount?.type)}
-                    size={16}
-                    color={getAccountColor(activeSourceAccount?.type)}
-                  />
-                </View>
-                <View style={styles.transferInfoCol}>
-                  <Text style={styles.transferRoleLabel}>Origen</Text>
-                  <Text style={styles.transferAccountName} numberOfLines={1} ellipsizeMode="tail">
-                    {activeSourceAccount?.name || 'Origen'}
-                  </Text>
-                  {activeSourceAccount && (
-                    <Text style={styles.transferAccountBalance} numberOfLines={1} ellipsizeMode="tail">
-                      {formatCurrency(activeSourceAccount.currentBalance)}
+                  <View
+                    style={[
+                      styles.transferIconBox,
+                      { backgroundColor: `${getAccountColor(activeSourceAccount?.type)}18` },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={getAccountIcon(activeSourceAccount?.type)}
+                      size={16}
+                      color={getAccountColor(activeSourceAccount?.type)}
+                    />
+                  </View>
+                  <View style={styles.transferInfoCol}>
+                    <Text style={styles.transferRoleLabel} numberOfLines={1}>
+                      Origen
                     </Text>
-                  )}
-                </View>
-                <MaterialIcons name="keyboard-arrow-down" size={16} color={COLORS.outline} />
-              </TouchableOpacity>
+                    <Text style={styles.transferAccountName} numberOfLines={1} ellipsizeMode="tail">
+                      {activeSourceAccount?.name || 'Origen'}
+                    </Text>
+                    {activeSourceAccount && (
+                      <Text
+                        style={styles.transferAccountBalance}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {formatCurrency(activeSourceAccount.currentBalance)}
+                      </Text>
+                    )}
+                  </View>
+                  <MaterialIcons
+                    name="keyboard-arrow-down"
+                    size={15}
+                    color={COLORS.outline}
+                    style={styles.transferArrowDown}
+                  />
+                </TouchableOpacity>
+              </View>
 
               {/* Flecha separadora */}
               <View style={styles.transferArrowBox}>
@@ -439,46 +726,64 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
               </View>
 
               {/* Destino */}
-              <TouchableOpacity
-                style={styles.transferCard}
-                onPress={() => {
-                  triggerSelection();
-                  setIsTargetAccountModalVisible(true);
-                }}
-                activeOpacity={0.75}
-              >
-                <View
-                  style={[
-                    styles.transferIconBox,
-                    { backgroundColor: `${getAccountColor(activeTargetAccount?.type)}18` },
-                  ]}
+              <View style={styles.transferCol}>
+                <TouchableOpacity
+                  style={styles.transferCard}
+                  onPress={() => {
+                    triggerSelection();
+                    setIsTargetAccountModalVisible(true);
+                  }}
+                  activeOpacity={0.75}
                 >
-                  <MaterialIcons
-                    name={getAccountIcon(activeTargetAccount?.type)}
-                    size={16}
-                    color={getAccountColor(activeTargetAccount?.type)}
-                  />
-                </View>
-                <View style={styles.transferInfoCol}>
-                  <Text style={styles.transferRoleLabel}>Destino</Text>
-                  <Text style={styles.transferAccountName} numberOfLines={1} ellipsizeMode="tail">
-                    {activeTargetAccount?.name || 'Destino'}
-                  </Text>
-                  {activeTargetAccount && (
-                    <Text style={styles.transferAccountBalance} numberOfLines={1} ellipsizeMode="tail">
-                      {formatCurrency(activeTargetAccount.currentBalance)}
+                  <View
+                    style={[
+                      styles.transferIconBox,
+                      { backgroundColor: `${getAccountColor(activeTargetAccount?.type)}18` },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={getAccountIcon(activeTargetAccount?.type)}
+                      size={16}
+                      color={getAccountColor(activeTargetAccount?.type)}
+                    />
+                  </View>
+                  <View style={styles.transferInfoCol}>
+                    <Text style={styles.transferRoleLabel} numberOfLines={1}>
+                      Destino
                     </Text>
-                  )}
-                </View>
-                <MaterialIcons name="keyboard-arrow-down" size={16} color={COLORS.outline} />
-              </TouchableOpacity>
+                    <Text style={styles.transferAccountName} numberOfLines={1} ellipsizeMode="tail">
+                      {activeTargetAccount?.name || 'Destino'}
+                    </Text>
+                    {activeTargetAccount && (
+                      <Text
+                        style={styles.transferAccountBalance}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {formatCurrency(activeTargetAccount.currentBalance)}
+                      </Text>
+                    )}
+                  </View>
+                  <MaterialIcons
+                    name="keyboard-arrow-down"
+                    size={15}
+                    color={COLORS.outline}
+                    style={styles.transferArrowDown}
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
-          {/* Input Box: Concepto / Comercio y Notas */}
+          {/* Sección de Entradas: Comercio/Concepto y Notas */}
           <View style={styles.inputsSection}>
             <View style={styles.modernInputBox}>
-              <MaterialIcons name="notes" size={20} color={COLORS.outline} style={styles.inputIconPrefix} />
+              <MaterialIcons
+                name="notes"
+                size={20}
+                color={COLORS.outline}
+                style={styles.inputIconPrefix}
+              />
               <TextInput
                 value={payee}
                 onChangeText={setPayee}
@@ -495,7 +800,12 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
             </View>
 
             <View style={[styles.modernInputBox, { marginTop: 10 }]}>
-              <MaterialIcons name="edit" size={18} color={COLORS.outline} style={styles.inputIconPrefix} />
+              <MaterialIcons
+                name="edit"
+                size={18}
+                color={COLORS.outline}
+                style={styles.inputIconPrefix}
+              />
               <TextInput
                 value={note}
                 onChangeText={setNote}
@@ -506,7 +816,7 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
             </View>
           </View>
 
-          {/* Categories Selector Horizontal Pills + [ ⌄ ] Siempre visible */}
+          {/* Carrusel de Categorías con Botón [ ⌄ ] Fijo */}
           {type !== 'TRANSFER' && (
             <View style={styles.categoriesContainer}>
               <ScrollView
@@ -548,7 +858,6 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
                 })}
               </ScrollView>
 
-              {/* Botón [ ⌄ ] fijo y visible en todo momento */}
               <TouchableOpacity
                 style={styles.categoryDropdownFixedBtn}
                 onPress={() => {
@@ -563,13 +872,10 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
             </View>
           )}
 
-          {/* Prominent Action Button: Guardar */}
+          {/* Botón Principal Guardar */}
           <View style={styles.bottomBar}>
             <TouchableOpacity
-              style={[
-                styles.guardarButton,
-                { backgroundColor: actionColor },
-              ]}
+              style={[styles.guardarButton, { backgroundColor: actionColor }]}
               onPress={handleSubmit}
               disabled={loading}
               activeOpacity={0.85}
@@ -594,7 +900,7 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
         </ScrollView>
       </View>
 
-      {/* Date Picker Modal */}
+      {/* Selector de Fecha Modal */}
       {isDatePickerVisible && (
         <DatePickerModal
           visible={isDatePickerVisible}
@@ -604,216 +910,41 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
         />
       )}
 
-      {/* Source Account Selector Modal */}
-      <Modal
+      {/* Modal Cuenta Origen */}
+      <ModalSelectorCuentas
         visible={isSourceAccountModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsSourceAccountModalVisible(false)}
-      >
-        <View style={styles.pickerModalOverlay}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => setIsSourceAccountModalVisible(false)}
-          />
-          <View style={styles.pickerModalCard}>
-            <View style={styles.pickerModalHeader}>
-              <Text style={[styles.pickerModalTitle, TYPOGRAPHY.titularPequeno]}>
-                {type === 'TRANSFER' ? 'Cuenta Origen' : 'Seleccionar cuenta'}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setIsSourceAccountModalVisible(false)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <MaterialIcons name="close" size={20} color={COLORS.outline} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
-              {accounts.map(acc => {
-                const isSelected = activeSourceAccountId === acc.id;
-                return (
-                  <TouchableOpacity
-                    key={acc.id}
-                    style={[
-                      styles.accountOptionItem,
-                      isSelected && styles.accountOptionItemSelected,
-                    ]}
-                    onPress={() => {
-                      triggerSelection();
-                      setUserSelectedSourceAccountId(acc.id);
-                      setIsSourceAccountModalVisible(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.accountOptionIconBox,
-                        { backgroundColor: `${getAccountColor(acc.type)}20` },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={getAccountIcon(acc.type)}
-                        size={20}
-                        color={getAccountColor(acc.type)}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.accountOptionName}>{acc.name}</Text>
-                      <Text style={styles.accountOptionBalance}>
-                        {formatCurrency(acc.currentBalance)}
-                      </Text>
-                    </View>
-                    {isSelected && (
-                      <MaterialIcons name="check" size={20} color={COLORS.secondary} />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        title={type === 'TRANSFER' ? 'Cuenta Origen' : 'Seleccionar cuenta'}
+        accounts={accounts}
+        selectedAccountId={activeSourceAccountId}
+        onSelect={setUserSelectedSourceAccountId}
+        onClose={() => setIsSourceAccountModalVisible(false)}
+      />
 
-      {/* Target Account Selector Modal (for TRANSFER) */}
-      <Modal
+      {/* Modal Cuenta Destino (Traspaso) */}
+      <ModalSelectorCuentas
         visible={isTargetAccountModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsTargetAccountModalVisible(false)}
-      >
-        <View style={styles.pickerModalOverlay}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => setIsTargetAccountModalVisible(false)}
-          />
-          <View style={styles.pickerModalCard}>
-            <View style={styles.pickerModalHeader}>
-              <Text style={[styles.pickerModalTitle, TYPOGRAPHY.titularPequeno]}>
-                Cuenta Destino
-              </Text>
-              <TouchableOpacity
-                onPress={() => setIsTargetAccountModalVisible(false)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <MaterialIcons name="close" size={20} color={COLORS.outline} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
-              {accounts.map(acc => {
-                const isSelected = activeTargetAccountId === acc.id;
-                return (
-                  <TouchableOpacity
-                    key={acc.id}
-                    style={[
-                      styles.accountOptionItem,
-                      isSelected && styles.accountOptionItemSelected,
-                    ]}
-                    onPress={() => {
-                      triggerSelection();
-                      setUserSelectedTargetAccountId(acc.id);
-                      setIsTargetAccountModalVisible(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.accountOptionIconBox,
-                        { backgroundColor: `${getAccountColor(acc.type)}20` },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={getAccountIcon(acc.type)}
-                        size={20}
-                        color={getAccountColor(acc.type)}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.accountOptionName}>{acc.name}</Text>
-                      <Text style={styles.accountOptionBalance}>
-                        {formatCurrency(acc.currentBalance)}
-                      </Text>
-                    </View>
-                    {isSelected && (
-                      <MaterialIcons name="check" size={20} color={COLORS.secondary} />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        title="Cuenta Destino"
+        accounts={accounts}
+        selectedAccountId={activeTargetAccountId}
+        onSelect={setUserSelectedTargetAccountId}
+        onClose={() => setIsTargetAccountModalVisible(false)}
+      />
 
-      {/* Full Categories Modal */}
-      <Modal
+      {/* Modal Todas las Categorías */}
+      <ModalSelectorCategorias
         visible={isCategoryPickerVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsCategoryPickerVisible(false)}
-      >
-        <View style={styles.pickerModalOverlay}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => setIsCategoryPickerVisible(false)}
-          />
-          <View style={styles.pickerModalCard}>
-            <View style={styles.pickerModalHeader}>
-              <Text style={[styles.pickerModalTitle, TYPOGRAPHY.titularPequeno]}>
-                Todas las categorías
-              </Text>
-              <TouchableOpacity
-                onPress={() => setIsCategoryPickerVisible(false)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <MaterialIcons name="close" size={20} color={COLORS.outline} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
-              <View style={styles.categoriesGridInModal}>
-                {categories.map(cat => {
-                  const isSelected = activeCategoryId === cat.id;
-                  return (
-                    <TouchableOpacity
-                      key={cat.id}
-                      style={[
-                        styles.categoryPill,
-                        { minWidth: '47%', flex: 1 },
-                        isSelected && {
-                          borderColor: cat.color,
-                          backgroundColor: `${cat.color}24`,
-                        },
-                      ]}
-                      onPress={() => {
-                        triggerSelection();
-                        setUserSelectedCategoryId(cat.id);
-                        setIsCategoryPickerVisible(false);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.categoryPillDot, { backgroundColor: cat.color }]} />
-                      <Text
-                        style={[
-                          styles.categoryPillText,
-                          isSelected && { color: '#FFFFFF', fontWeight: '700' },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {cat.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        categories={categories}
+        selectedCategoryId={activeCategoryId}
+        onSelect={setUserSelectedCategoryId}
+        onClose={() => setIsCategoryPickerVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 };
+
+// ==========================================
+// ESTILOS
+// ==========================================
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -842,12 +973,14 @@ const styles = StyleSheet.create({
   },
   scrollArea: {
     flexShrink: 1,
+    width: '100%',
   },
   formScrollContent: {
+    width: '100%',
     paddingBottom: 24,
   },
 
-  // Top Bar
+  // Barra Superior
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -866,7 +999,7 @@ const styles = StyleSheet.create({
     width: 38,
   },
 
-  // Segmented Capsule
+  // Cápsula Segmentada de Tipo
   segmentedCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -916,13 +1049,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Hero Amount
+  // Monto Principal
   heroAmountContainer: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 8,
+    position: 'relative',
   },
   heroAmountRow: {
     flexDirection: 'row',
@@ -933,22 +1067,34 @@ const styles = StyleSheet.create({
   heroCurrencySymbol: {
     fontWeight: '800',
     color: '#FFFFFF',
-    marginRight: 4,
+    marginRight: 6,
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
-  heroAmountInput: {
+  heroAmountText: {
     fontWeight: '800',
     color: '#FFFFFF',
-    minWidth: 40,
-    paddingVertical: 0,
-    paddingHorizontal: 2,
-    margin: 0,
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
+  heroAmountPlaceholder: {
+    color: 'rgba(255, 255, 255, 0.28)',
+  },
+  cursorBar: {
+    width: 2.5,
+    borderRadius: 1.25,
+    marginLeft: 3,
+  },
+  hiddenAmountInput: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0,
+  },
 
-  // Date Capsule Pill
+  // Cápsula de Fecha
   dateRow: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -971,7 +1117,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Account Selector Pill
+  // Selector de Cuenta Individual
   accountRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1011,41 +1157,45 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 
-  // Transfer Row (strictly symmetrical 50/50 without deformation)
+  // Fila de Traspaso 50/50 Estrictamente Simétrica
   transferRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 14,
     width: '100%',
+    marginBottom: 14,
   },
-  transferCard: {
+  transferCol: {
     flex: 1,
     minWidth: 0,
+  },
+  transferCard: {
+    width: '100%',
     height: 64,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#161A1C',
     borderRadius: 16,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 8,
-    gap: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
+    overflow: 'hidden',
   },
   transferIconBox: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 6,
     flexShrink: 0,
   },
   transferInfoCol: {
     flex: 1,
     minWidth: 0,
     justifyContent: 'center',
+    overflow: 'hidden',
+    marginRight: 2,
   },
   transferRoleLabel: {
     color: COLORS.outline,
@@ -1065,17 +1215,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 1,
   },
+  transferArrowDown: {
+    flexShrink: 0,
+  },
   transferArrowBox: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: 'rgba(138, 79, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginHorizontal: 6,
     flexShrink: 0,
   },
 
-  // Inputs Section
+  // Entradas de Concepto y Notas
   inputsSection: {
     marginBottom: 6,
   },
@@ -1099,7 +1253,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Categories Row with fixed button
+  // Categorías
   categoriesContainer: {
     marginTop: 12,
     flexDirection: 'row',
@@ -1127,6 +1281,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
+  categoryPillInModal: {
+    minWidth: '47%',
+    flex: 1,
+  },
   categoryPillDot: {
     width: 8,
     height: 8,
@@ -1149,7 +1307,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
 
-  // Action Button
+  // Botón Principal
   bottomBar: {
     marginTop: 22,
     marginBottom: 6,
@@ -1171,7 +1329,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Picker Modals (Accounts & Categories)
+  // Modales Selectores
   pickerModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -1196,6 +1354,9 @@ const styles = StyleSheet.create({
   pickerModalTitle: {
     color: COLORS.onSurface,
   },
+  modalAccountScroll: {
+    maxHeight: 320,
+  },
   accountOptionItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1218,6 +1379,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  accountOptionInfo: {
+    flex: 1,
+  },
   accountOptionName: {
     color: '#FFFFFF',
     fontSize: 14,
@@ -1227,6 +1391,9 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     fontSize: 12,
     marginTop: 2,
+  },
+  modalCategoryScroll: {
+    maxHeight: 360,
   },
   categoriesGridInModal: {
     flexDirection: 'row',
