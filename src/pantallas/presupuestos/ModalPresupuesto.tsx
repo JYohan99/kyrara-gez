@@ -132,7 +132,9 @@ const BudgetModalDrawer: React.FC<BudgetModalDrawerProps> = ({
       <View style={styles.drawerHandle} />
       <ScrollView
         showsVerticalScrollIndicator={false}
+        style={styles.scrollArea}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
         bounces={false}
         contentContainerStyle={styles.drawerScrollContent}
       >
@@ -327,10 +329,14 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 22,
     maxHeight: '85%',
+    flexShrink: 1,
+  },
+  scrollArea: {
+    flexShrink: 1,
   },
   drawerScrollContent: {
     gap: 16,
-    paddingBottom: 8,
+    paddingBottom: 28,
   },
   drawerHandle: {
     width: 40,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { BotonBrillante as GlowButton } from '@/compartido/componentes/BotonBrillante';
 import { ModalSelectorFecha as DatePickerModal } from '@/compartido/componentes/ModalSelectorFecha';
-import { TipoFlujo as FlowType, crearMovimiento as createTransaction } from '@/datos';
+import { TipoFlujo as FlowType, TipoCuenta, crearMovimiento as createTransaction } from '@/datos';
 import { useCuentasBoveda as useVaultAccounts, useCategoriasBoveda as useVaultCategories } from '@/datos/hooks';
 import {
   convertirMontoACentavos as parseAmountToCents,
@@ -26,7 +27,6 @@ import {
   formatearFechaAmigable as formatFriendlyDate,
   esHoy as isToday,
   esAyer as isYesterday,
-  crearFechaSegura as createSafeDate,
 } from '@/compartido/utilidades/fecha';
 import {
   vibracionExito as triggerSuccess,
@@ -41,6 +41,36 @@ export interface PropiedadesFormularioMovimiento {
   onCancel?: () => void;
 }
 
+function getAccountIcon(accType?: TipoCuenta): keyof typeof MaterialIcons.glyphMap {
+  switch (accType) {
+    case 'CASH':
+      return 'payments';
+    case 'BANK':
+      return 'account-balance';
+    case 'PREPAID':
+      return 'credit-card';
+    case 'VAULT':
+      return 'savings';
+    default:
+      return 'account-balance-wallet';
+  }
+}
+
+function getAccountColor(accType?: TipoCuenta): string {
+  switch (accType) {
+    case 'CASH':
+      return COLORS.cashflowIncome;
+    case 'BANK':
+      return COLORS.secondaryContainer;
+    case 'PREPAID':
+      return COLORS.primaryContainer;
+    case 'VAULT':
+      return COLORS.tertiary;
+    default:
+      return COLORS.primary;
+  }
+}
+
 export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = ({
   initialType = 'EXPENSE',
   isScreen = false,
@@ -48,12 +78,17 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
   onCancel,
 }) => {
   const insets = useSafeAreaInsets();
+  const amountInputRef = useRef<TextInput>(null);
+
   const [type, setType] = useState<FlowType>(initialType);
   const [amountStr, setAmountStr] = useState('');
   const [payee, setPayee] = useState('');
   const [note, setNote] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [isSourceAccountModalVisible, setIsSourceAccountModalVisible] = useState(false);
+  const [isTargetAccountModalVisible, setIsTargetAccountModalVisible] = useState(false);
+  const [isCategoryPickerVisible, setIsCategoryPickerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Hooks reactivos de la bóveda
@@ -64,7 +99,7 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
   const [userSelectedTargetAccountId, setUserSelectedTargetAccountId] = useState<string | null>(null);
   const [userSelectedCategoryId, setUserSelectedCategoryId] = useState<string | null>(null);
 
-  // Derivar IDs activos dinámicamente evitando llamadas a setState dentro de useEffect
+  // Derivar IDs activos dinámicamente evitando desajustes
   const activeSourceAccountId =
     (userSelectedSourceAccountId && accounts.some(a => a.id === userSelectedSourceAccountId))
       ? userSelectedSourceAccountId
@@ -79,6 +114,9 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
     (userSelectedCategoryId && categories.some(c => c.id === userSelectedCategoryId))
       ? userSelectedCategoryId
       : (categories[0]?.id ?? '');
+
+  const activeSourceAccount = accounts.find(a => a.id === activeSourceAccountId) || accounts[0];
+  const activeTargetAccount = accounts.find(a => a.id === activeTargetAccountId) || accounts[1] || accounts[0];
 
   const handleTypeChange = (newType: FlowType) => {
     triggerSelection();
@@ -146,7 +184,25 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
     }
   };
 
-  const parsedCents = parseAmountToCents(amountStr);
+  const actionColor =
+    type === 'EXPENSE'
+      ? COLORS.cashflowExpense
+      : type === 'INCOME'
+        ? COLORS.cashflowIncome
+        : COLORS.primaryContainer;
+
+  const amountLength = amountStr.length || 1;
+  const dynamicFontSize =
+    amountLength <= 5
+      ? 46
+      : amountLength <= 7
+        ? 38
+        : amountLength <= 9
+          ? 30
+          : amountLength <= 11
+            ? 24
+            : 20;
+  const dynamicCurrencySize = Math.max(dynamicFontSize - 4, 18);
 
   return (
     <KeyboardAvoidingView
@@ -160,375 +216,328 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
           onPress={onCancel}
         />
       )}
+
       <View
         style={
           isScreen
-            ? [styles.screenContent, { paddingBottom: Math.max(insets.bottom, 20) }]
+            ? [styles.screenContent, { paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 20) }]
             : [styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) }]
         }
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTitleRow}>
-            <Text style={[styles.headerTitle, TYPOGRAPHY.headlineSm]}>
-              {isScreen ? 'Registrar Operación' : 'Nueva Operación'}
-            </Text>
-          </View>
-          {onCancel && (
-            <TouchableOpacity onPress={onCancel} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <MaterialIcons name="close" size={24} color={COLORS.onSurfaceVariant} />
+        {/* Top Bar: Botón Cerrar (X) + Segmented Capsule de Tipos */}
+        <View style={styles.topBar}>
+          {onCancel ? (
+            <TouchableOpacity
+              style={styles.circularCloseBtn}
+              onPress={onCancel}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <MaterialIcons name="close" size={20} color={COLORS.onSurface} />
             </TouchableOpacity>
+          ) : (
+            <View style={styles.topBarSpacer} />
           )}
+
+          {/* Segmented Capsule: Ingreso, Gasto, Traspaso */}
+          <View style={styles.segmentedCapsule}>
+            {/* Ingreso */}
+            <TouchableOpacity
+              style={[
+                styles.segmentedItem,
+                type === 'INCOME' ? styles.segmentedItemActiveIncome : styles.segmentedItemInactive,
+              ]}
+              onPress={() => handleTypeChange('INCOME')}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons
+                name="arrow-downward"
+                size={16}
+                color={type === 'INCOME' ? COLORS.cashflowIncome : COLORS.onSurfaceVariant}
+              />
+              {type === 'INCOME' && (
+                <Text style={[styles.segmentedLabel, { color: COLORS.cashflowIncome }]}>
+                  Ingreso
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Gasto */}
+            <TouchableOpacity
+              style={[
+                styles.segmentedItem,
+                type === 'EXPENSE' ? styles.segmentedItemActiveExpense : styles.segmentedItemInactive,
+              ]}
+              onPress={() => handleTypeChange('EXPENSE')}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons
+                name="arrow-upward"
+                size={16}
+                color={type === 'EXPENSE' ? COLORS.cashflowExpense : COLORS.onSurfaceVariant}
+              />
+              {type === 'EXPENSE' && (
+                <Text style={[styles.segmentedLabel, { color: COLORS.cashflowExpense }]}>
+                  Gasto
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Traspaso */}
+            <TouchableOpacity
+              style={[
+                styles.segmentedItem,
+                type === 'TRANSFER' ? styles.segmentedItemActiveTransfer : styles.segmentedItemInactive,
+              ]}
+              onPress={() => handleTypeChange('TRANSFER')}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons
+                name="swap-horiz"
+                size={18}
+                color={type === 'TRANSFER' ? COLORS.cashflowTransfer : COLORS.onSurfaceVariant}
+              />
+              {type === 'TRANSFER' && (
+                <Text style={[styles.segmentedLabel, { color: COLORS.cashflowTransfer }]}>
+                  Traspaso
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.topBarSpacer} />
         </View>
 
-        {/* Operation Type Switcher */}
-        <View style={styles.typeSwitcherRow}>
-          <TouchableOpacity
-            style={[styles.typeButton, type === 'EXPENSE' && styles.typeButtonExpenseActive]}
-            onPress={() => handleTypeChange('EXPENSE')}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons
-              name="remove-circle-outline"
-              size={18}
-              color={type === 'EXPENSE' ? COLORS.cashflowExpense : COLORS.onSurfaceVariant}
-            />
-            <Text
-              style={[
-                styles.typeButtonText,
-                type === 'EXPENSE' && { color: COLORS.cashflowExpense, fontWeight: '700' },
-                TYPOGRAPHY.labelCaps,
-              ]}
-            >
-              Gasto
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.typeButton, type === 'INCOME' && styles.typeButtonIncomeActive]}
-            onPress={() => handleTypeChange('INCOME')}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons
-              name="add-circle-outline"
-              size={18}
-              color={type === 'INCOME' ? COLORS.cashflowIncome : COLORS.onSurfaceVariant}
-            />
-            <Text
-              style={[
-                styles.typeButtonText,
-                type === 'INCOME' && { color: COLORS.cashflowIncome, fontWeight: '700' },
-                TYPOGRAPHY.labelCaps,
-              ]}
-            >
-              Ingreso
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.typeButton, type === 'TRANSFER' && styles.typeButtonTransferActive]}
-            onPress={() => handleTypeChange('TRANSFER')}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons
-              name="swap-horiz"
-              size={18}
-              color={type === 'TRANSFER' ? COLORS.primary : COLORS.onSurfaceVariant}
-            />
-            <Text
-              style={[
-                styles.typeButtonText,
-                type === 'TRANSFER' && { color: COLORS.primary, fontWeight: '700' },
-                TYPOGRAPHY.labelCaps,
-              ]}
-            >
-              Traspaso
-            </Text>
-          </TouchableOpacity>
-        </View>
-
+        {/* Scrollable Form Body */}
         <ScrollView
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.formContent}
+          style={styles.scrollArea}
+          contentContainerStyle={styles.formScrollContent}
         >
-          {/* Amount Hero Input */}
-          <View style={styles.amountBox}>
-            <Text style={[styles.currencyPrefix, TYPOGRAPHY.headlineSm]}>$</Text>
-            <TextInput
-              style={styles.amountInput}
-              value={amountStr}
-              onChangeText={handleAmountChange}
-              placeholder="0,00"
-              placeholderTextColor={COLORS.outline}
-              keyboardType="decimal-pad"
-              autoFocus={!isScreen}
-            />
-          </View>
-          {parsedCents > 0 && (
-            <Text style={[styles.amountPreview, TYPOGRAPHY.labelCaps]}>
-              {formatCurrency(parsedCents)}
-            </Text>
-          )}
-
-          {/* Selector de Fecha */}
-          <View style={styles.dateSection}>
-            <View style={styles.dateLabelRow}>
-              <Text style={[styles.dateSectionLabel, TYPOGRAPHY.labelCaps]}>Fecha de Operación</Text>
-              <TouchableOpacity
-                style={styles.calendarTriggerButton}
-                onPress={() => {
-                  triggerSelection();
-                  setIsDatePickerVisible(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons name="edit-calendar" size={15} color={COLORS.primary} />
-                <Text style={styles.calendarTriggerText}>
-                  {formatFriendlyDate(selectedDate)}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.dateChipsRow}>
-              <TouchableOpacity
-                style={[
-                  styles.dateChip,
-                  isToday(selectedDate) && styles.dateChipActive,
-                ]}
-                onPress={() => {
-                  triggerSelection();
-                  setSelectedDate(new Date());
-                }}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons
-                  name="today"
-                  size={14}
-                  color={isToday(selectedDate) ? COLORS.primary : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.dateChipText,
-                    isToday(selectedDate) && styles.dateChipTextActive,
-                  ]}
-                >
-                  Hoy
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.dateChip,
-                  isYesterday(selectedDate) && styles.dateChipActive,
-                ]}
-                onPress={() => {
-                  triggerSelection();
-                  const yesterday = new Date();
-                  yesterday.setDate(yesterday.getDate() - 1);
-                  setSelectedDate(
-                    createSafeDate(
-                      yesterday.getFullYear(),
-                      yesterday.getMonth(),
-                      yesterday.getDate()
-                    )
-                  );
-                }}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons
-                  name="history"
-                  size={14}
-                  color={isYesterday(selectedDate) ? COLORS.primary : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.dateChipText,
-                    isYesterday(selectedDate) && styles.dateChipTextActive,
-                  ]}
-                >
-                  Ayer
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.dateChip,
-                  !isToday(selectedDate) && !isYesterday(selectedDate) && styles.dateChipActive,
-                ]}
-                onPress={() => {
-                  triggerSelection();
-                  setIsDatePickerVisible(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <MaterialIcons
-                  name="event"
-                  size={14}
-                  color={
-                    !isToday(selectedDate) && !isYesterday(selectedDate)
-                      ? COLORS.primary
-                      : COLORS.onSurfaceVariant
-                  }
-                />
-                <Text
-                  style={[
-                    styles.dateChipText,
-                    !isToday(selectedDate) && !isYesterday(selectedDate) && styles.dateChipTextActive,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {!isToday(selectedDate) && !isYesterday(selectedDate)
-                    ? formatFriendlyDate(selectedDate)
-                    : 'Otra fecha...'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+          {/* Hero Amount Input */}
+          <View style={styles.heroAmountContainer}>
+            <TouchableOpacity
+              style={styles.heroAmountRow}
+              activeOpacity={1}
+              onPress={() => amountInputRef.current?.focus()}
+            >
+              <Text style={[styles.heroCurrencySymbol, { fontSize: dynamicCurrencySize }]}>$</Text>
+              <TextInput
+                ref={amountInputRef}
+                style={[styles.heroAmountInput, { fontSize: dynamicFontSize }]}
+                value={amountStr}
+                onChangeText={handleAmountChange}
+                placeholder="0"
+                placeholderTextColor="rgba(255, 255, 255, 0.28)"
+                keyboardType="decimal-pad"
+                autoFocus={!isScreen}
+                cursorColor={actionColor}
+                scrollEnabled={false}
+              />
+            </TouchableOpacity>
           </View>
 
-          {/* Concept / Payee Input */}
-          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>
-            {type === 'EXPENSE'
-              ? 'Comercio o concepto'
-              : type === 'INCOME'
-              ? 'Fuente o pagador'
-              : 'Motivo del traspaso'}
-          </Text>
-          <TextInput
-            style={styles.textInput}
-            value={payee}
-            onChangeText={setPayee}
-            placeholder={
-              type === 'EXPENSE'
-                ? 'Ej. Supermercado, Combustible, Farmacia'
-                : type === 'INCOME'
-                ? 'Ej. Sueldo, Honorarios, Venta'
-                : 'Ej. Ahorro a reserva, Fondo semanal'
-            }
-            placeholderTextColor={COLORS.outline}
-          />
+          {/* Date Capsule Pill */}
+          <View style={styles.dateRow}>
+            <TouchableOpacity
+              style={styles.dateCapsule}
+              onPress={() => {
+                triggerSelection();
+                setIsDatePickerVisible(true);
+              }}
+              activeOpacity={0.75}
+            >
+              <MaterialIcons name="event" size={15} color={COLORS.outline} />
+              <Text style={styles.dateCapsuleText}>
+                {isToday(selectedDate)
+                  ? 'Hoy'
+                  : isYesterday(selectedDate)
+                    ? 'Ayer'
+                    : formatFriendlyDate(selectedDate)}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-          {/* Account Selector(s) */}
-          {type === 'TRANSFER' ? (
-            <View style={styles.transferAccountsGroup}>
-              <View style={styles.transferCol}>
-                <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Desde (Origen)</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.accountsScroll}>
-                  {accounts.map(acc => (
-                    <TouchableOpacity
-                      key={acc.id}
-                      onPress={() => {
-                        triggerSelection();
-                        setUserSelectedSourceAccountId(acc.id);
-                      }}
-                      style={[
-                        styles.accountChip,
-                        activeSourceAccountId === acc.id && styles.accountChipActive,
-                      ]}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.accountChipText,
-                          activeSourceAccountId === acc.id && styles.accountChipTextActive,
-                        ]}
-                      >
-                        {acc.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-
-              <View style={styles.transferCol}>
-                <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Hacia (Destino)</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.accountsScroll}>
-                  {accounts.map(acc => (
-                    <TouchableOpacity
-                      key={acc.id}
-                      onPress={() => {
-                        triggerSelection();
-                        setUserSelectedTargetAccountId(acc.id);
-                      }}
-                      style={[
-                        styles.accountChip,
-                        activeTargetAccountId === acc.id && styles.accountChipActive,
-                      ]}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.accountChipText,
-                          activeTargetAccountId === acc.id && styles.accountChipTextActive,
-                        ]}
-                      >
-                        {acc.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
+          {/* Account Selector Pill */}
+          {type !== 'TRANSFER' ? (
+            <View style={styles.accountRow}>
+              <TouchableOpacity
+                style={styles.accountPill}
+                onPress={() => {
+                  triggerSelection();
+                  setIsSourceAccountModalVisible(true);
+                }}
+                activeOpacity={0.75}
+              >
+                <View
+                  style={[
+                    styles.accountIconBox,
+                    { backgroundColor: `${getAccountColor(activeSourceAccount?.type)}18` },
+                  ]}
+                >
+                  <MaterialIcons
+                    name={getAccountIcon(activeSourceAccount?.type)}
+                    size={18}
+                    color={getAccountColor(activeSourceAccount?.type)}
+                  />
+                </View>
+                <View style={styles.accountInfoCol}>
+                  <Text style={styles.accountName} numberOfLines={1}>
+                    {activeSourceAccount?.name || 'Seleccionar cuenta'}
+                  </Text>
+                  {activeSourceAccount && (
+                    <Text style={styles.accountBalance}>
+                      {formatCurrency(activeSourceAccount.currentBalance)}
+                    </Text>
+                  )}
+                </View>
+                <MaterialIcons name="keyboard-arrow-down" size={20} color={COLORS.outline} />
+              </TouchableOpacity>
             </View>
           ) : (
-            <View>
-              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>
-                {type === 'EXPENSE' ? 'Pagado con' : 'Ingresado a'}
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.accountsScroll}>
-                {accounts.map(acc => (
-                  <TouchableOpacity
-                    key={acc.id}
-                    onPress={() => {
-                      triggerSelection();
-                      setUserSelectedSourceAccountId(acc.id);
-                    }}
-                    style={[
-                      styles.accountChip,
-                      activeSourceAccountId === acc.id && styles.accountChipActive,
-                    ]}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.accountChipText,
-                        activeSourceAccountId === acc.id && styles.accountChipTextActive,
-                      ]}
-                    >
-                      {acc.name}
+            <View style={styles.transferRow}>
+              {/* Origen */}
+              <TouchableOpacity
+                style={styles.transferCard}
+                onPress={() => {
+                  triggerSelection();
+                  setIsSourceAccountModalVisible(true);
+                }}
+                activeOpacity={0.75}
+              >
+                <View
+                  style={[
+                    styles.transferIconBox,
+                    { backgroundColor: `${getAccountColor(activeSourceAccount?.type)}18` },
+                  ]}
+                >
+                  <MaterialIcons
+                    name={getAccountIcon(activeSourceAccount?.type)}
+                    size={16}
+                    color={getAccountColor(activeSourceAccount?.type)}
+                  />
+                </View>
+                <View style={styles.transferInfoCol}>
+                  <Text style={styles.transferRoleLabel}>Origen</Text>
+                  <Text style={styles.transferAccountName} numberOfLines={1} ellipsizeMode="tail">
+                    {activeSourceAccount?.name || 'Origen'}
+                  </Text>
+                  {activeSourceAccount && (
+                    <Text style={styles.transferAccountBalance} numberOfLines={1} ellipsizeMode="tail">
+                      {formatCurrency(activeSourceAccount.currentBalance)}
                     </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                  )}
+                </View>
+                <MaterialIcons name="keyboard-arrow-down" size={16} color={COLORS.outline} />
+              </TouchableOpacity>
+
+              {/* Flecha separadora */}
+              <View style={styles.transferArrowBox}>
+                <MaterialIcons name="arrow-forward" size={15} color={COLORS.primary} />
+              </View>
+
+              {/* Destino */}
+              <TouchableOpacity
+                style={styles.transferCard}
+                onPress={() => {
+                  triggerSelection();
+                  setIsTargetAccountModalVisible(true);
+                }}
+                activeOpacity={0.75}
+              >
+                <View
+                  style={[
+                    styles.transferIconBox,
+                    { backgroundColor: `${getAccountColor(activeTargetAccount?.type)}18` },
+                  ]}
+                >
+                  <MaterialIcons
+                    name={getAccountIcon(activeTargetAccount?.type)}
+                    size={16}
+                    color={getAccountColor(activeTargetAccount?.type)}
+                  />
+                </View>
+                <View style={styles.transferInfoCol}>
+                  <Text style={styles.transferRoleLabel}>Destino</Text>
+                  <Text style={styles.transferAccountName} numberOfLines={1} ellipsizeMode="tail">
+                    {activeTargetAccount?.name || 'Destino'}
+                  </Text>
+                  {activeTargetAccount && (
+                    <Text style={styles.transferAccountBalance} numberOfLines={1} ellipsizeMode="tail">
+                      {formatCurrency(activeTargetAccount.currentBalance)}
+                    </Text>
+                  )}
+                </View>
+                <MaterialIcons name="keyboard-arrow-down" size={16} color={COLORS.outline} />
+              </TouchableOpacity>
             </View>
           )}
 
-          {/* Category Selector (only for EXPENSE and INCOME) */}
+          {/* Input Box: Concepto / Comercio y Notas */}
+          <View style={styles.inputsSection}>
+            <View style={styles.modernInputBox}>
+              <MaterialIcons name="notes" size={20} color={COLORS.outline} style={styles.inputIconPrefix} />
+              <TextInput
+                value={payee}
+                onChangeText={setPayee}
+                placeholder={
+                  type === 'EXPENSE'
+                    ? 'Comercio o concepto...'
+                    : type === 'INCOME'
+                      ? 'Fuente o pagador...'
+                      : 'Motivo del traspaso...'
+                }
+                placeholderTextColor={COLORS.outline}
+                style={styles.modernTextInput}
+              />
+            </View>
+
+            <View style={[styles.modernInputBox, { marginTop: 10 }]}>
+              <MaterialIcons name="edit" size={18} color={COLORS.outline} style={styles.inputIconPrefix} />
+              <TextInput
+                value={note}
+                onChangeText={setNote}
+                placeholder="Añadir notas o detalle"
+                placeholderTextColor={COLORS.outline}
+                style={styles.modernTextInput}
+              />
+            </View>
+          </View>
+
+          {/* Categories Selector Horizontal Pills + [ ⌄ ] Siempre visible */}
           {type !== 'TRANSFER' && (
-            <View style={styles.categorySection}>
-              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Categoría</Text>
-              <View style={styles.categoriesGrid}>
+            <View style={styles.categoriesContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoriesScrollContent}
+                keyboardShouldPersistTaps="handled"
+                style={styles.categoriesScrollView}
+              >
                 {categories.map(cat => {
                   const isSelected = activeCategoryId === cat.id;
                   return (
                     <TouchableOpacity
                       key={cat.id}
+                      style={[
+                        styles.categoryPill,
+                        isSelected && {
+                          borderColor: cat.color,
+                          backgroundColor: `${cat.color}24`,
+                        },
+                      ]}
                       onPress={() => {
                         triggerSelection();
                         setUserSelectedCategoryId(cat.id);
                       }}
-                      style={[
-                        styles.categoryChip,
-                        isSelected && {
-                          borderColor: cat.color,
-                          backgroundColor: `${cat.color}20`,
-                        },
-                      ]}
                       activeOpacity={0.7}
                     >
-                      <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                      <View style={[styles.categoryPillDot, { backgroundColor: cat.color }]} />
                       <Text
                         style={[
-                          styles.categoryChipText,
+                          styles.categoryPillText,
                           isSelected && { color: '#FFFFFF', fontWeight: '700' },
                         ]}
                       >
@@ -537,45 +546,55 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
                     </TouchableOpacity>
                   );
                 })}
-              </View>
+              </ScrollView>
+
+              {/* Botón [ ⌄ ] fijo y visible en todo momento */}
+              <TouchableOpacity
+                style={styles.categoryDropdownFixedBtn}
+                onPress={() => {
+                  triggerSelection();
+                  setIsCategoryPickerVisible(true);
+                }}
+                activeOpacity={0.7}
+                accessibilityLabel="Ver todas las categorías"
+              >
+                <MaterialIcons name="keyboard-arrow-down" size={22} color={COLORS.onSurfaceVariant} />
+              </TouchableOpacity>
             </View>
           )}
 
-          {/* Note Input */}
-          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nota adicional (opcional)</Text>
-          <TextInput
-            style={styles.textInput}
-            value={note}
-            onChangeText={setNote}
-            placeholder="Detalle o etiqueta..."
-            placeholderTextColor={COLORS.outline}
-          />
-
-          {/* Submit Button */}
-          <View style={styles.submitContainer}>
-            <GlowButton
-              title={
-                type === 'EXPENSE'
-                  ? 'Registrar Gasto'
-                  : type === 'INCOME'
-                  ? 'Registrar Ingreso'
-                  : 'Realizar Traspaso'
-              }
+          {/* Prominent Action Button: Guardar */}
+          <View style={styles.bottomBar}>
+            <TouchableOpacity
+              style={[
+                styles.guardarButton,
+                { backgroundColor: actionColor },
+              ]}
               onPress={handleSubmit}
-              loading={loading}
-              variant={type === 'EXPENSE' ? 'primary' : type === 'INCOME' ? 'secondary' : 'primary'}
-              icon={
-                <MaterialIcons
-                  name={type === 'EXPENSE' ? 'remove' : type === 'INCOME' ? 'add' : 'sync-alt'}
-                  size={20}
-                  color="#FFFFFF"
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator
+                  color={type === 'TRANSFER' ? '#FFFFFF' : '#0B0F10'}
+                  size="small"
                 />
-              }
-            />
+              ) : (
+                <Text
+                  style={[
+                    styles.guardarButtonText,
+                    { color: type === 'TRANSFER' ? '#FFFFFF' : '#0B0F10' },
+                  ]}
+                >
+                  Guardar
+                </Text>
+              )}
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
 
+      {/* Date Picker Modal */}
       {isDatePickerVisible && (
         <DatePickerModal
           visible={isDatePickerVisible}
@@ -584,6 +603,214 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
           onClose={() => setIsDatePickerVisible(false)}
         />
       )}
+
+      {/* Source Account Selector Modal */}
+      <Modal
+        visible={isSourceAccountModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsSourceAccountModalVisible(false)}
+      >
+        <View style={styles.pickerModalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setIsSourceAccountModalVisible(false)}
+          />
+          <View style={styles.pickerModalCard}>
+            <View style={styles.pickerModalHeader}>
+              <Text style={[styles.pickerModalTitle, TYPOGRAPHY.titularPequeno]}>
+                {type === 'TRANSFER' ? 'Cuenta Origen' : 'Seleccionar cuenta'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsSourceAccountModalVisible(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <MaterialIcons name="close" size={20} color={COLORS.outline} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
+              {accounts.map(acc => {
+                const isSelected = activeSourceAccountId === acc.id;
+                return (
+                  <TouchableOpacity
+                    key={acc.id}
+                    style={[
+                      styles.accountOptionItem,
+                      isSelected && styles.accountOptionItemSelected,
+                    ]}
+                    onPress={() => {
+                      triggerSelection();
+                      setUserSelectedSourceAccountId(acc.id);
+                      setIsSourceAccountModalVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={[
+                        styles.accountOptionIconBox,
+                        { backgroundColor: `${getAccountColor(acc.type)}20` },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={getAccountIcon(acc.type)}
+                        size={20}
+                        color={getAccountColor(acc.type)}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.accountOptionName}>{acc.name}</Text>
+                      <Text style={styles.accountOptionBalance}>
+                        {formatCurrency(acc.currentBalance)}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <MaterialIcons name="check" size={20} color={COLORS.secondary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Target Account Selector Modal (for TRANSFER) */}
+      <Modal
+        visible={isTargetAccountModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsTargetAccountModalVisible(false)}
+      >
+        <View style={styles.pickerModalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setIsTargetAccountModalVisible(false)}
+          />
+          <View style={styles.pickerModalCard}>
+            <View style={styles.pickerModalHeader}>
+              <Text style={[styles.pickerModalTitle, TYPOGRAPHY.titularPequeno]}>
+                Cuenta Destino
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsTargetAccountModalVisible(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <MaterialIcons name="close" size={20} color={COLORS.outline} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
+              {accounts.map(acc => {
+                const isSelected = activeTargetAccountId === acc.id;
+                return (
+                  <TouchableOpacity
+                    key={acc.id}
+                    style={[
+                      styles.accountOptionItem,
+                      isSelected && styles.accountOptionItemSelected,
+                    ]}
+                    onPress={() => {
+                      triggerSelection();
+                      setUserSelectedTargetAccountId(acc.id);
+                      setIsTargetAccountModalVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={[
+                        styles.accountOptionIconBox,
+                        { backgroundColor: `${getAccountColor(acc.type)}20` },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={getAccountIcon(acc.type)}
+                        size={20}
+                        color={getAccountColor(acc.type)}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.accountOptionName}>{acc.name}</Text>
+                      <Text style={styles.accountOptionBalance}>
+                        {formatCurrency(acc.currentBalance)}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <MaterialIcons name="check" size={20} color={COLORS.secondary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Full Categories Modal */}
+      <Modal
+        visible={isCategoryPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsCategoryPickerVisible(false)}
+      >
+        <View style={styles.pickerModalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setIsCategoryPickerVisible(false)}
+          />
+          <View style={styles.pickerModalCard}>
+            <View style={styles.pickerModalHeader}>
+              <Text style={[styles.pickerModalTitle, TYPOGRAPHY.titularPequeno]}>
+                Todas las categorías
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsCategoryPickerVisible(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <MaterialIcons name="close" size={20} color={COLORS.outline} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
+              <View style={styles.categoriesGridInModal}>
+                {categories.map(cat => {
+                  const isSelected = activeCategoryId === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.categoryPill,
+                        { minWidth: '47%', flex: 1 },
+                        isSelected && {
+                          borderColor: cat.color,
+                          backgroundColor: `${cat.color}24`,
+                        },
+                      ]}
+                      onPress={() => {
+                        triggerSelection();
+                        setUserSelectedCategoryId(cat.id);
+                        setIsCategoryPickerVisible(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.categoryPillDot, { backgroundColor: cat.color }]} />
+                      <Text
+                        style={[
+                          styles.categoryPillText,
+                          isSelected && { color: '#FFFFFF', fontWeight: '700' },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {cat.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -591,250 +818,423 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.78)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: COLORS.surfaceContainer,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 20,
+    backgroundColor: '#0E1214',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 16,
     paddingHorizontal: 20,
-    paddingBottom: 36,
-    maxHeight: '90%',
+    maxHeight: '92%',
+    flexShrink: 1,
     borderWidth: 1,
-    borderColor: COLORS.borderGlass,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   screenContainer: {
     flex: 1,
-    backgroundColor: COLORS.surfaceBase,
+    backgroundColor: '#0B0F10',
   },
   screenContent: {
     flex: 1,
-    paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 20,
   },
-  header: {
+  scrollArea: {
+    flexShrink: 1,
+  },
+  formScrollContent: {
+    paddingBottom: 24,
+  },
+
+  // Top Bar
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 8,
   },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    color: COLORS.onSurface,
-  },
-  typeSwitcherRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  typeButton: {
-    flex: 1,
-    flexDirection: 'row',
+  circularCloseBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'transparent',
   },
-  typeButtonExpenseActive: {
-    backgroundColor: 'rgba(255, 138, 158, 0.15)',
-    borderColor: COLORS.cashflowExpense,
+  topBarSpacer: {
+    width: 38,
   },
-  typeButtonIncomeActive: {
-    backgroundColor: 'rgba(87, 245, 171, 0.15)',
-    borderColor: COLORS.cashflowIncome,
-  },
-  typeButtonTransferActive: {
-    backgroundColor: 'rgba(138, 79, 255, 0.2)',
-    borderColor: COLORS.primaryContainer,
-  },
-  typeButtonText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-  },
-  formContent: {
-    paddingBottom: 20,
-  },
-  amountBox: {
+
+  // Segmented Capsule
+  segmentedCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlass,
-    marginBottom: 6,
-  },
-  currencyPrefix: {
-    color: COLORS.secondary,
-    marginRight: 8,
-    fontSize: 28,
-  },
-  amountInput: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: COLORS.onSurface,
-    textAlign: 'center',
-    minWidth: 140,
-  },
-  amountPreview: {
-    color: COLORS.primary,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  dateSection: {
-    marginBottom: 12,
-  },
-  dateLabelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  dateSectionLabel: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-  },
-  calendarTriggerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#181C1E',
+    borderRadius: 24,
+    padding: 4,
     gap: 4,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(138, 79, 255, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(138, 79, 255, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
-  calendarTriggerText: {
-    color: COLORS.primary,
-    fontSize: 12,
-    fontWeight: '600',
+  segmentedItem: {
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  dateChipsRow: {
+  segmentedItemInactive: {
+    width: 34,
+    height: 34,
+  },
+  segmentedItemActiveExpense: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255, 138, 158, 0.16)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  dateChip: {
-    flex: 1,
+  segmentedItemActiveIncome: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(87, 245, 171, 0.16)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  segmentedItemActiveTransfer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(138, 79, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  segmentedLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+
+  // Hero Amount
+  heroAmountContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  heroAmountRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 10,
-    backgroundColor: COLORS.surfaceContainerHigh,
+    maxWidth: '100%',
+  },
+  heroCurrencySymbol: {
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginRight: 4,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  heroAmountInput: {
+    fontWeight: '800',
+    color: '#FFFFFF',
+    minWidth: 40,
+    paddingVertical: 0,
+    paddingHorizontal: 2,
+    margin: 0,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+
+  // Date Capsule Pill
+  dateRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  dateCapsule: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#181C1E',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  dateChipActive: {
-    backgroundColor: 'rgba(138, 79, 255, 0.2)',
-    borderColor: COLORS.primary,
-  },
-  dateChipText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 12,
+  dateCapsuleText: {
+    color: COLORS.onSurface,
+    fontSize: 13,
     fontWeight: '600',
   },
-  dateChipTextActive: {
-    color: COLORS.primary,
-    fontWeight: '700',
+
+  // Account Selector Pill
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  inputLabel: {
+  accountPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#161A1C',
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  accountIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountInfoCol: {
+    flexShrink: 1,
+  },
+  accountName: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  accountBalance: {
     color: COLORS.onSurfaceVariant,
-    marginTop: 12,
+    fontSize: 11,
+    marginTop: 1,
+  },
+
+  // Transfer Row (strictly symmetrical 50/50 without deformation)
+  transferRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 14,
+    width: '100%',
+  },
+  transferCard: {
+    flex: 1,
+    minWidth: 0,
+    height: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#161A1C',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  transferIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  transferInfoCol: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  transferRoleLabel: {
+    color: COLORS.outline,
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  transferAccountName: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  transferAccountBalance: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 10,
+    marginTop: 1,
+  },
+  transferArrowBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(138, 79, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+
+  // Inputs Section
+  inputsSection: {
     marginBottom: 6,
   },
-  textInput: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlass,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: COLORS.onSurface,
-    fontSize: 15,
-  },
-  transferAccountsGroup: {
-    gap: 8,
-  },
-  transferCol: {
-    flex: 1,
-  },
-  accountsScroll: {
+  modernInputBox: {
     flexDirection: 'row',
-    marginVertical: 4,
-  },
-  accountChip: {
+    alignItems: 'center',
+    backgroundColor: '#161A1C',
+    borderRadius: 16,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    marginRight: 8,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
-  accountChipActive: {
-    borderColor: COLORS.secondary,
-    backgroundColor: 'rgba(0, 210, 255, 0.15)',
+  inputIconPrefix: {
+    marginRight: 10,
   },
-  accountChipText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 13,
+  modernTextInput: {
+    flex: 1,
+    color: COLORS.onSurface,
+    fontSize: 14,
     fontWeight: '500',
   },
-  accountChipTextActive: {
-    color: COLORS.secondary,
-    fontWeight: '700',
-  },
-  categorySection: {
-    marginTop: 4,
-  },
-  categoriesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  categoryChip: {
+
+  // Categories Row with fixed button
+  categoriesContainer: {
+    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlass,
-    gap: 6,
+    gap: 8,
   },
-  categoryDot: {
+  categoriesScrollView: {
+    flex: 1,
+  },
+  categoriesScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 2,
+    paddingRight: 4,
+  },
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#161A1C',
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  categoryPillDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
   },
-  categoryChipText: {
+  categoryPillText: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  categoryDropdownFixedBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#161A1C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    flexShrink: 0,
+  },
+
+  // Action Button
+  bottomBar: {
+    marginTop: 22,
+    marginBottom: 6,
+  },
+  guardarButton: {
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  guardarButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+
+  // Picker Modals (Accounts & Categories)
+  pickerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  pickerModalCard: {
+    width: '100%',
+    backgroundColor: '#14181A',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  pickerModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  pickerModalTitle: {
+    color: COLORS.onSurface,
+  },
+  accountOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    marginBottom: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    gap: 12,
+  },
+  accountOptionItemSelected: {
+    backgroundColor: 'rgba(165, 231, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: COLORS.secondary,
+  },
+  accountOptionIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountOptionName: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  accountOptionBalance: {
     color: COLORS.onSurfaceVariant,
     fontSize: 12,
+    marginTop: 2,
   },
-  submitContainer: {
-    marginTop: 24,
+  categoriesGridInModal: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
 });
 
 // Alias compatibles
 export const TransactionForm = FormularioMovimiento;
 export type TransactionFormProps = PropiedadesFormularioMovimiento;
-

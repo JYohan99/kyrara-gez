@@ -123,7 +123,9 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
       <View style={styles.drawerHandle} />
       <ScrollView
         showsVerticalScrollIndicator={false}
+        style={styles.scrollArea}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
         bounces={false}
         contentContainerStyle={styles.drawerScrollContent}
       >
@@ -265,10 +267,14 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 22,
     maxHeight: '85%',
+    flexShrink: 1,
+  },
+  scrollArea: {
+    flexShrink: 1,
   },
   drawerScrollContent: {
     gap: 14,
-    paddingBottom: 8,
+    paddingBottom: 24,
   },
   drawerHandle: {
     width: 40,

@@ -47,6 +47,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="deudas"
+        options={{
+          title: 'Deudas',
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="handshake" size={23} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="agenda"
         options={{
           title: 'Agenda',
@@ -81,6 +90,12 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="ajustes"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="precios-fotos"
         options={{
           href: null,
         }}

@@ -217,7 +217,9 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        style={styles.scrollArea}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
         contentContainerStyle={styles.drawerScrollContent}
       >
         {/* Header */}
@@ -519,7 +521,7 @@ export const ModalCompromiso: React.FC<PropiedadesModalCompromiso> = ({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.modalOverlay}
       >
         <TouchableOpacity
@@ -554,6 +556,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderGlassHighlight,
     maxHeight: '90%',
+    flexShrink: 1,
+  },
+  scrollArea: {
+    flexShrink: 1,
   },
   drawerHandle: {
     width: 36,
@@ -567,7 +573,7 @@ const styles = StyleSheet.create({
   drawerScrollContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 24,
+    paddingBottom: 36,
     gap: 16,
   },
   modalHeaderRow: {

@@ -17,8 +17,9 @@ import { PestanaCuentas as AccountsTab } from './PestanaCuentas';
 import { ModalCuenta as AccountModal } from './ModalCuenta';
 import { PestanaCategorias as CategoriesTab } from './PestanaCategorias';
 import { ModalCategoria as CategoryModal } from './ModalCategoria';
+import { PestanaPreciosFotos } from '@/pantallas/preciosFotos';
 
-type MainSectionTab = 'CUENTAS' | 'CATEGORIAS';
+type MainSectionTab = 'CUENTAS' | 'CATEGORIAS' | 'PRODUCTOS';
 
 export function PantallaCuentas() {
   const [activeTab, setActiveTab] = useState<MainSectionTab>('CUENTAS');
@@ -53,10 +54,16 @@ export function PantallaCuentas() {
     <View style={styles.screen}>
       {/* Top Header */}
       <EncabezadoSuperior
-        seccion={activeTab === 'CUENTAS' ? 'CUENTAS' : 'CATEGORÍAS'}
+        seccion={
+          activeTab === 'CUENTAS'
+            ? 'CUENTAS'
+            : activeTab === 'CATEGORIAS'
+            ? 'CATEGORÍAS'
+            : 'PRODUCTOS'
+        }
       />
 
-      {/* Segmented Top Switcher (Cuentas, Categorías) */}
+      {/* Segmented Top Switcher (Cuentas, Categorías, Productos) */}
       <View style={styles.segmentSwitcherContainer}>
         <View style={styles.segmentTrack}>
           <TouchableOpacity
@@ -73,6 +80,7 @@ export function PantallaCuentas() {
               color={activeTab === 'CUENTAS' ? COLORS.secondary : COLORS.onSurfaceVariant}
             />
             <Text
+              numberOfLines={1}
               style={[
                 styles.segmentBtnText,
                 TYPOGRAPHY.labelCaps,
@@ -97,6 +105,7 @@ export function PantallaCuentas() {
               color={activeTab === 'CATEGORIAS' ? COLORS.primary : COLORS.onSurfaceVariant}
             />
             <Text
+              numberOfLines={1}
               style={[
                 styles.segmentBtnText,
                 TYPOGRAPHY.labelCaps,
@@ -104,6 +113,31 @@ export function PantallaCuentas() {
               ]}
             >
               Categorías
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.segmentBtn, activeTab === 'PRODUCTOS' && styles.segmentBtnActive]}
+            onPress={() => {
+              triggerSelection();
+              setActiveTab('PRODUCTOS');
+            }}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons
+              name="inventory-2"
+              size={15}
+              color={activeTab === 'PRODUCTOS' ? COLORS.secondary : COLORS.onSurfaceVariant}
+            />
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.segmentBtnText,
+                TYPOGRAPHY.labelCaps,
+                activeTab === 'PRODUCTOS' && styles.segmentBtnTextActive,
+              ]}
+            >
+              Productos
             </Text>
           </TouchableOpacity>
         </View>
@@ -124,6 +158,10 @@ export function PantallaCuentas() {
           <CategoriesTab
             onNewCategory={handleOpenNewCategory}
           />
+        )}
+
+        {activeTab === 'PRODUCTOS' && (
+          <PestanaPreciosFotos />
         )}
       </ScrollView>
 

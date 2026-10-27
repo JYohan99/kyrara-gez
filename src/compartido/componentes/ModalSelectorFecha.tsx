@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Pressable,
+  Keyboard,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES } from '../tema/colores';
@@ -37,6 +38,12 @@ export const ModalSelectorFecha: React.FC<PropiedadesModalSelectorFecha> = ({
   const [anioVista, setAnioVista] = useState(selectedDate.getFullYear());
   const [mesVista, setMesVista] = useState(selectedDate.getMonth());
   const [fechaTemporal, setFechaTemporal] = useState<Date>(selectedDate);
+
+  useEffect(() => {
+    if (visible) {
+      Keyboard.dismiss();
+    }
+  }, [visible]);
 
   if (!visible) return null;
 

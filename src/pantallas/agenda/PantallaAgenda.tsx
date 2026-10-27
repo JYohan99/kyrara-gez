@@ -351,22 +351,7 @@ export function PantallaAgenda() {
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={styles.actionBtnWrapper}
-            onPress={handleOpenNew}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Nuevo compromiso"
-          >
-            <LinearGradient
-              colors={['#9B5CFF', '#6A1FE8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.actionBtnGradient}
-            >
-              <MaterialIcons name="add" size={24} color="#FFFFFF" />
-            </LinearGradient>
-          </TouchableOpacity>
+
         </View>
 
         {/* Lista de Compromisos del Día */}

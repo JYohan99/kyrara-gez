@@ -93,15 +93,113 @@ export function inicializarBaseDatos(): void {
       created_at INTEGER NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS debts (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      person TEXT NOT NULL,
+      concept TEXT NOT NULL,
+      total_amount INTEGER NOT NULL,
+      paid_amount INTEGER NOT NULL DEFAULT 0,
+      remaining_amount INTEGER NOT NULL,
+      issue_date TEXT NOT NULL,
+      due_date TEXT,
+      status TEXT NOT NULL DEFAULT 'PENDING',
+      notes TEXT,
+      reminder_days_before INTEGER,
+      reminder_time TEXT DEFAULT '09:00',
+      notification_id TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS debt_payments (
+      id TEXT PRIMARY KEY,
+      debt_id TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      account_id TEXT,
+      transaction_id TEXT,
+      notes TEXT,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY(debt_id) REFERENCES debts(id) ON DELETE CASCADE,
+      FOREIGN KEY(account_id) REFERENCES accounts(id),
+      FOREIGN KEY(transaction_id) REFERENCES transactions(id)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_commitments_date ON commitments(date);
     CREATE INDEX IF NOT EXISTS idx_commitments_series ON commitments(series_id);
     CREATE INDEX IF NOT EXISTS idx_reminders_commitment ON reminders(commitment_id);
     CREATE INDEX IF NOT EXISTS idx_exceptions_series_date ON recurrence_exceptions(series_id, original_date);
+    CREATE INDEX IF NOT EXISTS idx_debts_type_status ON debts(type, status);
+    CREATE INDEX IF NOT EXISTS idx_debts_due_date ON debts(due_date);
+    CREATE INDEX IF NOT EXISTS idx_debt_payments_debt_id ON debt_payments(debt_id);
+
+    CREATE TABLE IF NOT EXISTS photo_products (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'General',
+      size_format TEXT,
+      sale_unit TEXT NOT NULL DEFAULT 'Unidad',
+      description TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      base_price INTEGER DEFAULT 0,
+      cost_price INTEGER DEFAULT 0,
+      currency TEXT DEFAULT 'UYU',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_photo_products_name ON photo_products(name);
+    CREATE INDEX IF NOT EXISTS idx_photo_products_category ON photo_products(category);
+    CREATE INDEX IF NOT EXISTS idx_photo_products_active ON photo_products(is_active);
+
+    CREATE TABLE IF NOT EXISTS photo_product_prices (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL,
+      sale_price INTEGER NOT NULL DEFAULT 0,
+      cost_price INTEGER NOT NULL DEFAULT 0,
+      cost_usd REAL,
+      exchange_rate REAL,
+      valid_from TEXT NOT NULL,
+      valid_to TEXT,
+      notes TEXT,
+      currency TEXT DEFAULT 'UYU',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY(product_id) REFERENCES photo_products(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_photo_product_prices_product ON photo_product_prices(product_id);
+    CREATE INDEX IF NOT EXISTS idx_photo_product_prices_valid ON photo_product_prices(valid_from, valid_to);
   `);
 
   // Migraciones no destructivas
   try {
     db.execSync('ALTER TABLE transactions ADD COLUMN payee TEXT;');
+  } catch {
+    // Columna ya existe
+  }
+
+  try {
+    db.execSync('ALTER TABLE photo_products ADD COLUMN cost_usd REAL;');
+  } catch {
+    // Columna ya existe
+  }
+
+  try {
+    db.execSync('ALTER TABLE photo_products ADD COLUMN exchange_rate REAL;');
+  } catch {
+    // Columna ya existe
+  }
+
+  try {
+    db.execSync('ALTER TABLE photo_products ADD COLUMN price_valid_from TEXT;');
+  } catch {
+    // Columna ya existe
+  }
+
+  try {
+    db.execSync('ALTER TABLE photo_product_prices ADD COLUMN currency TEXT DEFAULT "UYU";');
   } catch {
     // Columna ya existe
   }

@@ -198,7 +198,9 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
 
           <ScrollView
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             showsVerticalScrollIndicator={false}
+            style={styles.scrollArea}
             contentContainerStyle={styles.body}
           >
             {/* Voucher Ticket Card */}
@@ -393,11 +395,15 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     maxHeight: '90%',
+    flexShrink: 1,
     backgroundColor: '#0E1314',
     borderRadius: 24,
     borderWidth: 1,
     borderColor: COLORS.borderGlass,
     overflow: 'hidden',
+  },
+  scrollArea: {
+    flexShrink: 1,
   },
   header: {
     flexDirection: 'row',

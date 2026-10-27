@@ -83,6 +83,8 @@ const ContenidoModalPin: React.FC<PropiedadesContenidoModalPin> = ({
       <View style={styles.drawerHandle} />
       <ScrollView
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        style={styles.scrollArea}
         contentContainerStyle={styles.drawerScrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -199,10 +201,14 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 22,
     maxHeight: '85%',
+    flexShrink: 1,
+  },
+  scrollArea: {
+    flexShrink: 1,
   },
   drawerScrollContent: {
     gap: 14,
-    paddingBottom: 8,
+    paddingBottom: 24,
   },
   drawerHandle: {
     width: 40,

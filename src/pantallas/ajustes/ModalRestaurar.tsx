@@ -72,7 +72,7 @@ export const ModalRestaurar: React.FC<PropiedadesModalRestaurar> = ({
 
                   Alert.alert(
                     'Bóveda Restaurada con Éxito',
-                    `Se importaron correctamente:\n• ${result.accounts} cuentas\n• ${result.categories} categorías\n• ${result.transactions} transacciones\n• ${result.budgets} presupuestos.`
+                    `Se importaron correctamente:\n• ${result.accounts} cuentas\n• ${result.categories} categorías\n• ${result.transactions} transacciones\n• ${result.budgets} presupuestos${result.debts ? `\n• ${result.debts} deudas` : ''}.`
                   );
                 } catch (err: any) {
                   triggerError();
@@ -109,7 +109,7 @@ export const ModalRestaurar: React.FC<PropiedadesModalRestaurar> = ({
 
       Alert.alert(
         'Bóveda Restaurada con Éxito',
-        `Se importaron correctamente:\n• ${result.accounts} cuentas\n• ${result.categories} categorías\n• ${result.transactions} transacciones\n• ${result.budgets} presupuestos.`
+        `Se importaron correctamente:\n• ${result.accounts} cuentas\n• ${result.categories} categorías\n• ${result.transactions} transacciones\n• ${result.budgets} presupuestos${result.debts ? `\n• ${result.debts} deudas` : ''}.`
       );
     } catch (err: any) {
       console.error('Error executing restore:', err);
@@ -141,6 +141,8 @@ export const ModalRestaurar: React.FC<PropiedadesModalRestaurar> = ({
           <View style={styles.drawerHandle} />
           <ScrollView
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            style={styles.scrollArea}
             contentContainerStyle={styles.drawerScrollContent}
             showsVerticalScrollIndicator={false}
           >
@@ -223,10 +225,14 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 22,
     maxHeight: '88%',
+    flexShrink: 1,
+  },
+  scrollArea: {
+    flexShrink: 1,
   },
   drawerScrollContent: {
     gap: 14,
-    paddingBottom: 8,
+    paddingBottom: 28,
   },
   drawerHandle: {
     width: 40,

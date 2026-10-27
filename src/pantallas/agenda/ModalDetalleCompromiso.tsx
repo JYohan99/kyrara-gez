@@ -169,6 +169,7 @@ export const ModalDetalleCompromiso: React.FC<PropiedadesModalDetalleCompromiso>
 
           <ScrollView
             showsVerticalScrollIndicator={false}
+            style={styles.scrollArea}
             contentContainerStyle={styles.drawerScrollContent}
           >
             {/* Header del modal */}
@@ -393,6 +394,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderGlassHighlight,
     maxHeight: '88%',
+    flexShrink: 1,
+  },
+  scrollArea: {
+    flexShrink: 1,
   },
   drawerHandle: {
     width: 36,

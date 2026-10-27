@@ -255,3 +255,88 @@ export async function cancelarNotificaciones(notificationIds: (string | undefine
   const idsValidos = notificationIds.filter((id): id is string => Boolean(id));
   await Promise.allSettled(idsValidos.map(id => cancelarNotificacion(id)));
 }
+
+export interface ParametrosAvisoDeuda {
+  debtId: string;
+  type: 'RECEIVABLE' | 'PAYABLE';
+  person: string;
+  concept: string;
+  remainingAmountFormatted: string;
+  dueDate: string; // 'YYYY-MM-DD'
+  daysBefore: number;
+  reminderTime?: string;
+}
+
+/**
+ * Programa una notificación local para el vencimiento de una deuda.
+ */
+export async function programarNotificacionDeuda(
+  params: ParametrosAvisoDeuda
+): Promise<string | null> {
+  const fechaDisparo = calcularFechaAviso(
+    params.dueDate,
+    params.daysBefore,
+    params.reminderTime || '09:00'
+  );
+
+  if (fechaDisparo.getTime() <= Date.now()) {
+    return null;
+  }
+
+  const notif = obtenerModuloNotificaciones();
+  if (!notif) {
+    return `sim_debt_${params.debtId}_${params.daysBefore}_${Date.now()}`;
+  }
+
+  try {
+    const tienePermisos = await tienePermisoNotificaciones();
+    if (!tienePermisos) {
+      const concedido = await solicitarPermisoNotificaciones();
+      if (!concedido) {
+        return null;
+      }
+    }
+
+    const esCobro = params.type === 'RECEIVABLE';
+    const titulo = esCobro
+      ? `Cobro pendiente: ${params.person}`
+      : `Pago pendiente: ${params.person}`;
+
+    let anticipacionTexto = '';
+    if (params.daysBefore === 0) {
+      anticipacionTexto = 'vence hoy';
+    } else if (params.daysBefore === 1) {
+      anticipacionTexto = 'vence mañana';
+    } else {
+      anticipacionTexto = `vence en ${params.daysBefore} días`;
+    }
+
+    const cuerpo = `${params.concept} (${params.remainingAmountFormatted}) ${anticipacionTexto} [${params.dueDate}].`;
+
+    const notificationId = await notif.scheduleNotificationAsync({
+      content: {
+        title: titulo,
+        body: cuerpo,
+        data: {
+          debtId: params.debtId,
+          type: params.type,
+          dueDate: params.dueDate,
+        },
+        sound: true,
+        ...(Platform.OS === 'android' ? { channelId: CANAL_ID } : {}),
+      },
+      trigger: {
+        type: notif.SchedulableTriggerInputTypes.DATE,
+        date: fechaDisparo,
+      },
+    });
+
+    return notificationId;
+  } catch (err) {
+    console.warn('Error al programar notificación de deuda:', err);
+    return null;
+  }
+}
+
+export const cancelarNotificacionDeuda = cancelarNotificacion;
+
