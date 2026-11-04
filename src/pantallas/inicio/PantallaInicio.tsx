@@ -60,10 +60,6 @@ export function PantallaInicio() {
             <MaterialIcons name="calendar-today" size={14} color={COLORS.secondary} />
             <Text style={[styles.dateText, TYPOGRAPHY.numericTable]}>{currentMonthLabel}</Text>
           </View>
-          <View style={styles.liveBadge}>
-            <View style={styles.liveDot} />
-            <Text style={[styles.liveText, TYPOGRAPHY.labelCaps]}>Al día • Local</Text>
-          </View>
         </View>
 
         {/* Hero Card: Dinero Disponible */}
@@ -104,7 +100,14 @@ export function PantallaInicio() {
           </View>
 
           {/* Cashflow Quick Metrics Strip */}
-          <View style={styles.metricsStrip}>
+          <TouchableOpacity
+            style={styles.metricsStrip}
+            activeOpacity={0.8}
+            onPress={() => {
+              triggerSelection();
+              router.push('/(tabs)/movimientos');
+            }}
+          >
             {/* Ingresos */}
             <View style={styles.metricCol}>
               <View style={styles.metricHeading}>
@@ -150,7 +153,7 @@ export function PantallaInicio() {
                 {formatCurrency(summary.netSavings)}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         </GlassCard>
 
         {/* Quick Operational Actions (Gasto, Ingreso, Traspaso) */}
@@ -291,10 +294,11 @@ export function PantallaInicio() {
             </GlassCard>
           ) : (
             <View style={styles.recentList}>
-              {recentTransactions.map(tx => (
+              {recentTransactions.map((tx, idx) => (
                 <TransactionRow
                   key={tx.id}
                   transaction={tx}
+                  mostrarDivisor={idx < recentTransactions.length - 1}
                   onPress={() => {
                     triggerSelection();
                     setSelectedTransaction(tx);
@@ -585,7 +589,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   recentList: {
-    gap: 8,
+    backgroundColor: '#16191B',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    overflow: 'hidden',
   },
 });
 

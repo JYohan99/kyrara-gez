@@ -5,14 +5,16 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY, COMMON_STYLES } from '@/compartido/tema';
+import { MaterialIcons } from '@expo/vector-icons';
+import { COMMON_STYLES } from '@/compartido/tema';
 import { EncabezadoSuperior, BotonFlotanteAccion, EstadoVacio } from '@/compartido/componentes';
 import { eliminarMovimiento as deleteTransaction } from '@/datos';
 import { MovimientoEnriquecido as EnrichedTransaction } from '@/datos/tipos';
 import { useMovimientosBoveda as useVaultTransactions } from '@/datos/hooks';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
-import { vibracionExito as triggerSuccess } from '@/compartido/utilidades/hapticos';
+import { vibracionExito as triggerSuccess, vibracionSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 
 import { FilaMovimiento as TransactionRow } from './FilaMovimiento';
 import { TarjetaResumenMovimientos as TransactionsSummaryCard } from './TarjetaResumenMovimientos';
@@ -23,13 +25,21 @@ import {
 import { ModalNuevoMovimiento as NewTransactionModal } from './ModalNuevoMovimiento';
 import { ModalDetalleMovimiento as TransactionDetailModal } from './ModalDetalleMovimiento';
 
+const MESES_ES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+];
+const DIAS_SEMANA_ES = [
+  'domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'
+];
+
 export function PantallaMovimientos() {
   const [activeFilter, setActiveFilter] = useState<TransactionFilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<EnrichedTransaction | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
-
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   // Hook reactivo de transacciones
   const { transactions, summary } = useVaultTransactions({
@@ -72,11 +82,10 @@ export function PantallaMovimientos() {
       } else if (txDay === yesterday) {
         key = 'Ayer';
       } else {
-        const monthNames = [
-          'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-          'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
-        ];
-        key = `${txDate.getDate()} de ${monthNames[txDate.getMonth()]}`;
+        const dia = txDate.getDate();
+        const mes = MESES_ES[txDate.getMonth()];
+        const diaSemana = DIAS_SEMANA_ES[txDate.getDay()];
+        key = `${dia} ${mes}, ${diaSemana}`;
       }
 
       if (!groups[key]) {
@@ -88,43 +97,40 @@ export function PantallaMovimientos() {
     return groups;
   }, [transactions]);
 
+  const toggleGroup = (groupKey: string, index: number) => {
+    triggerSelection();
+    setCollapsedGroups(prev => {
+      const isCurrentlyCollapsed =
+        prev[groupKey] !== undefined ? prev[groupKey] : (groupKey !== 'Hoy' && index !== 0);
+      return {
+        ...prev,
+        [groupKey]: !isCurrentlyCollapsed,
+      };
+    });
+  };
+
+  const isGroupCollapsed = (groupKey: string, index: number) => {
+    if (collapsedGroups[groupKey] !== undefined) {
+      return collapsedGroups[groupKey];
+    }
+    return groupKey !== 'Hoy' && index !== 0;
+  };
+
   return (
     <View style={COMMON_STYLES.screen}>
       {/* Top Header */}
-      <EncabezadoSuperior seccion="MOVIMIENTOS" />
+      <EncabezadoSuperior seccion="MOVIMIENTOS" modoVolver />
 
       <ScrollView
         contentContainerStyle={COMMON_STYLES.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Section Header Row */}
-        <View style={COMMON_STYLES.sectionHeaderRow}>
-          <View>
-            <Text style={[COMMON_STYLES.mainSectionTitle, TYPOGRAPHY.headlineLg]}>
-              Movimientos
-            </Text>
-            <Text style={[COMMON_STYLES.mainSectionSubtitle, TYPOGRAPHY.bodySm]}>
-              Historial de Bóveda
-            </Text>
-          </View>
-        </View>
-        {/* Status Strip */}
-        <View style={styles.statusStrip}>
-          <Text style={[styles.periodSubtitle, TYPOGRAPHY.bodySm]}>
-            Resumen contable del mes actual
-          </Text>
-          <View style={styles.recordsCountBadge}>
-            <Text style={[styles.recordsCountText, TYPOGRAPHY.labelCaps]}>
-              {summary.count} Registros
-            </Text>
-          </View>
-        </View>
-
         {/* Hero Summary Card */}
         <TransactionsSummaryCard
           totalIncome={summary.totalIncome}
           totalExpense={summary.totalExpense}
           netSavings={summary.netSavings}
+          count={summary.count}
         />
 
         {/* Search & Filter Bar */}
@@ -146,32 +152,54 @@ export function PantallaMovimientos() {
           />
         ) : (
           <View style={styles.feedContainer}>
-            {Object.entries(groupedTransactions).map(([dateGroup, items]) => (
-              <View key={dateGroup} style={styles.dateGroupContainer}>
-                {/* Date Group Header */}
-                <View style={styles.dateGroupHeader}>
-                  <Text style={[styles.dateGroupTitle, TYPOGRAPHY.headlineSm]}>{dateGroup}</Text>
-                  <Text style={[styles.dateGroupSubtitle, TYPOGRAPHY.labelCaps]}>
-                    {items.length} {items.length === 1 ? 'operación' : 'operaciones'}
-                  </Text>
-                </View>
+            {Object.entries(groupedTransactions).map(([dateGroup, items], index) => {
+              const collapsed = isGroupCollapsed(dateGroup, index);
 
-                {/* Items in this date */}
-                <View style={styles.itemsStack}>
-                  {items.map(tx => (
-                    <TransactionRow
-                      key={tx.id}
-                      transaction={tx}
-                      onPress={() => {
-                        setSelectedTransaction(tx);
-                        setDetailModalVisible(true);
-                      }}
-                      onLongPress={() => handleDelete(tx)}
-                    />
-                  ))}
+              return (
+                <View key={dateGroup} style={styles.tarjetaGrupoFecha}>
+                  {/* Date Group Header */}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => toggleGroup(dateGroup, index)}
+                    style={[
+                      styles.cabeceraGrupoFecha,
+                      !collapsed && styles.cabeceraGrupoFechaExpandida,
+                    ]}
+                  >
+                    <Text style={styles.tituloGrupoFecha}>{dateGroup}</Text>
+
+                    {collapsed ? (
+                      <View style={styles.badgeYFlecha}>
+                        <View style={styles.badgeConteo}>
+                          <Text style={styles.textoBadgeConteo}>{items.length}</Text>
+                        </View>
+                        <MaterialIcons name="keyboard-arrow-down" size={22} color="#7E8286" />
+                      </View>
+                    ) : (
+                      <MaterialIcons name="keyboard-arrow-up" size={24} color="#7E8286" />
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Items in this date */}
+                  {!collapsed && (
+                    <View>
+                      {items.map((tx, idx) => (
+                        <TransactionRow
+                          key={tx.id}
+                          transaction={tx}
+                          mostrarDivisor={idx < items.length - 1}
+                          onPress={() => {
+                            setSelectedTransaction(tx);
+                            setDetailModalVisible(true);
+                          }}
+                          onLongPress={() => handleDelete(tx)}
+                        />
+                      ))}
+                    </View>
+                  )}
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -202,46 +230,51 @@ export function PantallaMovimientos() {
 }
 
 const styles = StyleSheet.create({
-  statusStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  periodSubtitle: {
-    color: COLORS.onSurfaceVariant,
-  },
-  recordsCountBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: COLORS.surfaceContainerHighest,
-  },
-  recordsCountText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 9,
-  },
   feedContainer: {
-    gap: 16,
+    gap: 12,
   },
-  dateGroupContainer: {
-    gap: 8,
+  tarjetaGrupoFecha: {
+    backgroundColor: '#16191B',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    overflow: 'hidden',
   },
-  dateGroupHeader: {
+  cabeceraGrupoFecha: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 4,
-    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  dateGroupTitle: {
-    color: COLORS.onSurface,
+  cabeceraGrupoFechaExpandida: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
-  dateGroupSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 10,
+  tituloGrupoFecha: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
-  itemsStack: {
+  badgeYFlecha: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+  },
+  badgeConteo: {
+    backgroundColor: '#2F80ED',
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textoBadgeConteo: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
 

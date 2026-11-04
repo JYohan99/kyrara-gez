@@ -9,12 +9,14 @@ export interface PropiedadesTarjetaResumenMovimientos {
   totalIncome: number;
   totalExpense: number;
   netSavings: number;
+  count?: number;
 }
 
 export const TarjetaResumenMovimientos: React.FC<PropiedadesTarjetaResumenMovimientos> = ({
   totalIncome,
   totalExpense,
   netSavings,
+  count,
 }) => {
   return (
     <TarjetaVidrio variant="low" style={estilos.tarjetaResumen}>
@@ -23,6 +25,13 @@ export const TarjetaResumenMovimientos: React.FC<PropiedadesTarjetaResumenMovimi
           <View style={estilos.puntoActivo} />
           <Text style={[estilos.etiquetaMayus, TIPOGRAFIA.etiquetaMayusculas]}>Balance neto del período</Text>
         </View>
+        {typeof count === 'number' && (
+          <View style={estilos.badgeRegistros}>
+            <Text style={[estilos.textoBadgeRegistros, TIPOGRAFIA.etiquetaMayusculas]}>
+              {count} {count === 1 ? 'Registro' : 'Registros'}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={estilos.filaSaldo}>
@@ -93,11 +102,23 @@ const estilos = StyleSheet.create({
     color: COLORES.secundario,
     letterSpacing: 1,
   },
+  badgeRegistros: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: COLORES.superficieContenedorMasAlto,
+  },
+  textoBadgeRegistros: {
+    color: COLORES.enSuperficieVariante,
+    fontSize: 9,
+  },
   filaSaldo: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   saldo: {
     fontWeight: '700',
+    textAlign: 'center',
   },
   colorPositivo: {
     color: COLORES.ingreso,
@@ -115,10 +136,12 @@ const estilos = StyleSheet.create({
   columnaSubmetrica: {
     flex: 1,
     gap: 2,
+    alignItems: 'center',
   },
   encabezadoSubmetrica: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
   },
   etiquetaSubmetrica: {

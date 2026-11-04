@@ -40,10 +40,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="movimientos"
         options={{
-          title: 'Movimientos',
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="receipt-long" size={24} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
