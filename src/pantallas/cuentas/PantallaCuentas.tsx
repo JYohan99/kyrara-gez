@@ -9,42 +9,21 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY, COMMON_STYLES } from '@/compartido/tema';
 import { EncabezadoSuperior, BotonFlotanteAccion } from '@/compartido/componentes';
-import { useCuentasBoveda as useVaultAccounts } from '@/datos/hooks';
-import { Cuenta } from '@/datos/tipos';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 
-import { PestanaCuentas as AccountsTab } from './PestanaCuentas';
-import { ModalCuenta as AccountModal } from './ModalCuenta';
 import { PestanaCategorias as CategoriesTab } from './PestanaCategorias';
 import { ModalCategoria as CategoryModal } from './ModalCategoria';
 import { PestanaPreciosFotos } from '@/pantallas/preciosFotos';
 
-type MainSectionTab = 'CUENTAS' | 'CATEGORIAS' | 'PRODUCTOS';
+type MainSectionTab = 'CATEGORIAS' | 'PRODUCTOS';
 
 export function PantallaCuentas() {
-  const [activeTab, setActiveTab] = useState<MainSectionTab>('CUENTAS');
+  const [activeTab, setActiveTab] = useState<MainSectionTab>('CATEGORIAS');
   const newProductRef = useRef<(() => void) | null>(null);
-
-  // Hooks reactivos de la bóveda
-  const { accounts } = useVaultAccounts();
-
-  // Modales de Cuentas
-  const [accountModalVisible, setAccountModalVisible] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<Cuenta | null>(null);
 
   // Modales de Categorías
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [categoryFlowType, setCategoryFlowType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
-
-  const handleOpenNewAccount = () => {
-    setEditingAccount(null);
-    setAccountModalVisible(true);
-  };
-
-  const handleOpenEditAccount = (acc: Cuenta) => {
-    setEditingAccount(acc);
-    setAccountModalVisible(true);
-  };
 
   const handleOpenNewCategory = (flowType: 'EXPENSE' | 'INCOME') => {
     setCategoryFlowType(flowType);
@@ -55,43 +34,12 @@ export function PantallaCuentas() {
     <View style={COMMON_STYLES.screen}>
       {/* Top Header */}
       <EncabezadoSuperior
-        seccion={
-          activeTab === 'CUENTAS'
-            ? 'CUENTAS'
-            : activeTab === 'CATEGORIAS'
-            ? 'CATEGORÍAS'
-            : 'PRODUCTOS'
-        }
+        seccion={activeTab === 'CATEGORIAS' ? 'CATEGORÍAS' : 'PRODUCTOS'}
       />
 
-      {/* Segmented Top Switcher (Cuentas, Categorías, Productos) */}
+      {/* Segmented Top Switcher (Categorías, Productos) */}
       <View style={styles.segmentSwitcherContainer}>
         <View style={styles.segmentTrack}>
-          <TouchableOpacity
-            style={[styles.segmentBtn, activeTab === 'CUENTAS' && styles.segmentBtnActive]}
-            onPress={() => {
-              triggerSelection();
-              setActiveTab('CUENTAS');
-            }}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons
-              name="account-balance-wallet"
-              size={15}
-              color={activeTab === 'CUENTAS' ? COLORS.secondary : COLORS.onSurfaceVariant}
-            />
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.segmentBtnText,
-                TYPOGRAPHY.labelCaps,
-                activeTab === 'CUENTAS' && styles.segmentBtnTextActive,
-              ]}
-            >
-              Cuentas ({accounts.length})
-            </Text>
-          </TouchableOpacity>
-
           <TouchableOpacity
             style={[styles.segmentBtn, activeTab === 'CATEGORIAS' && styles.segmentBtnActive]}
             onPress={() => {
@@ -148,13 +96,6 @@ export function PantallaCuentas() {
         contentContainerStyle={COMMON_STYLES.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {activeTab === 'CUENTAS' && (
-          <AccountsTab
-            onNewAccount={handleOpenNewAccount}
-            onEditAccount={handleOpenEditAccount}
-          />
-        )}
-
         {activeTab === 'CATEGORIAS' && (
           <CategoriesTab
             onNewCategory={handleOpenNewCategory}
@@ -167,12 +108,6 @@ export function PantallaCuentas() {
       </ScrollView>
 
       {/* Botón Circular Flotante (FAB) contextual */}
-      {activeTab === 'CUENTAS' && (
-        <BotonFlotanteAccion
-          onPress={handleOpenNewAccount}
-          accessibilityLabel="Nueva cuenta"
-        />
-      )}
       {activeTab === 'CATEGORIAS' && (
         <BotonFlotanteAccion
           onPress={() => handleOpenNewCategory('EXPENSE')}
@@ -186,13 +121,7 @@ export function PantallaCuentas() {
         />
       )}
 
-      {/* Modales */}
-      <AccountModal
-        visible={accountModalVisible}
-        editingAccount={editingAccount}
-        onClose={() => setAccountModalVisible(false)}
-      />
-
+      {/* Modal de Categorías */}
       <CategoryModal
         visible={categoryModalVisible}
         flowType={categoryFlowType}

@@ -76,7 +76,7 @@ export function actualizarSaldoCuenta(id: string, nuevoSaldo: number): void {
 
 export function actualizarCuenta(
   id: string,
-  datos: { name?: string; icon?: string; color?: string; isArchived?: boolean }
+  datos: { name?: string; type?: TipoCuenta; icon?: string; color?: string; isArchived?: boolean }
 ): void {
   const db = obtenerBaseDatos();
   const sets: string[] = [];
@@ -85,6 +85,10 @@ export function actualizarCuenta(
   if (datos.name !== undefined) {
     sets.push('name = ?');
     params.push(datos.name);
+  }
+  if (datos.type !== undefined) {
+    sets.push('type = ?');
+    params.push(datos.type);
   }
   if (datos.icon !== undefined) {
     sets.push('icon = ?');

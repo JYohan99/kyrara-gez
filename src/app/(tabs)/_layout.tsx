@@ -73,9 +73,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="cuentas"
         options={{
-          title: 'Cuentas',
+          title: 'Gestión',
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="account-balance-wallet" size={22} color={color} />
+            <MaterialIcons name="tune" size={22} color={color} />
           ),
         }}
       />

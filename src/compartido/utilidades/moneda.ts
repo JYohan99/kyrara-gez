@@ -47,17 +47,19 @@ export function formatearMoneda(
 export function formatearEntradaDinero(entrada: string): string {
   if (!entrada) return '';
 
-  let tieneComa = entrada.includes(',');
-  let texto = entrada;
+  let texto = entrada.trim();
 
-  if (!tieneComa && texto.includes('.')) {
-    const ultimoPunto = texto.lastIndexOf('.');
-    const despuesPunto = texto.substring(ultimoPunto + 1);
-    if (despuesPunto.length <= 2) {
-      texto = texto.substring(0, ultimoPunto) + ',' + despuesPunto;
-      tieneComa = true;
-    }
+  // Si el usuario comienza directamente con coma o punto (ej. "," o ".") -> "0,"
+  if (texto === ',' || texto === '.') {
+    return '0,';
   }
+
+  // Si el usuario acaba de escribir un punto al final como separador decimal (ej. "100.") -> "100,"
+  if (texto.endsWith('.') && !texto.includes(',')) {
+    texto = texto.slice(0, -1) + ',';
+  }
+
+  const tieneComa = texto.includes(',');
 
   if (tieneComa) {
     const indiceComa = texto.indexOf(',');
@@ -68,14 +70,18 @@ export function formatearEntradaDinero(entrada: string): string {
     const enteroLimpio = digitosEnteros ? digitosEnteros.replace(/^0+(?=\d)/, '') : '0';
     const enteroFormateado = enteroLimpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
+    // Permitir hasta 2 decimales limpios
     const decimalLimpio = parteDecimalBruta.replace(/\D/g, '').slice(0, 2);
 
     return `${enteroFormateado},${decimalLimpio}`;
   }
 
+  // Es un número entero sin coma decimal:
+  // Quitamos cualquier punto que hubiera sido separador de miles previo
   const digitos = texto.replace(/\D/g, '');
   if (!digitos) return '';
   const limpio = digitos.replace(/^0+(?=\d)/, '');
+  if (!limpio) return '0';
   return limpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 

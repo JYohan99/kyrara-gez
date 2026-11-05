@@ -14,10 +14,11 @@ import { ModalNuevoMovimiento as NewTransactionModal } from '@/pantallas/movimie
 import { ModalDetalleMovimiento as TransactionDetailModal } from '@/pantallas/movimientos/ModalDetalleMovimiento';
 import { vibracionSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 import { TipoFlujo as FlowType } from '@/datos';
-import { MovimientoEnriquecido as EnrichedTransaction } from '@/datos/tipos';
+import { MovimientoEnriquecido as EnrichedTransaction, Cuenta } from '@/datos/tipos';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import { useCuentasBoveda as useVaultAccounts, useMovimientosBoveda as useVaultTransactions } from '@/datos/hooks';
 import { FilaMovimiento as TransactionRow } from '@/pantallas/movimientos/FilaMovimiento';
+import { ModalCuenta as AccountModal } from '@/pantallas/cuentas/ModalCuenta';
 
 export function PantallaInicio() {
   // Hooks reactivos de la bóveda
@@ -29,6 +30,8 @@ export function PantallaInicio() {
   const [modalType, setModalType] = useState<FlowType>('EXPENSE');
   const [selectedTransaction, setSelectedTransaction] = useState<EnrichedTransaction | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [accountModalVisible, setAccountModalVisible] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Cuenta | null>(null);
 
   const currentMonthLabel = useMemo(() => {
     const monthNames = [
@@ -202,69 +205,98 @@ export function PantallaInicio() {
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, TYPOGRAPHY.headlineSm]}>Mis cuentas</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/cuentas')}>
-              <Text style={[styles.sectionActionText, TYPOGRAPHY.labelCaps]}>
-                {accounts.length} configuradas
-              </Text>
-            </TouchableOpacity>
+            <Text style={[styles.sectionActionText, TYPOGRAPHY.labelCaps]}>
+              {accounts.length} {accounts.length === 1 ? 'configurada' : 'configuradas'}
+            </Text>
           </View>
 
           <View style={styles.accountsGrid}>
             {accounts.map(acc => (
-              <GlassCard key={acc.id} variant="high" style={styles.accountCard}>
-                <View style={styles.accountCardTop}>
-                  <View
-                    style={[
-                      styles.accountIconBox,
-                      {
-                        backgroundColor:
+              <TouchableOpacity
+                key={acc.id}
+                style={styles.accountCardWrapper}
+                activeOpacity={0.7}
+                onPress={() => {
+                  triggerSelection();
+                  setEditingAccount(acc);
+                  setAccountModalVisible(true);
+                }}
+              >
+                <GlassCard variant="high" style={styles.accountCard}>
+                  <View style={styles.accountCardTop}>
+                    <View
+                      style={[
+                        styles.accountIconBox,
+                        {
+                          backgroundColor:
+                            acc.type === 'CASH'
+                              ? `${COLORS.cashflowIncome}20`
+                              : acc.type === 'BANK'
+                                ? `${COLORS.secondaryContainer}20`
+                                : `${COLORS.primaryContainer}20`,
+                        },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={
                           acc.type === 'CASH'
-                            ? `${COLORS.cashflowIncome}20`
+                            ? 'payments'
                             : acc.type === 'BANK'
-                              ? `${COLORS.secondaryContainer}20`
-                              : `${COLORS.primaryContainer}20`,
-                      },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name={
-                        acc.type === 'CASH'
-                          ? 'payments'
-                          : acc.type === 'BANK'
-                            ? 'account-balance'
-                            : acc.type === 'PREPAID'
-                              ? 'credit-card'
-                              : 'lock'
-                      }
-                      size={18}
-                      color={
-                        acc.type === 'CASH'
-                          ? COLORS.cashflowIncome
-                          : acc.type === 'BANK'
-                            ? COLORS.secondary
-                            : COLORS.primary
-                      }
-                    />
+                              ? 'account-balance'
+                              : acc.type === 'PREPAID'
+                                ? 'credit-card'
+                                : 'lock'
+                        }
+                        size={18}
+                        color={
+                          acc.type === 'CASH'
+                            ? COLORS.cashflowIncome
+                            : acc.type === 'BANK'
+                              ? COLORS.secondary
+                              : COLORS.primary
+                        }
+                      />
+                    </View>
+                    <Text style={[styles.accountTypeBadge, TYPOGRAPHY.labelCaps]}>
+                      {acc.type === 'CASH'
+                        ? 'Físico'
+                        : acc.type === 'BANK'
+                          ? 'Banco'
+                          : acc.type === 'PREPAID'
+                            ? 'Virtual'
+                            : 'Vault'}
+                    </Text>
                   </View>
-                  <Text style={[styles.accountTypeBadge, TYPOGRAPHY.labelCaps]}>
-                    {acc.type === 'CASH'
-                      ? 'Físico'
-                      : acc.type === 'BANK'
-                        ? 'Banco'
-                        : acc.type === 'PREPAID'
-                          ? 'Virtual'
-                          : 'Vault'}
-                  </Text>
-                </View>
 
-                <View style={styles.accountCardBottom}>
-                  <Text style={[styles.accountCardName, TYPOGRAPHY.bodySm]}>{acc.name}</Text>
-                  <Text style={[styles.accountCardBalance, TYPOGRAPHY.numericTable]}>
-                    {formatCurrency(acc.currentBalance, { hidden: isBalanceHidden })}
-                  </Text>
-                </View>
-              </GlassCard>
+                  <View style={styles.accountCardBottom}>
+                    <Text style={[styles.accountCardName, TYPOGRAPHY.bodySm]} numberOfLines={1}>
+                      {acc.name}
+                    </Text>
+                    <Text style={[styles.accountCardBalance, TYPOGRAPHY.numericTable]}>
+                      {formatCurrency(acc.currentBalance, { hidden: isBalanceHidden })}
+                    </Text>
+                  </View>
+                </GlassCard>
+              </TouchableOpacity>
             ))}
+
+            {/* Tarjeta para agregar nueva cuenta */}
+            <TouchableOpacity
+              style={styles.addAccountCard}
+              activeOpacity={0.7}
+              onPress={() => {
+                triggerSelection();
+                setEditingAccount(null);
+                setAccountModalVisible(true);
+              }}
+            >
+              <View style={styles.addAccountIconBox}>
+                <MaterialIcons name="add" size={20} color={COLORS.primary} />
+              </View>
+              <Text style={[styles.addAccountTitle, TYPOGRAPHY.labelCaps]}>
+                + Nueva cuenta
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -332,6 +364,13 @@ export function PantallaInicio() {
           setDetailModalVisible(false);
           setSelectedTransaction(null);
         }}
+      />
+
+      {/* Account Modal (Crear / Editar cuenta) */}
+      <AccountModal
+        visible={accountModalVisible}
+        editingAccount={editingAccount}
+        onClose={() => setAccountModalVisible(false)}
       />
     </View>
   );
@@ -535,11 +574,41 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
   },
-  accountCard: {
+  accountCardWrapper: {
     width: '48%',
+  },
+  accountCard: {
+    width: '100%',
     padding: 14,
     borderRadius: 16,
     gap: 8,
+  },
+  addAccountCard: {
+    width: '48%',
+    minHeight: 88,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(209, 188, 255, 0.3)',
+    borderStyle: 'dashed',
+    backgroundColor: 'rgba(209, 188, 255, 0.04)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  addAccountIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(209, 188, 255, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addAccountTitle: {
+    color: COLORS.primary,
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   accountCardTop: {
     flexDirection: 'row',
