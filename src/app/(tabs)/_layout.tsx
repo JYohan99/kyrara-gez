@@ -73,9 +73,24 @@ export default function TabLayout() {
       <Tabs.Screen
         name="cuentas"
         options={{
-          title: 'Gestión',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="categorias"
+        options={{
+          title: 'Categorías',
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="tune" size={22} color={color} />
+            <MaterialIcons name="category" size={22} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="precios-fotos"
+        options={{
+          title: 'Productos',
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="inventory-2" size={22} color={color} />
           ),
         }}
       />
@@ -91,12 +106,6 @@ export default function TabLayout() {
           href: null,
         }}
       />
-      <Tabs.Screen
-        name="precios-fotos"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }
@@ -108,9 +117,9 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.borderGlass,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
     textTransform: 'uppercase',
   },
 });

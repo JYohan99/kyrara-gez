@@ -11,7 +11,6 @@ export function PantallaPreciosFotos() {
     <View style={styles.screen}>
       <EncabezadoSuperior
         seccion="PRODUCTOS"
-        modoVolver
       />
       <ScrollView
         contentContainerStyle={styles.scrollContent}

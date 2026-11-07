@@ -1,16 +1,18 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar as RNStatusBar } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '../tema';
 import { EmblemaKyrara as KyraraEmblem } from './EmblemaKyrara';
+import { ModalGuiaPantalla } from './ModalGuiaPantalla';
 import { gatillarSeleccion as triggerSelection } from '../utilidades/hapticos';
 
 export interface PropiedadesEncabezadoSuperior {
   seccion: string;
   etiquetaPeriodo?: string;
   mostrarPeriodo?: boolean;
+  mostrarAyuda?: boolean;
   tamanoLogo?: number;
   onPressAjustes?: () => void;
   onPressAvatar?: () => void;
@@ -30,6 +32,7 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
   seccion,
   etiquetaPeriodo,
   mostrarPeriodo = true,
+  mostrarAyuda = true,
   tamanoLogo = 65,
   onPressAjustes,
   onPressAvatar,
@@ -38,6 +41,7 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
   paddingInferior,
   paddingSuperior,
 }) => {
+  const [modalGuiaVisible, setModalGuiaVisible] = useState(false);
   const insets = useSafeAreaInsets();
   const topInset = insets.top > 0 ? insets.top : (RNStatusBar.currentHeight || 0);
   const paddingTopCalculado = paddingSuperior ?? Math.max(topInset + 6, 12);
@@ -96,6 +100,24 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
             </Text>
           </View>
         )}
+        {mostrarAyuda && (
+          <TouchableOpacity
+            style={styles.botonAccion}
+            onPress={() => {
+              triggerSelection();
+              setModalGuiaVisible(true);
+            }}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Guía y tutorial"
+          >
+            <MaterialIcons
+              name="help-outline"
+              size={19}
+              color={COLORS.primary}
+            />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={styles.botonAccion}
           onPress={esModoVolver ? handlePressVolver : handlePressAjustes}
@@ -110,6 +132,12 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
           />
         </TouchableOpacity>
       </View>
+
+      <ModalGuiaPantalla
+        visible={modalGuiaVisible}
+        seccion={seccion}
+        onClose={() => setModalGuiaVisible(false)}
+      />
     </View>
   );
 };
