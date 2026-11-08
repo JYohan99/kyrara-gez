@@ -19,15 +19,15 @@ import {
   gatillarSeleccion as triggerSelection,
   gatillarExito as triggerSuccess,
 } from '@/compartido/utilidades/hapticos';
-import { ProductoFoto } from '@/datos/tipos';
-import { verificarRegistroPrecioYCosto } from '@/datos/consultas/productosFotos';
+import { Producto } from '@/datos/tipos';
+import { verificarRegistroPrecioYCosto } from '@/datos/consultas/productos';
 
 export interface PropiedadesModalSelectorProductosCalculadora {
   visible: boolean;
   onClose: () => void;
-  productos: ProductoFoto[];
+  productos: Producto[];
   cantidadesSeleccionadas: Record<string, number>;
-  onSeleccionarProducto: (producto: ProductoFoto, cantidad: number) => void;
+  onSeleccionarProducto: (producto: Producto, cantidad: number) => void;
 }
 
 export const ModalSelectorProductosCalculadora: React.FC<
@@ -96,7 +96,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
     }));
   };
 
-  const handleAgregar = (producto: ProductoFoto) => {
+  const handleAgregar = (producto: Producto) => {
     const cant = obtenerCantidadLocal(producto.id);
     triggerSuccess();
     onSeleccionarProducto(producto, cant);

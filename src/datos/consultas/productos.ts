@@ -1,15 +1,16 @@
 import { obtenerBaseDatos } from '../conexion';
+import { asegurarEsquemaBaseDatos } from '../esquema';
 import {
-  ProductoFoto,
-  FiltroProductosFotos,
-  TarifaProductoFoto,
-  LineaCalculoFoto,
-  TotalesMonedaCalculoFoto,
-  ResultadoCalculadoraFotos,
+  Producto,
+  FiltroProductos,
+  TarifaProducto,
+  LineaCalculoProducto,
+  TotalesMonedaCalculoProducto,
+  ResultadoCalculadoraProductos,
   CambioPrecioHistorial,
   FiltroHistorialPrecios,
-  EstadisticasCatalogoFotos,
-  EstadisticasMonedaFotos,
+  EstadisticasCatalogoProductos,
+  EstadisticasMonedaProductos,
   EvolucionTarifaItem,
 } from '../tipos';
 import { emitirCambioBoveda } from '../sincronizacion';
@@ -24,7 +25,6 @@ export const CATEGORIAS_PRODUCTOS_SUGERIDAS = [
   'Personalizados',
   'Accesorios',
 ];
-export const CATEGORIAS_FOTOS_SUGERIDAS = CATEGORIAS_PRODUCTOS_SUGERIDAS;
 
 export const FORMATOS_PRODUCTOS_SUGERIDOS = [
   'Estándar',
@@ -39,7 +39,6 @@ export const FORMATOS_PRODUCTOS_SUGERIDOS = [
   'Digital',
   'Personalizado',
 ];
-export const FORMATOS_FOTOS_SUGERIDOS = FORMATOS_PRODUCTOS_SUGERIDOS;
 
 export const UNIDADES_VENTA_SUGERIDAS = [
   'Unidad',
@@ -47,14 +46,12 @@ export const UNIDADES_VENTA_SUGERIDAS = [
   'Servicio',
   'Docena',
   'Kit',
-  'Hora',
-  'Digital',
-  'Copia',
 ];
 
-interface FilaProductoFoto {
+interface FilaProducto {
   id: string;
   name: string;
+  sku: string | null;
   category: string;
   size_format: string | null;
   sale_unit: string;
@@ -62,6 +59,9 @@ interface FilaProductoFoto {
   is_active: number;
   base_price: number | null;
   cost_price: number | null;
+  current_stock: number | null;
+  min_stock: number | null;
+  supplier: string | null;
   cost_usd: number | null;
   exchange_rate: number | null;
   price_valid_from: string | null;
@@ -71,7 +71,7 @@ interface FilaProductoFoto {
   tariffs_count?: number;
 }
 
-interface FilaTarifaProductoFoto {
+interface FilaTarifaProducto {
   id: string;
   product_id: string;
   sale_price: number;
@@ -109,14 +109,19 @@ export function calcularGananciaYMargen(
   return { grossProfit, grossMarginPercent };
 }
 
-function mapearFilaAProductoFoto(fila: FilaProductoFoto, tariffsCount?: number): ProductoFoto {
+function mapearFilaAProducto(fila: FilaProducto, tariffsCount?: number): Producto {
   const sale = fila.base_price !== null && fila.base_price !== undefined ? fila.base_price : 0;
   const cost = fila.cost_price !== null && fila.cost_price !== undefined ? fila.cost_price : 0;
   const { grossProfit, grossMarginPercent } = calcularGananciaYMargen(sale, cost);
+  const currentStock = fila.current_stock !== null && fila.current_stock !== undefined ? fila.current_stock : 0;
+  const minStock = fila.min_stock !== null && fila.min_stock !== undefined ? fila.min_stock : 0;
+  const isOutOfStock = currentStock <= 0;
+  const isLowStock = currentStock > 0 && currentStock <= minStock;
 
   return {
     id: fila.id,
     name: fila.name,
+    sku: fila.sku || undefined,
     category: fila.category || 'General',
     sizeFormat: fila.size_format || undefined,
     saleUnit: fila.sale_unit || 'Unidad',
@@ -124,6 +129,9 @@ function mapearFilaAProductoFoto(fila: FilaProductoFoto, tariffsCount?: number):
     isActive: fila.is_active === 1,
     basePrice: sale,
     costPrice: cost,
+    currentStock,
+    minStock,
+    supplier: fila.supplier || undefined,
     costUsd: fila.cost_usd !== null && fila.cost_usd !== undefined ? fila.cost_usd : undefined,
     exchangeRate: fila.exchange_rate !== null && fila.exchange_rate !== undefined ? fila.exchange_rate : undefined,
     priceValidFrom: fila.price_valid_from || undefined,
@@ -133,10 +141,12 @@ function mapearFilaAProductoFoto(fila: FilaProductoFoto, tariffsCount?: number):
     grossProfit,
     grossMarginPercent,
     tariffsCount: tariffsCount ?? fila.tariffs_count ?? 0,
+    isLowStock,
+    isOutOfStock,
   };
 }
 
-function mapearFilaATarifa(fila: FilaTarifaProductoFoto): TarifaProductoFoto {
+function mapearFilaATarifa(fila: FilaTarifaProducto): TarifaProducto {
   return {
     id: fila.id,
     productId: fila.product_id,
@@ -172,9 +182,10 @@ export function verificarNombreDuplicado(nombre: string, idExcluir?: string): bo
 }
 
 /**
- * Obtiene la lista de productos fotográficos según los filtros especificados.
+ * Obtiene la lista de productos según los filtros especificados.
  */
-export function obtenerProductosFotos(filtros?: FiltroProductosFotos): ProductoFoto[] {
+export function obtenerProductos(filtros?: FiltroProductos): Producto[] {
+  asegurarEsquemaBaseDatos();
   const db = obtenerBaseDatos();
   let query = `
     SELECT p.*, COALESCE(t.count, 0) as tariffs_count
@@ -201,23 +212,24 @@ export function obtenerProductosFotos(filtros?: FiltroProductosFotos): ProductoF
 
   if (filtros?.search && filtros.search.trim()) {
     const searchPattern = `%${filtros.search.trim()}%`;
-    query += ' AND (p.name LIKE ? OR p.size_format LIKE ? OR p.category LIKE ? OR p.description LIKE ?)';
-    params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+    query += ' AND (p.name LIKE ? OR p.sku LIKE ? OR p.supplier LIKE ? OR p.size_format LIKE ? OR p.category LIKE ? OR p.description LIKE ?)';
+    params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
   }
 
   // Ordenar: primero los activos, luego alfabéticamente por nombre
   query += ' ORDER BY p.is_active DESC, p.name COLLATE NOCASE ASC';
 
-  const rows = db.getAllSync<FilaProductoFoto>(query, params);
-  return rows.map(r => mapearFilaAProductoFoto(r, r.tariffs_count));
+  const rows = db.getAllSync<FilaProducto>(query, params);
+  return rows.map(r => mapearFilaAProducto(r, r.tariffs_count));
 }
 
 /**
- * Obtiene un producto fotográfico por su identificador único.
+ * Obtiene un producto por su identificador único.
  */
-export function obtenerProductoFotoPorId(id: string): ProductoFoto | null {
+export function obtenerProductoPorId(id: string): Producto | null {
+  asegurarEsquemaBaseDatos();
   const db = obtenerBaseDatos();
-  const row = db.getFirstSync<FilaProductoFoto>(
+  const row = db.getFirstSync<FilaProducto>(
     `SELECT p.*, COALESCE(t.count, 0) as tariffs_count
      FROM photo_products p
      LEFT JOIN (
@@ -228,15 +240,15 @@ export function obtenerProductoFotoPorId(id: string): ProductoFoto | null {
      WHERE p.id = ?`,
     [id]
   );
-  return row ? mapearFilaAProductoFoto(row, row.tariffs_count) : null;
+  return row ? mapearFilaAProducto(row, row.tariffs_count) : null;
 }
 
 /**
- * Obtiene todas las tarifas históricas y vigentes de un producto fotográfico.
+ * Obtiene todas las tarifas históricas y vigentes de un producto.
  */
-export function obtenerTarifasProducto(productId: string): TarifaProductoFoto[] {
+export function obtenerTarifasProducto(productId: string): TarifaProducto[] {
   const db = obtenerBaseDatos();
-  const rows = db.getAllSync<FilaTarifaProductoFoto>(
+  const rows = db.getAllSync<FilaTarifaProducto>(
     'SELECT * FROM photo_product_prices WHERE product_id = ? ORDER BY valid_from DESC, created_at DESC',
     [productId]
   );
@@ -246,17 +258,17 @@ export function obtenerTarifasProducto(productId: string): TarifaProductoFoto[] 
 /**
  * Obtiene la tarifa vigente actual de un producto.
  */
-export function obtenerTarifaVigente(productId: string): TarifaProductoFoto | null {
+export function obtenerTarifaVigente(productId: string): TarifaProducto | null {
   const db = obtenerBaseDatos();
   // Primero buscar la que tenga valid_to NULL
-  const row = db.getFirstSync<FilaTarifaProductoFoto>(
+  const row = db.getFirstSync<FilaTarifaProducto>(
     "SELECT * FROM photo_product_prices WHERE product_id = ? AND (valid_to IS NULL OR TRIM(valid_to) = '') ORDER BY valid_from DESC, created_at DESC LIMIT 1",
     [productId]
   );
   if (row) return mapearFilaATarifa(row);
 
   // Fallback: la más reciente
-  const fallback = db.getFirstSync<FilaTarifaProductoFoto>(
+  const fallback = db.getFirstSync<FilaTarifaProducto>(
     'SELECT * FROM photo_product_prices WHERE product_id = ? ORDER BY valid_from DESC, created_at DESC LIMIT 1',
     [productId]
   );
@@ -282,13 +294,13 @@ export interface DatosEstablecerTarifa {
  * - Si es nueva tarifa (isCorrection: false), cierra la tarifa anterior asignándole valid_to y crea la nueva tarifa vigente.
  */
 export function establecerTarifaProducto(datos: DatosEstablecerTarifa): {
-  product: ProductoFoto;
-  tariff: TarifaProductoFoto;
+  product: Producto;
+  tariff: TarifaProducto;
 } {
   const db = obtenerBaseDatos();
-  const producto = obtenerProductoFotoPorId(datos.productId);
+  const producto = obtenerProductoPorId(datos.productId);
   if (!producto) {
-    throw new Error('El producto fotográfico no existe.');
+    throw new Error('El producto no existe.');
   }
 
   if (datos.salePrice < 0) {
@@ -312,10 +324,10 @@ export function establecerTarifaProducto(datos: DatosEstablecerTarifa): {
     : fechaActualISO();
 
   const ahora = Date.now();
-  let tarifaFinal: TarifaProductoFoto;
+  let tarifaFinal: TarifaProducto;
 
   db.withTransactionSync(() => {
-    const tarifaVigenteFila = db.getFirstSync<FilaTarifaProductoFoto>(
+    const tarifaVigenteFila = db.getFirstSync<FilaTarifaProducto>(
       "SELECT * FROM photo_product_prices WHERE product_id = ? AND (valid_to IS NULL OR TRIM(valid_to) = '') ORDER BY valid_from DESC, created_at DESC LIMIT 1",
       [datos.productId]
     );
@@ -447,7 +459,7 @@ export function establecerTarifaProducto(datos: DatosEstablecerTarifa): {
 
   emitirCambioBoveda();
 
-  const productoActualizado = obtenerProductoFotoPorId(datos.productId)!;
+  const productoActualizado = obtenerProductoPorId(datos.productId)!;
   return { product: productoActualizado, tariff: tarifaFinal! };
 }
 
@@ -456,7 +468,7 @@ export function establecerTarifaProducto(datos: DatosEstablecerTarifa): {
  */
 export function eliminarTarifaProducto(tariffId: string): void {
   const db = obtenerBaseDatos();
-  const tarifa = db.getFirstSync<FilaTarifaProductoFoto>(
+  const tarifa = db.getFirstSync<FilaTarifaProducto>(
     'SELECT * FROM photo_product_prices WHERE id = ?',
     [tariffId]
   );
@@ -466,7 +478,7 @@ export function eliminarTarifaProducto(tariffId: string): void {
     db.runSync('DELETE FROM photo_product_prices WHERE id = ?', [tariffId]);
 
     // Si eliminó la tarifa vigente, reactivar la más reciente si existe
-    const latest = db.getFirstSync<FilaTarifaProductoFoto>(
+    const latest = db.getFirstSync<FilaTarifaProducto>(
       'SELECT * FROM photo_product_prices WHERE product_id = ? ORDER BY valid_from DESC, created_at DESC LIMIT 1',
       [tarifa.product_id]
     );
@@ -513,18 +525,19 @@ export function eliminarTarifaProducto(tariffId: string): void {
 /**
  * Obtiene las categorías actualmente en uso más las sugeridas.
  */
-export function obtenerCategoriasFotos(): string[] {
+export function obtenerCategoriasProductos(): string[] {
   const db = obtenerBaseDatos();
   const rows = db.getAllSync<{ category: string }>(
     'SELECT DISTINCT category FROM photo_products WHERE category IS NOT NULL AND TRIM(category) != "" ORDER BY category ASC'
   );
   const usadas = rows.map(r => r.category);
-  const todas = Array.from(new Set([...CATEGORIAS_FOTOS_SUGERIDAS, ...usadas]));
+  const todas = Array.from(new Set([...CATEGORIAS_PRODUCTOS_SUGERIDAS, ...usadas]));
   return todas;
 }
 
-export interface DatosCrearProductoFoto {
+export interface DatosCrearProducto {
   name: string;
+  sku?: string;
   category?: string;
   sizeFormat?: string;
   saleUnit: string;
@@ -532,6 +545,9 @@ export interface DatosCrearProductoFoto {
   isActive?: boolean;
   basePrice?: number;
   costPrice?: number;
+  initialStock?: number;
+  minStock?: number;
+  supplier?: string;
   costUsd?: number;
   exchangeRate?: number;
   priceValidFrom?: string;
@@ -539,9 +555,10 @@ export interface DatosCrearProductoFoto {
 }
 
 /**
- * Registra un nuevo producto fotográfico en el catálogo.
+ * Registra un nuevo producto comercial/inventariable en el catálogo.
  */
-export function crearProductoFoto(datos: DatosCrearProductoFoto): ProductoFoto {
+export function crearProducto(datos: DatosCrearProducto): Producto {
+  asegurarEsquemaBaseDatos();
   const nombreLimpio = datos.name.trim();
   if (!nombreLimpio) {
     throw new Error('El nombre del producto es obligatorio.');
@@ -558,13 +575,17 @@ export function crearProductoFoto(datos: DatosCrearProductoFoto): ProductoFoto {
 
   const db = obtenerBaseDatos();
   const ahora = Date.now();
-  const id = 'prod_foto_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+  const id = 'prod_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+  const sku = datos.sku?.trim() || null;
   const categoria = datos.category?.trim() || 'General';
   const formato = datos.sizeFormat?.trim() || null;
   const descripcion = datos.description?.trim() || null;
   const activo = datos.isActive === false ? 0 : 1;
   const precioBase = datos.basePrice !== undefined ? Math.round(datos.basePrice) : 0;
   const costoBase = datos.costPrice !== undefined ? Math.round(datos.costPrice) : 0;
+  const stockInicial = datos.initialStock !== undefined && datos.initialStock > 0 ? Number(datos.initialStock) : 0;
+  const stockMinimo = datos.minStock !== undefined && datos.minStock >= 0 ? Number(datos.minStock) : 0;
+  const proveedor = datos.supplier?.trim() || null;
   const costoUsd = datos.costUsd !== undefined ? datos.costUsd : null;
   const tipoCambio = datos.exchangeRate !== undefined ? datos.exchangeRate : null;
   const fechaVigencia = datos.priceValidFrom || fechaActualISO();
@@ -573,13 +594,14 @@ export function crearProductoFoto(datos: DatosCrearProductoFoto): ProductoFoto {
   db.withTransactionSync(() => {
     db.runSync(
       `INSERT INTO photo_products (
-        id, name, category, size_format, sale_unit, description,
-        is_active, base_price, cost_price, cost_usd, exchange_rate, price_valid_from,
-        currency, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        id, name, sku, category, size_format, sale_unit, description,
+        is_active, base_price, cost_price, current_stock, min_stock, supplier,
+        cost_usd, exchange_rate, price_valid_from, currency, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         nombreLimpio,
+        sku,
         categoria,
         formato,
         unidadLimpia,
@@ -587,6 +609,9 @@ export function crearProductoFoto(datos: DatosCrearProductoFoto): ProductoFoto {
         activo,
         precioBase,
         costoBase,
+        stockInicial,
+        stockMinimo,
+        proveedor,
         costoUsd,
         tipoCambio,
         fechaVigencia,
@@ -595,6 +620,28 @@ export function crearProductoFoto(datos: DatosCrearProductoFoto): ProductoFoto {
         ahora,
       ]
     );
+
+    // Si se especificó un stock inicial positivo, registrar operación formal en inventory_operations
+    if (stockInicial > 0) {
+      const opId = 'op_inv_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 6);
+      db.runSync(
+        `INSERT INTO inventory_operations (
+          id, product_id, type, quantity, previous_stock, new_stock, unit_cost, total_cost,
+          reason, supplier, notes, date, created_at
+        ) VALUES (?, ?, 'PURCHASE', ?, 0, ?, ?, ?, 'Stock inicial', ?, 'Carga de inventario inicial al registrar producto', ?, ?)`,
+        [
+          opId,
+          id,
+          stockInicial,
+          stockInicial,
+          costoBase,
+          costoBase * stockInicial,
+          proveedor,
+          ahora,
+          ahora,
+        ]
+      );
+    }
 
     // Si se registraron precios (venta o costo > 0 o referencia USD), crear tarifa inicial en historial
     if (precioBase > 0 || costoBase > 0 || costoUsd !== null) {
@@ -621,11 +668,12 @@ export function crearProductoFoto(datos: DatosCrearProductoFoto): ProductoFoto {
 
   emitirCambioBoveda();
 
-  return obtenerProductoFotoPorId(id)!;
+  return obtenerProductoPorId(id)!;
 }
 
-export interface DatosActualizarProductoFoto {
+export interface DatosActualizarProducto {
   name?: string;
+  sku?: string;
   category?: string;
   sizeFormat?: string;
   saleUnit?: string;
@@ -633,6 +681,8 @@ export interface DatosActualizarProductoFoto {
   isActive?: boolean;
   basePrice?: number;
   costPrice?: number;
+  minStock?: number;
+  supplier?: string;
   costUsd?: number;
   exchangeRate?: number;
   priceValidFrom?: string;
@@ -641,13 +691,13 @@ export interface DatosActualizarProductoFoto {
 }
 
 /**
- * Actualiza los datos de un producto fotográfico existente.
+ * Actualiza los datos de un producto existente.
  */
-export function actualizarProductoFoto(
+export function actualizarProducto(
   id: string,
-  datos: DatosActualizarProductoFoto
-): ProductoFoto {
-  const actual = obtenerProductoFotoPorId(id);
+  datos: DatosActualizarProducto
+): Producto {
+  const actual = obtenerProductoPorId(id);
   if (!actual) {
     throw new Error('El producto no existe.');
   }
@@ -671,12 +721,15 @@ export function actualizarProductoFoto(
     }
   }
 
+  const skuFinal = datos.sku !== undefined ? (datos.sku.trim() || null) : (actual.sku || null);
   const categoriaFinal = datos.category !== undefined ? (datos.category.trim() || 'General') : actual.category;
   const formatoFinal = datos.sizeFormat !== undefined ? (datos.sizeFormat.trim() || null) : (actual.sizeFormat || null);
   const descripcionFinal = datos.description !== undefined ? (datos.description.trim() || null) : (actual.description || null);
   const activoFinal = datos.isActive !== undefined ? (datos.isActive ? 1 : 0) : (actual.isActive ? 1 : 0);
   const precioFinal = datos.basePrice !== undefined ? Math.round(datos.basePrice) : (actual.basePrice ?? 0);
   const costoFinal = datos.costPrice !== undefined ? Math.round(datos.costPrice) : (actual.costPrice ?? 0);
+  const minStockFinal = datos.minStock !== undefined ? Math.max(0, Number(datos.minStock)) : actual.minStock;
+  const supplierFinal = datos.supplier !== undefined ? (datos.supplier.trim() || null) : (actual.supplier || null);
   const costoUsdFinal = datos.costUsd !== undefined ? datos.costUsd : (actual.costUsd ?? null);
   const tipoCambioFinal = datos.exchangeRate !== undefined ? datos.exchangeRate : (actual.exchangeRate ?? null);
   const fechaVigenciaFinal = datos.priceValidFrom || actual.priceValidFrom || fechaActualISO();
@@ -689,6 +742,7 @@ export function actualizarProductoFoto(
     db.runSync(
       `UPDATE photo_products SET
         name = ?,
+        sku = ?,
         category = ?,
         size_format = ?,
         sale_unit = ?,
@@ -696,6 +750,8 @@ export function actualizarProductoFoto(
         is_active = ?,
         base_price = ?,
         cost_price = ?,
+        min_stock = ?,
+        supplier = ?,
         cost_usd = ?,
         exchange_rate = ?,
         price_valid_from = ?,
@@ -704,6 +760,7 @@ export function actualizarProductoFoto(
       WHERE id = ?`,
       [
         nombreFinal,
+        skuFinal,
         categoriaFinal,
         formatoFinal,
         unidadFinal,
@@ -711,6 +768,8 @@ export function actualizarProductoFoto(
         activoFinal,
         precioFinal,
         costoFinal,
+        minStockFinal,
+        supplierFinal,
         costoUsdFinal,
         tipoCambioFinal,
         fechaVigenciaFinal,
@@ -728,7 +787,7 @@ export function actualizarProductoFoto(
       datos.exchangeRate !== undefined;
 
     if (cambioPrecios) {
-      const tarifaVigenteFila = db.getFirstSync<FilaTarifaProductoFoto>(
+      const tarifaVigenteFila = db.getFirstSync<FilaTarifaProducto>(
         "SELECT * FROM photo_product_prices WHERE product_id = ? AND (valid_to IS NULL OR TRIM(valid_to) = '') ORDER BY valid_from DESC, created_at DESC LIMIT 1",
         [id]
       );
@@ -804,25 +863,25 @@ export function actualizarProductoFoto(
 
   emitirCambioBoveda();
 
-  return obtenerProductoFotoPorId(id)!;
+  return obtenerProductoPorId(id)!;
 }
 
 /**
- * Alterna el estado activo/inactivo de un producto fotográfico.
+ * Alterna el estado activo/inactivo de un producto.
  */
-export function alternarEstadoProductoFoto(id: string): ProductoFoto {
-  const actual = obtenerProductoFotoPorId(id);
+export function alternarEstadoProducto(id: string): Producto {
+  const actual = obtenerProductoPorId(id);
   if (!actual) {
     throw new Error('El producto no existe.');
   }
 
-  return actualizarProductoFoto(id, { isActive: !actual.isActive });
+  return actualizarProducto(id, { isActive: !actual.isActive });
 }
 
 /**
- * Elimina físicamente un producto fotográfico del catálogo.
+ * Elimina físicamente un producto del catálogo.
  */
-export function eliminarProductoFoto(id: string): void {
+export function eliminarProducto(id: string): void {
   const db = obtenerBaseDatos();
   db.runSync('DELETE FROM photo_products WHERE id = ?', [id]);
   emitirCambioBoveda();
@@ -848,7 +907,7 @@ export function validarCantidadCalculo(cantidad: number | string): number {
  * Verifica si un producto tiene precio de venta y costo unitario registrados.
  * No asume cero como sustituto silencioso de un dato desconocido.
  */
-export function verificarRegistroPrecioYCosto(producto: ProductoFoto): {
+export function verificarRegistroPrecioYCosto(producto: Producto): {
   tienePrecio: boolean;
   tieneCosto: boolean;
 } {
@@ -864,10 +923,10 @@ export function verificarRegistroPrecioYCosto(producto: ProductoFoto): {
  * - Ganancia bruta estimada = importe − costo estimado.
  * Si falta el precio o el costo, no inventa valores ni usa cero silenciosamente: retorna null en los campos no calculables.
  */
-export function calcularLineaFoto(
-  producto: ProductoFoto,
+export function calcularLineaProducto(
+  producto: Producto,
   cantidad: number | string
-): LineaCalculoFoto {
+): LineaCalculoProducto {
   const cantidadValidada = validarCantidadCalculo(cantidad);
   const { tienePrecio, tieneCosto } = verificarRegistroPrecioYCosto(producto);
   const esInactivo = !producto.isActive;
@@ -909,10 +968,10 @@ export function calcularLineaFoto(
  * - No redondea internamente antes de totalizar.
  * - Advierte si faltan precios o costos en los productos seleccionados.
  */
-export function calcularTotalesFotos(
-  lineas: LineaCalculoFoto[]
-): ResultadoCalculadoraFotos {
-  const totalesPorMoneda: Record<string, TotalesMonedaCalculoFoto> = {};
+export function calcularTotalesProductos(
+  lineas: LineaCalculoProducto[]
+): ResultadoCalculadoraProductos {
+  const totalesPorMoneda: Record<string, TotalesMonedaCalculoProducto> = {};
 
   for (const linea of lineas) {
     const mon = linea.moneda;
@@ -1032,7 +1091,7 @@ export function obtenerHistorialCambiosPrecios(
 
   for (const prod of productos) {
     // Tarifas ordenadas cronológicamente de la más antigua a la más reciente
-    const tarifasFilas = db.getAllSync<FilaTarifaProductoFoto>(
+    const tarifasFilas = db.getAllSync<FilaTarifaProducto>(
       'SELECT * FROM photo_product_prices WHERE product_id = ? ORDER BY valid_from ASC, created_at ASC',
       [prod.id]
     );
@@ -1137,7 +1196,7 @@ export function obtenerHistorialCambiosPrecios(
  */
 export function obtenerEvolucionTarifasProducto(productId: string): EvolucionTarifaItem[] {
   const db = obtenerBaseDatos();
-  const tarifasFilas = db.getAllSync<FilaTarifaProductoFoto>(
+  const tarifasFilas = db.getAllSync<FilaTarifaProducto>(
     'SELECT * FROM photo_product_prices WHERE product_id = ? ORDER BY valid_from ASC, created_at ASC',
     [productId]
   );
@@ -1173,14 +1232,14 @@ export function obtenerEvolucionTarifasProducto(productId: string): EvolucionTar
 }
 
 /**
- * Obtiene estadísticas generales del catálogo de productos fotográficos:
+ * Obtiene estadísticas generales del catálogo de productos:
  * - Cantidad de productos activos e inactivos.
  * - Cantidad de productos sin precio o costo registrado.
  * - Promedios de venta, costo, ganancia bruta y margen, desglosados estrictamente por moneda.
  */
-export function obtenerEstadisticasCatalogoFotos(): EstadisticasCatalogoFotos {
+export function obtenerEstadisticasCatalogo(): EstadisticasCatalogoProductos {
   const db = obtenerBaseDatos();
-  const productosFilas = db.getAllSync<FilaProductoFoto>(
+  const productosFilas = db.getAllSync<FilaProducto>(
     'SELECT * FROM photo_products ORDER BY name COLLATE NOCASE ASC'
   );
 
@@ -1190,7 +1249,7 @@ export function obtenerEstadisticasCatalogoFotos(): EstadisticasCatalogoFotos {
   let totalSinPrecioGlobal = 0;
   let totalSinCostoGlobal = 0;
 
-  const porMoneda: Record<string, EstadisticasMonedaFotos> = {};
+  const porMoneda: Record<string, EstadisticasMonedaProductos> = {};
 
   for (const fila of productosFilas) {
     totalProductosGlobal++;
@@ -1292,17 +1351,4 @@ export function obtenerEstadisticasCatalogoFotos(): EstadisticasCatalogoFotos {
   };
 }
 
-// ==========================================
-// ALIAS GENERALES DEL MÓDULO PRODUCTOS
-// ==========================================
-export const crearProducto = crearProductoFoto;
-export const actualizarProducto = actualizarProductoFoto;
-export const eliminarProducto = eliminarProductoFoto;
-export const alternarEstadoProducto = alternarEstadoProductoFoto;
-export const obtenerProductos = obtenerProductosFotos;
-export const obtenerProductoPorId = obtenerProductoFotoPorId;
-export const obtenerCategoriasProductos = obtenerCategoriasFotos;
-export const obtenerEstadisticasCatalogoProductos = obtenerEstadisticasCatalogoFotos;
-export const calcularLineaProducto = calcularLineaFoto;
-export const calcularTotalesProductos = calcularTotalesFotos;
-
+export const obtenerEstadisticasCatalogoProductos = obtenerEstadisticasCatalogo;

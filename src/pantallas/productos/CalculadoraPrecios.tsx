@@ -17,22 +17,22 @@ import {
   gatillarSeleccion as triggerSelection,
   gatillarExito as triggerSuccess,
 } from '@/compartido/utilidades/hapticos';
-import { ProductoFoto, LineaCalculoFoto } from '@/datos/tipos';
+import { Producto, LineaCalculoProducto } from '@/datos/tipos';
 import {
-  calcularLineaFoto,
-  calcularTotalesFotos,
+  calcularLineaProducto,
+  calcularTotalesProductos,
   validarCantidadCalculo,
-} from '@/datos/consultas/productosFotos';
+} from '@/datos/consultas/productos';
 import { ModalSelectorProductosCalculadora } from './ModalSelectorProductosCalculadora';
 
-export interface PropiedadesCalculadoraPreciosFotos {
-  productosCatalogo: ProductoFoto[];
+export interface PropiedadesCalculadoraPrecios {
+  productosCatalogo: Producto[];
   itemsSeleccionados: Record<string, number>;
   onActualizarItems: (nuevosItems: Record<string, number>) => void;
   onIrAlCatalogo?: () => void;
 }
 
-export const CalculadoraPreciosFotos: React.FC<PropiedadesCalculadoraPreciosFotos> = ({
+export const CalculadoraPrecios: React.FC<PropiedadesCalculadoraPrecios> = ({
   productosCatalogo,
   itemsSeleccionados,
   onActualizarItems,
@@ -42,7 +42,7 @@ export const CalculadoraPreciosFotos: React.FC<PropiedadesCalculadoraPreciosFoto
 
   // Mapa de productos por ID para acceso rápido
   const productosMap = useMemo(() => {
-    const mapa = new Map<string, ProductoFoto>();
+    const mapa = new Map<string, Producto>();
     for (const p of productosCatalogo) {
       mapa.set(p.id, p);
     }
@@ -50,17 +50,17 @@ export const CalculadoraPreciosFotos: React.FC<PropiedadesCalculadoraPreciosFoto
   }, [productosCatalogo]);
 
   // Líneas calculadas en memoria a partir de los ítems y datos vigentes
-  const lineasCalculadas = useMemo<LineaCalculoFoto[]>(() => {
-    const resultado: LineaCalculoFoto[] = [];
+  const lineasCalculadas = useMemo<LineaCalculoProducto[]>(() => {
+    const resultado: LineaCalculoProducto[] = [];
     for (const [id, cant] of Object.entries(itemsSeleccionados)) {
       if (cant <= 0) continue;
       const prod = productosMap.get(id);
       if (prod) {
         try {
-          resultado.push(calcularLineaFoto(prod, cant));
+          resultado.push(calcularLineaProducto(prod, cant));
         } catch {
           // Si la cantidad era inválida, forzar 1
-          resultado.push(calcularLineaFoto(prod, 1));
+          resultado.push(calcularLineaProducto(prod, 1));
         }
       }
     }
@@ -69,7 +69,7 @@ export const CalculadoraPreciosFotos: React.FC<PropiedadesCalculadoraPreciosFoto
 
   // Totales y desgloses por moneda
   const resultados = useMemo(() => {
-    return calcularTotalesFotos(lineasCalculadas);
+    return calcularTotalesProductos(lineasCalculadas);
   }, [lineasCalculadas]);
 
   // Manejadores de interacción
@@ -78,7 +78,7 @@ export const CalculadoraPreciosFotos: React.FC<PropiedadesCalculadoraPreciosFoto
     setSelectorVisible(true);
   };
 
-  const handleSeleccionarProducto = (producto: ProductoFoto, cantidad: number) => {
+  const handleSeleccionarProducto = (producto: Producto, cantidad: number) => {
     try {
       const cantValidada = validarCantidadCalculo(cantidad);
       onActualizarItems({
@@ -1070,6 +1070,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
-export const CalculadoraPrecios = CalculadoraPreciosFotos;
-export const ProductPricingCalculator = CalculadoraPreciosFotos;

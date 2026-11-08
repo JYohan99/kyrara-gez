@@ -14,19 +14,19 @@ import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moned
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 import {
   useHistorialPreciosBoveda,
-  useProductosFotosBoveda,
+  useProductosBoveda,
 } from '@/datos/hooks';
 import { CambioPrecioHistorial } from '@/datos/tipos';
 import { BadgeRentabilidad } from './BadgeRentabilidad';
 
-export interface PropiedadesHistorialPreciosFotos {
+export interface PropiedadesHistorialPrecios {
   productoIdInicial?: string;
   onIrAlCatalogo?: () => void;
 }
 
 type FiltroPeriodo = 'TODOS' | '30_DIAS' | '90_DIAS' | 'ESTE_ANO';
 
-export const HistorialPreciosFotos: React.FC<PropiedadesHistorialPreciosFotos> = ({
+export const HistorialPrecios: React.FC<PropiedadesHistorialPrecios> = ({
   productoIdInicial,
   onIrAlCatalogo,
 }) => {
@@ -64,7 +64,7 @@ export const HistorialPreciosFotos: React.FC<PropiedadesHistorialPreciosFotos> =
   });
 
   // Lista de productos para el filtro
-  const { products: allProducts } = useProductosFotosBoveda();
+  const { products: allProducts } = useProductosBoveda();
 
   // Monedas detectadas en el catálogo
   const monedasDisponibles = useMemo(() => {
@@ -981,6 +981,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-
-export const HistorialPrecios = HistorialPreciosFotos;
-export const ProductPriceHistory = HistorialPreciosFotos;

@@ -26,14 +26,12 @@ import {
   gatillarError as triggerError,
   gatillarSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
-import { ProductoFoto as Producto } from '@/datos/tipos';
+import { Producto } from '@/datos/tipos';
 import {
-  crearProductoFoto,
-  actualizarProductoFoto,
-  CATEGORIAS_PRODUCTOS_SUGERIDAS,
-  FORMATOS_PRODUCTOS_SUGERIDOS,
+  crearProducto,
+  actualizarProducto,
   UNIDADES_VENTA_SUGERIDAS,
-} from '@/datos/consultas/productosFotos';
+} from '@/datos/consultas/productos';
 import { SelectorChips } from './SelectorChips';
 import { BadgeRentabilidad } from './BadgeRentabilidad';
 
@@ -44,7 +42,6 @@ export interface PropiedadesModalProducto {
   categoriaInicial?: string;
 }
 
-export type PropiedadesModalProductoFoto = PropiedadesModalProducto;
 
 interface PropiedadesContenidoModalProducto {
   productoParaEditar?: Producto | null;
@@ -60,27 +57,6 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
   const insets = useSafeAreaInsets();
 
   const [nombre, setNombre] = useState(() => productoParaEditar?.name || '');
-  const [categoria, setCategoria] = useState(() => productoParaEditar?.category || categoriaInicial || 'General');
-  const [otraCategoria, setOtraCategoria] = useState(() => {
-    if (productoParaEditar && !CATEGORIAS_PRODUCTOS_SUGERIDAS.includes(productoParaEditar.category)) {
-      return productoParaEditar.category;
-    }
-    return '';
-  });
-  const [mostrarOtraCategoria, setMostrarOtraCategoria] = useState(() => {
-    return Boolean(productoParaEditar && !CATEGORIAS_PRODUCTOS_SUGERIDAS.includes(productoParaEditar.category));
-  });
-
-  const [formato, setFormato] = useState(() => productoParaEditar?.sizeFormat || 'Estándar');
-  const [otroFormato, setOtroFormato] = useState(() => {
-    if (productoParaEditar?.sizeFormat && !FORMATOS_PRODUCTOS_SUGERIDOS.includes(productoParaEditar.sizeFormat)) {
-      return productoParaEditar.sizeFormat;
-    }
-    return '';
-  });
-  const [mostrarOtroFormato, setMostrarOtroFormato] = useState(() => {
-    return Boolean(productoParaEditar?.sizeFormat && !FORMATOS_PRODUCTOS_SUGERIDOS.includes(productoParaEditar.sizeFormat));
-  });
 
   const [unidadVenta, setUnidadVenta] = useState(() => productoParaEditar?.saleUnit || 'Unidad');
   const [otraUnidad, setOtraUnidad] = useState(() => {
@@ -95,6 +71,8 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
 
   const [descripcion, setDescripcion] = useState(() => productoParaEditar?.description || '');
   const [activo, setActivo] = useState(() => (productoParaEditar ? productoParaEditar.isActive : true));
+  const [stockInicialTexto, setStockInicialTexto] = useState('0');
+  const [stockMinimoTexto, setStockMinimoTexto] = useState(() => String(productoParaEditar?.minStock ?? 0));
 
   // Precios referenciales opcionales
   const [precioTexto, setPrecioTexto] = useState(() => {
@@ -124,8 +102,8 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
       return;
     }
 
-    const categoriaFinal = mostrarOtraCategoria && otraCategoria.trim() ? otraCategoria.trim() : categoria;
-    const formatoFinal = mostrarOtroFormato && otroFormato.trim() ? otroFormato.trim() : formato;
+    const categoriaFinal = productoParaEditar?.category || categoriaInicial || 'General';
+    const formatoFinal = productoParaEditar?.sizeFormat || undefined;
     const unidadFinal = mostrarOtraUnidad && otraUnidad.trim() ? otraUnidad.trim() : unidadVenta.trim();
 
     if (!unidadFinal) {
@@ -136,30 +114,41 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
 
     const precioCentavos = precioTexto ? convertirMontoACentavos(precioTexto) : 0;
     const costoCentavos = costoTexto ? convertirMontoACentavos(costoTexto) : 0;
+    const skuFinal = productoParaEditar?.sku || undefined;
+    const proveedorFinal = productoParaEditar?.supplier || undefined;
+    const minStockNum = Math.max(0, parseFloat(stockMinimoTexto.replace(',', '.')) || 0);
 
     setGuardando(true);
     try {
       if (productoParaEditar) {
-        actualizarProductoFoto(productoParaEditar.id, {
+        actualizarProducto(productoParaEditar.id, {
           name: nombreFinal,
+          sku: skuFinal,
           category: categoriaFinal,
-          sizeFormat: formatoFinal || undefined,
+          sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
           description: descripcion.trim() || undefined,
           isActive: activo,
           basePrice: precioCentavos,
           costPrice: costoCentavos,
+          minStock: minStockNum,
+          supplier: proveedorFinal,
         });
       } else {
-        crearProductoFoto({
+        const initialStockNum = Math.max(0, parseFloat(stockInicialTexto.replace(',', '.')) || 0);
+        crearProducto({
           name: nombreFinal,
+          sku: skuFinal,
           category: categoriaFinal,
-          sizeFormat: formatoFinal || undefined,
+          sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
           description: descripcion.trim() || undefined,
           isActive: activo,
           basePrice: precioCentavos,
           costPrice: costoCentavos,
+          initialStock: initialStockNum,
+          minStock: minStockNum,
+          supplier: proveedorFinal,
         });
       }
 
@@ -239,34 +228,6 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
               </View>
             </View>
 
-            {/* Selector: Categoría o tipo */}
-            <SelectorChips
-              titulo="Categoría o Tipo"
-              opciones={CATEGORIAS_PRODUCTOS_SUGERIDAS}
-              seleccionada={categoria}
-              onSeleccionar={setCategoria}
-              etiquetaPersonalizado="+ Otra"
-              valorPersonalizado={otraCategoria}
-              onChangeValorPersonalizado={setOtraCategoria}
-              mostrarPersonalizado={mostrarOtraCategoria}
-              onToggleMostrarPersonalizado={setMostrarOtraCategoria}
-              placeholderPersonalizado="Escribe la categoría personalizada..."
-            />
-
-            {/* Selector: Formato, medida o variante */}
-            <SelectorChips
-              titulo="Formato / Medida / Variante"
-              opciones={FORMATOS_PRODUCTOS_SUGERIDOS}
-              seleccionada={formato}
-              onSeleccionar={setFormato}
-              etiquetaPersonalizado="Personalizado"
-              valorPersonalizado={otroFormato}
-              onChangeValorPersonalizado={setOtroFormato}
-              mostrarPersonalizado={mostrarOtroFormato}
-              onToggleMostrarPersonalizado={setMostrarOtroFormato}
-              placeholderPersonalizado="ej. 60x90 cm, Talle M, Pack x10..."
-            />
-
             {/* Selector: Unidad de venta */}
             <SelectorChips
               titulo="Unidad de Venta"
@@ -280,6 +241,67 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
               onToggleMostrarPersonalizado={setMostrarOtraUnidad}
               placeholderPersonalizado="ej. Rollo, Pliego, etc..."
             />
+
+            {/* Inventario y Control de Stock */}
+            <View style={styles.stockSectionBox}>
+              <View style={styles.pricingHeader}>
+                <MaterialIcons name="inventory" size={16} color={COLORS.secondary} />
+                <Text style={[styles.pricingSectionTitle, TYPOGRAPHY.etiquetaMayusculas]}>
+                  Inventario y Control de Stock
+                </Text>
+              </View>
+
+              <View style={styles.pricingInputsRow}>
+                {!productoParaEditar ? (
+                  <View style={styles.pricingInputCol}>
+                    <Text style={styles.subLabel}>Stock inicial (Unidades)</Text>
+                    <View style={styles.inputContainerCompact}>
+                      <TextInput
+                        value={stockInicialTexto}
+                        onChangeText={setStockInicialTexto}
+                        placeholder="0"
+                        placeholderTextColor={COLORS.onSurfaceVariant + '80'}
+                        keyboardType="numeric"
+                        style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
+                      />
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.pricingInputCol}>
+                    <Text style={styles.subLabel}>Stock actual registrado</Text>
+                    <View style={[styles.inputContainerCompact, styles.stockDisplayBox]}>
+                      <Text style={[styles.stockDisplayText, TYPOGRAPHY.titularPequeno]}>
+                        {productoParaEditar.currentStock} {productoParaEditar.saleUnit}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.pricingInputCol}>
+                  <Text style={styles.subLabel}>Stock mínimo (Alerta)</Text>
+                  <View style={styles.inputContainerCompact}>
+                    <TextInput
+                      value={stockMinimoTexto}
+                      onChangeText={setStockMinimoTexto}
+                      placeholder="0"
+                      placeholderTextColor={COLORS.onSurfaceVariant + '80'}
+                      keyboardType="numeric"
+                      style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {productoParaEditar ? (
+                <Text style={styles.pricingHint}>
+                  El stock no se altera directamente aquí: se gestiona mediante compras, devoluciones o ajustes desde el detalle del producto.
+                </Text>
+              ) : (
+                <Text style={styles.pricingHint}>
+                  Si ingresas stock inicial, se creará automáticamente la operación correspondiente en el historial.
+                </Text>
+              )}
+            </View>
 
             {/* Precios opcionales */}
             <View style={styles.pricingOptionalBox}>
@@ -431,7 +453,6 @@ export const ModalProducto: React.FC<PropiedadesModalProducto> = ({
   );
 };
 
-export const ModalProductoFoto = ModalProducto;
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -569,6 +590,21 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     paddingHorizontal: 10,
+  },
+  stockSectionBox: {
+    backgroundColor: COLORS.surfaceContainerLowest,
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.2)',
+  },
+  stockDisplayBox: {
+    paddingVertical: 8,
+  },
+  stockDisplayText: {
+    color: COLORS.secondary,
+    fontWeight: '700',
   },
   currencyPrefix: {
     color: COLORS.onSurfaceVariant,

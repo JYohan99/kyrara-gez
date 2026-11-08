@@ -8,5 +8,6 @@ export * from './analiticas';
 export * from './agenda';
 export * from './deudas';
 export * from './importadorDeudas';
-export * from './productosFotos';
+export * from './productos';
+export * from './inventario';
 

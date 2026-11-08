@@ -125,7 +125,7 @@ function crearProducto(db, datos) {
   }
 
   const ahora = Date.now();
-  const id = 'prod_foto_' + Math.random().toString(36).substring(2, 10);
+  const id = 'prod_' + Math.random().toString(36).substring(2, 10);
   const categoria = datos.category?.trim() || 'General';
   const formato = datos.sizeFormat?.trim() || null;
   const descripcion = datos.description?.trim() || null;
@@ -181,7 +181,7 @@ function crearProducto(db, datos) {
 
 function establecerTarifa(db, datos) {
   const prod = db.prepare('SELECT * FROM photo_products WHERE id = ?').get(datos.productId);
-  if (!prod) throw new Error('El producto fotográfico no existe.');
+  if (!prod) throw new Error('El producto no existe.');
 
   if (datos.salePrice < 0) throw new Error('El precio de venta no puede ser negativo.');
   if (datos.costPrice < 0) throw new Error('El costo no puede ser negativo.');
@@ -419,7 +419,7 @@ function obtenerEvolucionTarifasProducto(db, productId) {
   return items;
 }
 
-function obtenerEstadisticasCatalogoFotos(db) {
+function obtenerEstadisticasCatalogo(db) {
   const productosFilas = db.prepare('SELECT * FROM photo_products ORDER BY name COLLATE NOCASE ASC').all();
 
   let totalProductosGlobal = 0;
@@ -529,18 +529,18 @@ function obtenerEstadisticasCatalogoFotos(db) {
 }
 
 // TESTS FASE 1 & FASE 2
-test('1. Crear producto fotográfico con campos válidos y valores predeterminados', () => {
+test('1. Crear producto con campos válidos y valores predeterminados', () => {
   const db = setupTestDb();
   const prod = crearProducto(db, {
     name: 'Copia 15x21 cm Brillante',
     category: 'Copias y Ampliaciones',
     sizeFormat: '15x21 cm',
     saleUnit: 'Copia',
-    description: 'Papel fotográfico satinado Fuji',
+    description: 'Papel satinado premium',
     isActive: true,
   });
 
-  assert.ok(prod.id.startsWith('prod_foto_'));
+  assert.ok(prod.id.startsWith('prod_'));
   assert.equal(prod.name, 'Copia 15x21 cm Brillante');
   assert.equal(prod.basePrice, 0);
   assert.equal(prod.costPrice, 0);
@@ -551,7 +551,7 @@ test('1. Crear producto fotográfico con campos válidos y valores predeterminad
 test('2. Validaciones: nombre obligatorio y unidad obligatoria', () => {
   const db = setupTestDb();
   assert.throws(() => crearProducto(db, { name: '  ', saleUnit: 'Unidad' }), /El nombre del producto es obligatorio/);
-  assert.throws(() => crearProducto(db, { name: 'Foto', saleUnit: '  ' }), /La unidad de venta es obligatoria/);
+  assert.throws(() => crearProducto(db, { name: 'Producto Test', saleUnit: '  ' }), /La unidad de venta es obligatoria/);
 });
 
 test('3. Prevención de duplicados insensible a mayúsculas y espacios', () => {
@@ -636,7 +636,7 @@ test('5. Historial de precios: conservar tarifa anterior al cambiar de precio', 
 test('6. Corrección de tarifa actual por error (isCorrection: true) preserva el historial', () => {
   const db = setupTestDb();
   const prod = crearProducto(db, {
-    name: 'Fotolibro 20x30',
+    name: 'Libro 20x30',
     saleUnit: 'Unidad',
     basePrice: 20000,
     costPrice: 10000,
@@ -673,7 +673,7 @@ test('6. Corrección de tarifa actual por error (isCorrection: true) preserva el
 
 test('7. Validación: rechazar precios o costos negativos', () => {
   const db = setupTestDb();
-  const prod = crearProducto(db, { name: 'Foto 10x15', saleUnit: 'Copia' });
+  const prod = crearProducto(db, { name: 'Lámina 10x15', saleUnit: 'Copia' });
 
   assert.throws(() => {
     establecerTarifa(db, {
@@ -726,11 +726,11 @@ test('9. Compatibilidad y persistencia: datos de otros módulos y productos sin 
 
   db.prepare(`
     INSERT INTO debts (id, type, person, concept, total_amount, remaining_amount, issue_date, created_at, updated_at)
-    VALUES ('debt_x', 'RECEIVABLE', 'Carlos Gómez', 'Fotos de Boda', 300000, 300000, '2026-10-22', 123456, 123456)
+    VALUES ('debt_x', 'RECEIVABLE', 'Carlos Gómez', 'Evento Boda', 300000, 300000, '2026-10-22', 123456, 123456)
   `).run();
 
   // Producto sin precio alguno
-  const prodSinPrecio = crearProducto(db, { name: 'Foto Pasaporte', saleUnit: 'Unidad' });
+  const prodSinPrecio = crearProducto(db, { name: 'Documento Pasaporte', saleUnit: 'Unidad' });
   assert.equal(prodSinPrecio.basePrice, 0);
   assert.equal(prodSinPrecio.grossProfit, 0);
   assert.equal(prodSinPrecio.grossMarginPercent, null);
@@ -758,7 +758,7 @@ function verificarRegistroPrecioYCosto(producto) {
   return { tienePrecio, tieneCosto };
 }
 
-function calcularLineaFoto(producto, cantidad) {
+function calcularLineaProducto(producto, cantidad) {
   const cantidadValidada = validarCantidadCalculo(cantidad);
   const { tienePrecio, tieneCosto } = verificarRegistroPrecioYCosto(producto);
   const esInactivo = !producto.isActive;
@@ -794,7 +794,7 @@ function calcularLineaFoto(producto, cantidad) {
   };
 }
 
-function calcularTotalesFotos(lineas) {
+function calcularTotalesProductos(lineas) {
   const totalesPorMoneda = {};
 
   for (const linea of lineas) {
@@ -864,21 +864,21 @@ function calcularTotalesFotos(lineas) {
 test('10. Calculadora: cálculo con un solo producto y cantidades válidas', () => {
   const db = setupTestDb();
   const prod = crearProducto(db, {
-    name: 'Foto 15x20 cm',
+    name: 'Lámina 15x20 cm',
     saleUnit: 'Unidad',
     basePrice: 15000, // $150,00 UYU
     costPrice: 8000,  // $80,00 UYU
     currency: 'UYU',
   });
 
-  const linea = calcularLineaFoto(prod, 10);
+  const linea = calcularLineaProducto(prod, 10);
   assert.equal(linea.cantidad, 10);
   assert.equal(linea.subtotalImporte, 150000); // $1.500,00
   assert.equal(linea.subtotalCosto, 80000);    // $800,00
   assert.equal(linea.subtotalGanancia, 70000); // $700,00
   assert.ok(Math.abs(linea.margenPorcentual - 46.6666) < 0.01);
 
-  const res = calcularTotalesFotos([linea]);
+  const res = calcularTotalesProductos([linea]);
   assert.equal(res.esMultimoneda, false);
   assert.equal(res.tieneFaltantes, false);
   const uyu = res.totalesPorMoneda['UYU'];
@@ -900,26 +900,26 @@ test('11. Calculadora: cálculo con varios productos y cambio inmediato de canti
   });
 
   const prodB = crearProducto(db, {
-    name: 'Fotolibro Tapa Dura 20x30',
+    name: 'Libro Tapa Dura 20x30',
     saleUnit: 'Unidad',
     basePrice: 250000, // $2.500,00
     costPrice: 120000, // $1.200,00
   });
 
-  // Cálculo inicial: 100 copias + 2 fotolibros
-  const lineaA = calcularLineaFoto(prodA, 100);
-  let lineaB = calcularLineaFoto(prodB, 2);
+  // Cálculo inicial: 100 copias + 2 libros
+  const lineaA = calcularLineaProducto(prodA, 100);
+  let lineaB = calcularLineaProducto(prodB, 2);
 
-  let res = calcularTotalesFotos([lineaA, lineaB]);
+  let res = calcularTotalesProductos([lineaA, lineaB]);
   let uyu = res.totalesPorMoneda['UYU'];
   assert.equal(uyu.totalUnidades, 102);
   assert.equal(uyu.totalImporte, 250000 + 500000); // $7.500,00
   assert.equal(uyu.totalCosto, 100000 + 240000);   // $3.400,00
   assert.equal(uyu.totalGanancia, 150000 + 260000); // $4.100,00
 
-  // Cambio de cantidad inmediato: Fotolibros pasa de 2 a 4
-  lineaB = calcularLineaFoto(prodB, 4);
-  res = calcularTotalesFotos([lineaA, lineaB]);
+  // Cambio de cantidad inmediato: Libros pasa de 2 a 4
+  lineaB = calcularLineaProducto(prodB, 4);
+  res = calcularTotalesProductos([lineaA, lineaB]);
   uyu = res.totalesPorMoneda['UYU'];
   assert.equal(uyu.totalUnidades, 104);
   assert.equal(uyu.totalImporte, 250000 + 1000000); // $12.500,00
@@ -943,7 +943,7 @@ test('12. Calculadora: productos sin precio o sin costo no inventan valores ni u
     basePrice: 80000, // tiene precio $800, pero costo desconocido
   });
 
-  const lineaSinPrecio = calcularLineaFoto(prodSinPrecio, 3);
+  const lineaSinPrecio = calcularLineaProducto(prodSinPrecio, 3);
   assert.equal(lineaSinPrecio.tienePrecio, false);
   assert.equal(lineaSinPrecio.tieneCosto, true);
   assert.equal(lineaSinPrecio.subtotalImporte, null); // No usa 0 silencioso
@@ -951,14 +951,14 @@ test('12. Calculadora: productos sin precio o sin costo no inventan valores ni u
   assert.equal(lineaSinPrecio.subtotalGanancia, null); // No calculable
   assert.equal(lineaSinPrecio.margenPorcentual, null);
 
-  const lineaSinCosto = calcularLineaFoto(prodSinCosto, 2);
+  const lineaSinCosto = calcularLineaProducto(prodSinCosto, 2);
   assert.equal(lineaSinCosto.tienePrecio, true);
   assert.equal(lineaSinCosto.tieneCosto, false);
   assert.equal(lineaSinCosto.subtotalImporte, 160000);
   assert.equal(lineaSinCosto.subtotalCosto, null);    // No usa 0 silencioso
   assert.equal(lineaSinCosto.subtotalGanancia, null); // No calculable
 
-  const res = calcularTotalesFotos([lineaSinPrecio, lineaSinCosto]);
+  const res = calcularTotalesProductos([lineaSinPrecio, lineaSinCosto]);
   assert.equal(res.tieneFaltantes, true);
   const uyu = res.totalesPorMoneda['UYU'];
   assert.equal(uyu.esCalculoCompleto, false);
@@ -993,7 +993,7 @@ test('14. Calculadora: productos inactivos identificados correctamente', () => {
     isActive: false,
   });
 
-  const linea = calcularLineaFoto(prodInactivo, 1);
+  const linea = calcularLineaProducto(prodInactivo, 1);
   assert.equal(linea.esInactivo, true);
 });
 
@@ -1015,10 +1015,10 @@ test('15. Calculadora: productos con diferentes monedas no se suman entre sí', 
     currency: 'USD',
   });
 
-  const lineaUYU = calcularLineaFoto(prodUYU, 10); // $1500 UYU importe
-  const lineaUSD = calcularLineaFoto(prodUSD, 2);  // $100 USD importe
+  const lineaUYU = calcularLineaProducto(prodUYU, 10); // $1500 UYU importe
+  const lineaUSD = calcularLineaProducto(prodUSD, 2);  // $100 USD importe
 
-  const res = calcularTotalesFotos([lineaUYU, lineaUSD]);
+  const res = calcularTotalesProductos([lineaUYU, lineaUSD]);
   assert.equal(res.esMultimoneda, true);
   assert.deepEqual(res.monedas.sort(), ['USD', 'UYU']);
 
@@ -1044,12 +1044,12 @@ test('16. Calculadora: reinicio y limpieza sin generar registros en base de dato
   });
 
   // Simular cálculo en memoria
-  const linea = calcularLineaFoto(prod, 5);
-  const res = calcularTotalesFotos([linea]);
+  const linea = calcularLineaProducto(prod, 5);
+  const res = calcularTotalesProductos([linea]);
   assert.equal(res.lineas.length, 1);
 
   // Limpiar / Nuevo cálculo
-  const resLimpio = calcularTotalesFotos([]);
+  const resLimpio = calcularTotalesProductos([]);
   assert.equal(resLimpio.lineas.length, 0);
   assert.equal(resLimpio.monedas.length, 0);
   assert.equal(resLimpio.esMultimoneda, false);
@@ -1065,9 +1065,9 @@ test('16. Calculadora: reinicio y limpieza sin generar registros en base de dato
 test('17. Compatibilidad global: catálogo y demás módulos conservan datos intactos', () => {
   const db = setupTestDb();
   // Verificar catálogo
-  const prod = crearProducto(db, { name: 'Foto Carnet', saleUnit: 'Unidad', basePrice: 20000, costPrice: 5000 });
+  const prod = crearProducto(db, { name: 'Documento Carnet', saleUnit: 'Unidad', basePrice: 20000, costPrice: 5000 });
   const check = db.prepare('SELECT * FROM photo_products WHERE id = ?').get(prod.id);
-  assert.equal(check.name, 'Foto Carnet');
+  assert.equal(check.name, 'Documento Carnet');
   assert.equal(check.base_price, 20000);
 });
 
@@ -1133,7 +1133,7 @@ test('18. Historial de precios: registro y consulta con precios anteriores, nuev
 test('19. Historial de precios: orden cronológico estricto (del más reciente al más antiguo)', () => {
   const db = setupTestDb();
   const prod = crearProducto(db, {
-    name: 'Fotolibro 20x20',
+    name: 'Libro 20x20',
     saleUnit: 'Unidad',
     basePrice: 50000,
     costPrice: 20000,
@@ -1164,7 +1164,7 @@ test('19. Historial de precios: orden cronológico estricto (del más reciente a
 test('20. Historial de precios: filtros por producto, período y moneda', () => {
   const db = setupTestDb();
   const prodUYU = crearProducto(db, {
-    name: 'Foto 15x21 UYU',
+    name: 'Lámina 15x21 UYU',
     saleUnit: 'Unidad',
     basePrice: 15000,
     costPrice: 5000,
@@ -1286,7 +1286,7 @@ test('22. Estadísticas del catálogo: conteo exacto de activos, inactivos, sin 
     isActive: false,
   });
 
-  const stats = obtenerEstadisticasCatalogoFotos(db);
+  const stats = obtenerEstadisticasCatalogo(db);
   assert.equal(stats.totalProductosGlobal, 3);
   assert.equal(stats.totalActivosGlobal, 2);
   assert.equal(stats.totalInactivosGlobal, 1);
@@ -1299,14 +1299,14 @@ test('23. Estadísticas del catálogo: separación estricta de monedas y exactit
 
   // UYU
   crearProducto(db, {
-    name: 'Foto Carnet UYU',
+    name: 'Documento Carnet UYU',
     saleUnit: 'Unidad',
     basePrice: 20000, // $200 UYU
     costPrice: 5000,  // $50 UYU (ganancia: $150)
     currency: 'UYU',
   });
   crearProducto(db, {
-    name: 'Foto 10x15 UYU',
+    name: 'Lámina 10x15 UYU',
     saleUnit: 'Unidad',
     basePrice: 40000, // $400 UYU
     costPrice: 15000, // $150 UYU (ganancia: $250)
@@ -1322,7 +1322,7 @@ test('23. Estadísticas del catálogo: separación estricta de monedas y exactit
     currency: 'USD',
   });
 
-  const stats = obtenerEstadisticasCatalogoFotos(db);
+  const stats = obtenerEstadisticasCatalogo(db);
   assert.deepEqual(stats.monedas.sort(), ['USD', 'UYU']);
 
   // Validar estadísticas UYU
@@ -1393,7 +1393,7 @@ test('24. Evolución de tarifas: secuencia temporal de cambios individuales para
 
 test('25. Nombres generalizados: catálogo aplicable a cualquier producto comercial (artículos, servicios, kits)', () => {
   const db = setupTestDb();
-  // Crear artículos diversos no fotográficos (remeras, tazas, servicios de diseño, asesorías)
+  // Crear artículos diversos comerciales (remeras, tazas, servicios de diseño, asesorías)
   const articulo = crearProducto(db, {
     name: 'Taza Térmica Personalizada',
     category: 'Artículos',
@@ -1423,9 +1423,9 @@ test('25. Nombres generalizados: catálogo aplicable a cualquier producto comerc
   assert.equal(servicio.grossProfit, 90000);
 
   // Calcular totales
-  const lineaArticulo = calcularLineaFoto(articulo, 3);
-  const lineaServicio = calcularLineaFoto(servicio, 1);
-  const totales = calcularTotalesFotos([lineaArticulo, lineaServicio]);
+  const lineaArticulo = calcularLineaProducto(articulo, 3);
+  const lineaServicio = calcularLineaProducto(servicio, 1);
+  const totales = calcularTotalesProductos([lineaArticulo, lineaServicio]);
 
   assert.equal(totales.totalesPorMoneda['UYU'].totalImporte, 45000 * 3 + 120000); // 135000 + 120000 = 255000
   assert.equal(totales.totalesPorMoneda['UYU'].totalCosto, 20000 * 3 + 30000);    // 60000 + 30000 = 90000

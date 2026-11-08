@@ -137,7 +137,7 @@ export const GUIAS_PANTALLAS: Record<string, GuiaPantalla> = {
   },
   PRODUCTOS: {
     titulo: 'Catálogo de Productos y Precios',
-    subtitulo: 'Control de artículos con precios de venta, costos y fotos de referencia.',
+    subtitulo: 'Control de artículos con precios de venta, costos y control de inventario.',
     elementos: [
       {
         icono: 'search',
@@ -152,9 +152,9 @@ export const GUIAS_PANTALLAS: Record<string, GuiaPantalla> = {
         colorIcono: COLORS.cashflowIncome,
       },
       {
-        icono: 'photo-camera',
-        titulo: 'Fotos de Referencia',
-        descripcion: 'Asocia fotos desde tu galería o cámara para identificar cada producto a simple vista.',
+        icono: 'inventory-2',
+        titulo: 'Control de Inventario',
+        descripcion: 'Gestiona compras, ventas, devoluciones y stock mínimo con alertas automáticas.',
         colorIcono: COLORS.primary,
       },
       {

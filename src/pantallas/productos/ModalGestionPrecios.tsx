@@ -28,18 +28,18 @@ import {
   gatillarError as triggerError,
   gatillarSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
-import { ProductoFoto, TarifaProductoFoto } from '@/datos/tipos';
+import { Producto, TarifaProducto } from '@/datos/tipos';
 import {
   calcularGananciaYMargen,
   establecerTarifaProducto,
   eliminarTarifaProducto,
-} from '@/datos/consultas/productosFotos';
+} from '@/datos/consultas/productos';
 import { useTarifasProductoBoveda } from '@/datos/hooks';
 
 export interface PropiedadesModalGestionPrecios {
   visible: boolean;
   onClose: () => void;
-  producto: ProductoFoto | null;
+  producto: Producto | null;
 }
 
 function fechaAISO(date: Date): string {
@@ -63,7 +63,7 @@ function formatearFechaEspanol(iso?: string): string {
 }
 
 interface PropiedadesContenidoGestionPrecios {
-  producto: ProductoFoto;
+  producto: Producto;
   onClose: () => void;
 }
 
@@ -195,7 +195,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
     }
   };
 
-  const handleEliminarTarifa = (tarifa: TarifaProductoFoto) => {
+  const handleEliminarTarifa = (tarifa: TarifaProducto) => {
     triggerSelection();
     Alert.alert(
       'Eliminar tarifa histórica',
@@ -568,7 +568,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                   </GlassCard>
                 ) : (
                   <View style={styles.tariffsList}>
-                    {historialTarifas.map((t, idx) => {
+                    {historialTarifas.map(t => {
                       const esVigente = !t.validTo || t.validTo.trim() === '';
                       const metrics = calcularGananciaYMargen(t.salePrice, t.costPrice);
 

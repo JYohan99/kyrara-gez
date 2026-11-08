@@ -4,6 +4,6 @@ export * from './ModalCategoria';
 export * from './PestanaCategorias';
 export * from './PantallaCategorias';
 
-// Re-exportaciones de compatibilidad hacia el módulo de ajustes y precios de fotos
+// Re-exportaciones de compatibilidad hacia el módulo de ajustes y productos
 export * from '@/pantallas/ajustes';
-export * from '@/pantallas/preciosFotos';
+export * from '@/pantallas/productos';

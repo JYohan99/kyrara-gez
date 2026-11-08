@@ -13,26 +13,24 @@ import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidr
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 import {
-  useEstadisticasCatalogoFotosBoveda,
-  useProductosFotosBoveda,
+  useEstadisticasCatalogoBoveda,
+  useProductosBoveda,
   useEvolucionTarifasProductoBoveda,
 } from '@/datos/hooks';
-import { ProductoFoto, EvolucionTarifaItem } from '@/datos/tipos';
+import { Producto, EvolucionTarifaItem } from '@/datos/tipos';
 import { BadgeRentabilidad } from './BadgeRentabilidad';
 
-export interface PropiedadesEstadisticasPreciosFotos {
+export interface PropiedadesEstadisticasPrecios {
   productoIdInicial?: string;
   onVerHistorialProducto?: (productoId: string) => void;
-  onIrAlCatalogo?: () => void;
 }
 
-export const EstadisticasPreciosFotos: React.FC<PropiedadesEstadisticasPreciosFotos> = ({
+export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
   productoIdInicial,
   onVerHistorialProducto,
-  onIrAlCatalogo,
 }) => {
-  const { stats } = useEstadisticasCatalogoFotosBoveda();
-  const { products: allProducts } = useProductosFotosBoveda();
+  const { stats } = useEstadisticasCatalogoBoveda();
+  const { products: allProducts } = useProductosBoveda();
 
   // Producto seleccionado para consultar evolución individual
   const [selectedProductId, setSelectedProductId] = useState<string>(() => {
@@ -176,7 +174,7 @@ export const EstadisticasPreciosFotos: React.FC<PropiedadesEstadisticasPreciosFo
         </Text>
       </View>
 
-      {stats.monedas.map(moneda => {
+      {stats.monedas.map((moneda: string) => {
         const mStat = stats.porMoneda[moneda];
         return (
           <GlassCard key={moneda} variant="surface" style={styles.currencyCard}>
@@ -509,7 +507,7 @@ export const EstadisticasPreciosFotos: React.FC<PropiedadesEstadisticasPreciosFo
 
       {/* Lista de Rentabilidad de Productos */}
       <View style={styles.profitabilityList}>
-        {productosRentabilidad.map((p: ProductoFoto) => {
+        {productosRentabilidad.map((p: Producto) => {
           const mon = p.currency || 'UYU';
           const tienePrecio = p.basePrice !== undefined && p.basePrice > 0;
           const tieneCosto = p.costPrice !== undefined && p.costPrice > 0;
@@ -1100,5 +1098,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export const EstadisticasProductos = EstadisticasPreciosFotos;
-export const ProductCatalogStatistics = EstadisticasPreciosFotos;
+export const EstadisticasProductos = EstadisticasPrecios;
+export const ProductCatalogStatistics = EstadisticasPrecios;

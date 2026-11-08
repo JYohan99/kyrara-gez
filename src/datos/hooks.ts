@@ -15,20 +15,25 @@ import {
   obtenerProximosCompromisos,
   obtenerDeudas,
   obtenerResumenDeudas,
-  obtenerProductosFotos,
-  obtenerCategoriasFotos,
+  obtenerProductos,
+  obtenerCategoriasProductos,
   obtenerTarifasProducto,
   obtenerTarifaVigente,
   obtenerHistorialCambiosPrecios,
-  obtenerEstadisticasCatalogoFotos,
+  obtenerEstadisticasCatalogo,
   obtenerEvolucionTarifasProducto,
+  obtenerOperacionesProducto,
+  obtenerResumenInventario,
+  obtenerAnalisisVentasInventario,
+  obtenerProductosConAlertasStock,
 } from './consultas';
 import {
   TipoFlujo,
   TipoDeuda,
   FiltroEstadoDeuda,
-  FiltroEstadoProductoFoto,
+  FiltroEstadoProducto,
   FiltroHistorialPrecios,
+  TipoFiltroPeriodoInventario,
 } from './tipos';
 
 /**
@@ -371,12 +376,12 @@ export function useDeudasBoveda(filtros?: {
 }
 
 /**
- * Hook reactivo para consultar productos fotográficos y categorías del catálogo.
+ * Hook reactivo para consultar productos y categorías del catálogo.
  */
-export function useProductosFotosBoveda(filtros?: {
+export function useProductosBoveda(filtros?: {
   category?: string;
   search?: string;
-  statusFilter?: FiltroEstadoProductoFoto;
+  statusFilter?: FiltroEstadoProducto;
 }) {
   const version = useSyncExternalStore(suscribirCambiosBoveda, obtenerVersionBoveda);
 
@@ -387,7 +392,7 @@ export function useProductosFotosBoveda(filtros?: {
   const products = useMemo(() => {
     void version;
     try {
-      return obtenerProductosFotos({ category, search, statusFilter });
+      return obtenerProductos({ category, search, statusFilter });
     } catch {
       return [];
     }
@@ -396,7 +401,7 @@ export function useProductosFotosBoveda(filtros?: {
   const categories = useMemo(() => {
     void version;
     try {
-      return obtenerCategoriasFotos();
+      return obtenerCategoriasProductos();
     } catch {
       return [];
     }
@@ -484,13 +489,13 @@ export function useHistorialPreciosBoveda(filtros?: FiltroHistorialPrecios) {
 /**
  * Hook reactivo para consultar las estadísticas generales y métricas por moneda del catálogo.
  */
-export function useEstadisticasCatalogoFotosBoveda() {
+export function useEstadisticasCatalogoBoveda() {
   const version = useSyncExternalStore(suscribirCambiosBoveda, obtenerVersionBoveda);
 
   const stats = useMemo(() => {
     void version;
     try {
-      return obtenerEstadisticasCatalogoFotos();
+      return obtenerEstadisticasCatalogo();
     } catch {
       return {
         totalProductosGlobal: 0,
@@ -535,7 +540,127 @@ export function useEvolucionTarifasProductoBoveda(productId?: string) {
   };
 }
 
+/**
+ * Hook reactivo para consultar el historial de operaciones de inventario de un producto.
+ */
+export function useOperacionesInventarioBoveda(productId?: string) {
+  const version = useSyncExternalStore(suscribirCambiosBoveda, obtenerVersionBoveda);
+
+  const operations = useMemo(() => {
+    void version;
+    if (!productId) return [];
+    try {
+      return obtenerOperacionesProducto(productId);
+    } catch {
+      return [];
+    }
+  }, [version, productId]);
+
+  const reloadOperations = useCallback(() => {
+    emitirCambioBoveda();
+  }, []);
+
+  return {
+    operations,
+    reloadOperations,
+  };
+}
+
+/**
+ * Hook reactivo para el resumen de inventario y alertas de stock con filtro de período.
+ */
+export function useResumenInventarioBoveda(periodo: TipoFiltroPeriodoInventario = 'ESTE_MES') {
+  const version = useSyncExternalStore(suscribirCambiosBoveda, obtenerVersionBoveda);
+
+  const summary = useMemo(() => {
+    void version;
+    try {
+      return obtenerResumenInventario(periodo);
+    } catch {
+      return {
+        totalProducts: 0,
+        activeProducts: 0,
+        totalStockUnits: 0,
+        inventoryCostValue: 0,
+        inventorySaleValue: 0,
+        potentialProfit: 0,
+        lowStockCount: 0,
+        outOfStockCount: 0,
+        totalSalesValue: 0,
+        totalCollectedValue: 0,
+        totalPendingCollectValue: 0,
+        totalCostOfGoodsSold: 0,
+        totalGrossProfit: 0,
+        totalUnitsSold: 0,
+        periodoFiltro: periodo,
+        labelPeriodo: '',
+      };
+    }
+  }, [version, periodo]);
+
+  return {
+    summary,
+  };
+}
+
+/**
+ * Hook reactivo para el análisis comercial y financiero de ventas en el período.
+ */
+export function useAnalisisVentasInventarioBoveda(periodo: TipoFiltroPeriodoInventario = 'ESTE_MES') {
+  const version = useSyncExternalStore(suscribirCambiosBoveda, obtenerVersionBoveda);
+
+  const analysis = useMemo(() => {
+    void version;
+    try {
+      return obtenerAnalisisVentasInventario(periodo);
+    } catch {
+      return {
+        periodo,
+        startDate: 0,
+        endDate: 0,
+        labelPeriodo: '',
+        totalSales: 0,
+        totalCollected: 0,
+        totalPending: 0,
+        totalCostOfGoods: 0,
+        grossProfit: 0,
+        marginPercent: null,
+        totalUnitsSold: 0,
+        topSellingProducts: [],
+        topProfitableProducts: [],
+        evolution: [],
+      };
+    }
+  }, [version, periodo]);
+
+  return {
+    analysis,
+  };
+}
+
+/**
+ * Hook reactivo para la lista de productos con alerta de stock (bajo o agotado).
+ */
+export function useAlertasStockBoveda() {
+  const version = useSyncExternalStore(suscribirCambiosBoveda, obtenerVersionBoveda);
+
+  const alertProducts = useMemo(() => {
+    void version;
+    try {
+      return obtenerProductosConAlertasStock();
+    } catch {
+      return [];
+    }
+  }, [version]);
+
+  return {
+    alertProducts,
+  };
+}
+
 // Alias compatibles
+export const useVaultInventoryOperations = useOperacionesInventarioBoveda;
+export const useVaultInventorySummary = useResumenInventarioBoveda;
 export const useVaultAccounts = useCuentasBoveda;
 export const useVaultTransactions = useMovimientosBoveda;
 export const useVaultBudgets = usePresupuestosBoveda;
@@ -544,16 +669,10 @@ export const useVaultCategories = useCategoriasBoveda;
 export const useVaultSecurity = useSeguridadBoveda;
 export const useVaultAgenda = useAgendaBoveda;
 export const useVaultDebts = useDeudasBoveda;
-export const useProductosBoveda = useProductosFotosBoveda;
-export const useEstadisticasCatalogoProductosBoveda = useEstadisticasCatalogoFotosBoveda;
-export const useVaultProducts = useProductosFotosBoveda;
+export const useEstadisticasCatalogoProductosBoveda = useEstadisticasCatalogoBoveda;
+export const useVaultProducts = useProductosBoveda;
 export const useVaultProductTariffs = useTarifasProductoBoveda;
 export const useVaultPriceHistory = useHistorialPreciosBoveda;
-export const useVaultCatalogStats = useEstadisticasCatalogoFotosBoveda;
+export const useVaultCatalogStats = useEstadisticasCatalogoBoveda;
 export const useVaultProductEvolution = useEvolucionTarifasProductoBoveda;
-export const useVaultPhotoProducts = useProductosFotosBoveda;
-export const useVaultPhotoProductTariffs = useTarifasProductoBoveda;
-export const useVaultPhotoPriceHistory = useHistorialPreciosBoveda;
-export const useVaultPhotoCatalogStats = useEstadisticasCatalogoFotosBoveda;
-export const useVaultPhotoProductEvolution = useEvolucionTarifasProductoBoveda;
 

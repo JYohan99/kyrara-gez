@@ -210,11 +210,11 @@ export interface TarifaProducto {
   createdAt: number;
   updatedAt: number;
 }
-export type TarifaProductoFoto = TarifaProducto;
 
 export interface Producto {
   id: string;
   name: string;
+  sku?: string;
   category: string;
   sizeFormat?: string;
   saleUnit: string;
@@ -222,6 +222,9 @@ export interface Producto {
   isActive: boolean;
   basePrice?: number; // precio de venta vigente en centavos
   costPrice?: number; // costo vigente en centavos
+  currentStock: number; // stock actual
+  minStock: number; // stock mínimo para alertas
+  supplier?: string; // proveedor opcional
   costUsd?: number; // costo de referencia en USD
   exchangeRate?: number; // tipo de cambio utilizado
   priceValidFrom?: string; // fecha de vigencia de tarifa actual 'YYYY-MM-DD'
@@ -232,18 +235,154 @@ export interface Producto {
   grossProfit?: number; // basePrice - costPrice (en centavos)
   grossMarginPercent?: number | null; // (grossProfit / basePrice) * 100
   tariffsCount?: number;
+  // Indicadores de stock
+  isLowStock?: boolean;
+  isOutOfStock?: boolean;
 }
-export type ProductoFoto = Producto;
+
+// Módulo de Inventario
+export type TipoOperacionInventario =
+  | 'PURCHASE'
+  | 'SUPPLIER_RETURN'
+  | 'ADJUSTMENT'
+  | 'SALE'
+  | 'CUSTOMER_RETURN';
+
+export type EstadoCobroOperacion = 'PAID' | 'PENDING' | 'REFUNDED';
+export type FormaCobroVenta = 'ACCOUNT' | 'CREDIT_PENDING';
+
+export type MotivoAjusteInventario =
+  | 'PERDIDA'
+  | 'ROTURA'
+  | 'DIFERENCIA_CONTEO'
+  | 'VENCIMIENTO'
+  | 'USO_INTERNO'
+  | 'OTRO';
+
+export interface OperacionInventario {
+  id: string;
+  productId: string;
+  type: TipoOperacionInventario;
+  quantity: number; // cantidad afectada en unidades
+  previousStock: number;
+  newStock: number;
+  unitCost?: number; // costo unitario histórico en centavos en el momento de la operación
+  totalCost?: number; // costo de lo vendido total en centavos (quantity * unitCost)
+  unitPrice?: number; // precio de venta unitario en centavos
+  totalPrice?: number; // importe de la venta en centavos (quantity * unitPrice)
+  grossProfit?: number; // ganancia bruta = totalPrice - totalCost (en centavos)
+  customer?: string; // nombre del cliente
+  paymentStatus?: EstadoCobroOperacion; // 'PAID' (cobrado) | 'PENDING' (pendiente) | 'REFUNDED' (reembolsado)
+  paymentMethod?: string; // cuenta seleccionada o crédito
+  accountId?: string;
+  accountName?: string;
+  transactionId?: string;
+  debtId?: string;
+  debtStatus?: string;
+  relatedOperationId?: string;
+  reason?: string;
+  supplier?: string;
+  notes?: string;
+  date: number; // timestamp
+  createdAt: number;
+}
+
+export interface ResumenInventario {
+  totalProducts: number;
+  activeProducts: number;
+  totalStockUnits: number;
+  inventoryCostValue: number; // en centavos (stock * costo)
+  inventorySaleValue: number; // en centavos (stock * precio venta)
+  potentialProfit: number; // en centavos (venta - costo)
+  lowStockCount: number; // con stock <= min_stock y > 0
+  outOfStockCount: number; // con stock <= 0
+  // Métricas de ventas (del período seleccionado o acumuladas)
+  totalSalesValue: number; // importe vendido en centavos (Venta)
+  totalCollectedValue: number; // dinero efectivamente cobrado en centavos (Cobro)
+  totalPendingCollectValue: number; // pendiente de cobro en centavos
+  totalCostOfGoodsSold: number; // costo de lo vendido acumulado en centavos
+  totalGrossProfit: number; // ganancia bruta = totalSalesValue - totalCostOfGoodsSold
+  totalUnitsSold: number; // unidades totales vendidas
+  periodoFiltro?: TipoFiltroPeriodoInventario;
+  labelPeriodo?: string;
+}
+
+export type TipoFiltroPeriodoInventario =
+  | 'ESTE_MES'
+  | 'MES_ANTERIOR'
+  | 'ULTIMOS_30_DIAS'
+  | 'ESTE_ANO'
+  | 'TODO';
+
+export interface RankingProductoVenta {
+  productId: string;
+  productName: string;
+  category: string;
+  saleUnit: string;
+  sizeFormat?: string;
+  unitsSold: number;
+  totalSales: number; // en centavos
+  totalCollected: number; // en centavos
+  totalCost: number; // en centavos
+  grossProfit: number; // en centavos
+  marginPercent: number | null; // %
+}
+
+export interface PuntoEvolucionVentas {
+  dateKey: string; // ej. '2026-11-01' o '2026-11'
+  label: string; // ej. '01 Nov' o 'Nov 2026'
+  sales: number; // en centavos
+  collected: number; // en centavos
+  costOfGoods: number; // en centavos
+  grossProfit: number; // en centavos
+  unitsSold: number;
+}
+
+export interface AnalisisVentasInventario {
+  periodo: TipoFiltroPeriodoInventario;
+  startDate: number;
+  endDate: number;
+  labelPeriodo: string;
+  totalSales: number; // Venta: importe vendido
+  totalCollected: number; // Cobro: dinero efectivamente cobrado
+  totalPending: number; // Pendiente de cobro
+  totalCostOfGoods: number; // Costo de lo vendido
+  grossProfit: number; // Ganancia bruta
+  marginPercent: number | null; // Margen bruto porcentual
+  totalUnitsSold: number; // Unidades vendidas netas
+  topSellingProducts: RankingProductoVenta[];
+  topProfitableProducts: RankingProductoVenta[];
+  evolution: PuntoEvolucionVentas[];
+}
+
+export interface ProductoImportadoExcel {
+  id?: string;
+  name: string;
+  category: string;
+  saleUnit: string;
+  sizeFormat?: string;
+  costPrice: number; // en centavos
+  basePrice: number; // en centavos
+  initialStock: number; // 0
+  minStock: number;
+  supplier?: string;
+  sourceSheet: string;
+  sourceRow: number;
+  isSelected?: boolean;
+}
+
+export type InventoryOperationType = TipoOperacionInventario;
+export type InventoryAdjustmentReason = MotivoAjusteInventario;
+export type InventoryOperation = OperacionInventario;
+export type InventorySummary = ResumenInventario;
 
 export type FiltroEstadoProducto = 'TODOS' | 'ACTIVOS' | 'INACTIVOS';
-export type FiltroEstadoProductoFoto = FiltroEstadoProducto;
 
 export interface FiltroProductos {
   category?: string;
   search?: string;
   statusFilter?: FiltroEstadoProducto;
 }
-export type FiltroProductosFotos = FiltroProductos;
 
 // Alias compatibles
 export type AccountType = TipoCuenta;
@@ -274,13 +413,8 @@ export type Product = Producto;
 export type ProductTariff = TarifaProducto;
 export type ProductStatusFilter = FiltroEstadoProducto;
 export type ProductFilter = FiltroProductos;
-export type PhotoProduct = Producto;
-export type PhotoProductStatusFilter = FiltroEstadoProducto;
-export type PhotoProductFilter = FiltroProductos;
-export type PhotoProductTariff = TarifaProducto;
-export type PhotoProductPrice = TarifaProducto;
 
-// Calculadora de Precios de Productos (Fase 3)
+// Calculadora de Precios de Productos
 export interface LineaCalculoProducto {
   producto: Producto;
   cantidad: number;
@@ -295,7 +429,6 @@ export interface LineaCalculoProducto {
   subtotalGanancia: number | null;// en centavos (null si falta precio o costo)
   margenPorcentual: number | null;// porcentaje (null si falta dato o importe es 0)
 }
-export type LineaCalculoFoto = LineaCalculoProducto;
 
 export interface TotalesMonedaCalculoProducto {
   moneda: string;
@@ -309,7 +442,6 @@ export interface TotalesMonedaCalculoProducto {
   itemsSinCosto: number;
   esCalculoCompleto: boolean;
 }
-export type TotalesMonedaCalculoFoto = TotalesMonedaCalculoProducto;
 
 export interface ResultadoCalculadoraProductos {
   lineas: LineaCalculoProducto[];
@@ -318,16 +450,12 @@ export interface ResultadoCalculadoraProductos {
   esMultimoneda: boolean;
   tieneFaltantes: boolean;
 }
-export type ResultadoCalculadoraFotos = ResultadoCalculadoraProductos;
 
 export type ProductCalculatorLine = LineaCalculoProducto;
 export type ProductCalculatorCurrencyTotals = TotalesMonedaCalculoProducto;
 export type ProductCalculatorResult = ResultadoCalculadoraProductos;
-export type PhotoCalculatorLine = LineaCalculoProducto;
-export type PhotoCalculatorCurrencyTotals = TotalesMonedaCalculoProducto;
-export type PhotoCalculatorResult = ResultadoCalculadoraProductos;
 
-// Fase 4: Historial y Estadísticas de Precios y Rentabilidad de Productos
+// Historial y Estadísticas de Precios y Rentabilidad de Productos
 export interface CambioPrecioHistorial {
   id: string;
   productId: string;
@@ -382,7 +510,6 @@ export interface EstadisticasMonedaProductos {
   margenPromedio: number | null;  // %
   totalTarifasRegistradas: number;
 }
-export type EstadisticasMonedaFotos = EstadisticasMonedaProductos;
 
 export interface EstadisticasCatalogoProductos {
   totalProductosGlobal: number;
@@ -393,7 +520,6 @@ export interface EstadisticasCatalogoProductos {
   monedas: string[];
   porMoneda: Record<string, EstadisticasMonedaProductos>;
 }
-export type EstadisticasCatalogoFotos = EstadisticasCatalogoProductos;
 
 export interface EvolucionTarifaItem {
   id: string;
@@ -412,7 +538,4 @@ export interface EvolucionTarifaItem {
 export type PriceHistoryChange = CambioPrecioHistorial;
 export type PriceHistoryFilter = FiltroHistorialPrecios;
 export type CatalogStatistics = EstadisticasCatalogoProductos;
-export type PhotoPriceHistoryChange = CambioPrecioHistorial;
-export type PhotoPriceHistoryFilter = FiltroHistorialPrecios;
-export type PhotoCatalogStatistics = EstadisticasCatalogoProductos;
 

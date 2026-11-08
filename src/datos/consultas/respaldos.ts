@@ -1,9 +1,11 @@
 import { obtenerBaseDatos } from '../conexion';
+import { asegurarEsquemaBaseDatos } from '../esquema';
 import { obtenerMovimientos } from './movimientos';
 import { emitirCambioBoveda } from '../sincronizacion';
 import { sincronizarNotificacionesPendientes } from './agenda';
 
 export function exportarBaseDatosAJson(): string {
+  asegurarEsquemaBaseDatos();
   const db = obtenerBaseDatos();
   const accounts = db.getAllSync('SELECT * FROM accounts');
   const categories = db.getAllSync('SELECT * FROM categories');
@@ -17,10 +19,11 @@ export function exportarBaseDatosAJson(): string {
   const debt_payments = db.getAllSync('SELECT * FROM debt_payments');
   const photo_products = db.getAllSync('SELECT * FROM photo_products');
   const photo_product_prices = db.getAllSync('SELECT * FROM photo_product_prices');
+  const inventory_operations = db.getAllSync('SELECT * FROM inventory_operations');
 
   return JSON.stringify(
     {
-      version: '1.2.0',
+      version: '1.3.0',
       exportDate: new Date().toISOString(),
       generator: 'Kyrara Gez Local Vault',
       data: {
@@ -36,6 +39,7 @@ export function exportarBaseDatosAJson(): string {
         debt_payments,
         photo_products,
         photo_product_prices,
+        inventory_operations,
       },
     },
     null,
@@ -85,6 +89,7 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
   commitments: number;
   debts?: number;
   photoProducts?: number;
+  inventoryOperations?: number;
 } {
   const parsed = JSON.parse(jsonString);
   const data = parsed.data || parsed;
@@ -92,6 +97,7 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
     throw new Error('Formato de archivo inválido. No contiene la estructura de Kyrara Gez.');
   }
 
+  asegurarEsquemaBaseDatos();
   const db = obtenerBaseDatos();
   let accCount = 0;
   let txCount = 0;
@@ -100,9 +106,11 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
   let comCount = 0;
   let debtCount = 0;
   let photoProductCount = 0;
+  let invOpCount = 0;
 
   db.withTransactionSync(() => {
     db.execSync(`
+      DELETE FROM inventory_operations;
       DELETE FROM photo_product_prices;
       DELETE FROM photo_products;
       DELETE FROM debt_payments;
@@ -297,12 +305,14 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
       for (const p of data.photo_products) {
         db.runSync(
           `INSERT INTO photo_products (
-            id, name, category, size_format, sale_unit, description,
-            is_active, base_price, cost_price, currency, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            id, name, sku, category, size_format, sale_unit, description,
+            is_active, base_price, cost_price, current_stock, min_stock, supplier,
+            currency, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             p.id,
             p.name,
+            p.sku || null,
             p.category || 'General',
             p.size_format || p.sizeFormat || null,
             p.sale_unit || p.saleUnit || 'Unidad',
@@ -310,6 +320,9 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
             p.is_active !== undefined ? (p.is_active ? 1 : 0) : (p.isActive ? 1 : 0),
             p.base_price ?? p.basePrice ?? 0,
             p.cost_price ?? p.costPrice ?? 0,
+            p.current_stock ?? p.currentStock ?? 0,
+            p.min_stock ?? p.minStock ?? 0,
+            p.supplier || null,
             p.currency || 'UYU',
             p.created_at || p.createdAt || Date.now(),
             p.updated_at || p.updatedAt || Date.now(),
@@ -342,6 +355,44 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
         );
       }
     }
+
+    if (Array.isArray(data.inventory_operations)) {
+      for (const op of data.inventory_operations) {
+        db.runSync(
+          `INSERT INTO inventory_operations (
+            id, product_id, type, quantity, previous_stock, new_stock,
+            unit_cost, total_cost, unit_price, total_price, customer,
+            payment_status, payment_method, account_id, transaction_id, debt_id,
+            related_operation_id, reason, supplier, notes, date, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            op.id,
+            op.product_id || op.productId,
+            op.type,
+            op.quantity ?? 0,
+            op.previous_stock ?? op.previousStock ?? 0,
+            op.new_stock ?? op.newStock ?? 0,
+            op.unit_cost ?? op.unitCost ?? null,
+            op.total_cost ?? op.totalCost ?? null,
+            op.unit_price ?? op.unitPrice ?? null,
+            op.total_price ?? op.totalPrice ?? null,
+            op.customer || null,
+            op.payment_status || op.paymentStatus || null,
+            op.payment_method || op.paymentMethod || null,
+            op.account_id || op.accountId || null,
+            op.transaction_id || op.transactionId || null,
+            op.debt_id || op.debtId || null,
+            op.related_operation_id || op.relatedOperationId || null,
+            op.reason || null,
+            op.supplier || null,
+            op.notes || null,
+            op.date || Date.now(),
+            op.created_at || op.createdAt || Date.now(),
+          ]
+        );
+        invOpCount++;
+      }
+    }
   });
 
   emitirCambioBoveda();
@@ -357,6 +408,7 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
     commitments: comCount,
     debts: debtCount,
     photoProducts: photoProductCount,
+    inventoryOperations: invOpCount,
   };
 }
 

@@ -1,10 +1,68 @@
+import type { SQLiteDatabase } from 'expo-sqlite';
 import { obtenerBaseDatos } from './conexion';
 import { sembrarCategoriasPredeterminadas, sembrarCuentasPredeterminadas } from './semillas';
 
-export function inicializarBaseDatos(): void {
-  const db = obtenerBaseDatos();
+let esquemaVerificado = false;
 
-  // Crear tablas y configurar PRAGMA de SQLite
+export function forzarVerificacionEsquema(): void {
+  esquemaVerificado = false;
+}
+
+function asegurarColumna(
+  db: SQLiteDatabase,
+  tabla: string,
+  columna: string,
+  definicionSql: string
+): void {
+  try {
+    const columnas = db.getAllSync<{ name: string }>(`PRAGMA table_info(${tabla});`);
+    const existe = columnas.some(c => c.name.toLowerCase() === columna.toLowerCase());
+    if (!existe) {
+      db.execSync(`ALTER TABLE ${tabla} ADD COLUMN ${columna} ${definicionSql};`);
+    }
+  } catch {
+    // Fallback defensivo si PRAGMA o ALTER inicial no aplica
+    try {
+      db.execSync(`ALTER TABLE ${tabla} ADD COLUMN ${columna} ${definicionSql};`);
+    } catch {
+      // Columna ya existe o tabla no creada aún
+    }
+  }
+}
+
+function asegurarIndices(db: SQLiteDatabase): void {
+  const indices = [
+    'CREATE INDEX IF NOT EXISTS idx_commitments_date ON commitments(date);',
+    'CREATE INDEX IF NOT EXISTS idx_commitments_series ON commitments(series_id);',
+    'CREATE INDEX IF NOT EXISTS idx_reminders_commitment ON reminders(commitment_id);',
+    'CREATE INDEX IF NOT EXISTS idx_exceptions_series_date ON recurrence_exceptions(series_id, original_date);',
+    'CREATE INDEX IF NOT EXISTS idx_debts_type_status ON debts(type, status);',
+    'CREATE INDEX IF NOT EXISTS idx_debts_due_date ON debts(due_date);',
+    'CREATE INDEX IF NOT EXISTS idx_debt_payments_debt_id ON debt_payments(debt_id);',
+    'CREATE INDEX IF NOT EXISTS idx_photo_products_name ON photo_products(name);',
+    'CREATE INDEX IF NOT EXISTS idx_photo_products_category ON photo_products(category);',
+    'CREATE INDEX IF NOT EXISTS idx_photo_products_active ON photo_products(is_active);',
+    'CREATE INDEX IF NOT EXISTS idx_photo_products_sku ON photo_products(sku);',
+    'CREATE INDEX IF NOT EXISTS idx_inv_ops_product ON inventory_operations(product_id);',
+    'CREATE INDEX IF NOT EXISTS idx_inv_ops_date ON inventory_operations(date);',
+    'CREATE INDEX IF NOT EXISTS idx_inv_ops_type ON inventory_operations(type);',
+    'CREATE INDEX IF NOT EXISTS idx_photo_product_prices_product ON photo_product_prices(product_id);',
+    'CREATE INDEX IF NOT EXISTS idx_photo_product_prices_valid ON photo_product_prices(valid_from, valid_to);',
+  ];
+
+  for (const sql of indices) {
+    try {
+      db.execSync(sql);
+    } catch {
+      // Ignorar si el índice ya existe
+    }
+  }
+}
+
+export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()): void {
+  if (esquemaVerificado) return;
+
+  // 1. Tablas principales de finanzas, agenda y deudas
   db.execSync(`
     PRAGMA journal_mode = WAL;
 
@@ -125,18 +183,14 @@ export function inicializarBaseDatos(): void {
       FOREIGN KEY(account_id) REFERENCES accounts(id),
       FOREIGN KEY(transaction_id) REFERENCES transactions(id)
     );
+  `);
 
-    CREATE INDEX IF NOT EXISTS idx_commitments_date ON commitments(date);
-    CREATE INDEX IF NOT EXISTS idx_commitments_series ON commitments(series_id);
-    CREATE INDEX IF NOT EXISTS idx_reminders_commitment ON reminders(commitment_id);
-    CREATE INDEX IF NOT EXISTS idx_exceptions_series_date ON recurrence_exceptions(series_id, original_date);
-    CREATE INDEX IF NOT EXISTS idx_debts_type_status ON debts(type, status);
-    CREATE INDEX IF NOT EXISTS idx_debts_due_date ON debts(due_date);
-    CREATE INDEX IF NOT EXISTS idx_debt_payments_debt_id ON debt_payments(debt_id);
-
+  // Tablas del módulo de productos, inventario y tarifas
+  db.execSync(`
     CREATE TABLE IF NOT EXISTS photo_products (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      sku TEXT,
       category TEXT NOT NULL DEFAULT 'General',
       size_format TEXT,
       sale_unit TEXT NOT NULL DEFAULT 'Unidad',
@@ -144,14 +198,42 @@ export function inicializarBaseDatos(): void {
       is_active INTEGER NOT NULL DEFAULT 1,
       base_price INTEGER DEFAULT 0,
       cost_price INTEGER DEFAULT 0,
+      current_stock REAL DEFAULT 0,
+      min_stock REAL DEFAULT 0,
+      supplier TEXT,
       currency TEXT DEFAULT 'UYU',
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
 
-    CREATE INDEX IF NOT EXISTS idx_photo_products_name ON photo_products(name);
-    CREATE INDEX IF NOT EXISTS idx_photo_products_category ON photo_products(category);
-    CREATE INDEX IF NOT EXISTS idx_photo_products_active ON photo_products(is_active);
+    CREATE TABLE IF NOT EXISTS inventory_operations (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      quantity REAL NOT NULL,
+      previous_stock REAL NOT NULL,
+      new_stock REAL NOT NULL,
+      unit_cost INTEGER,
+      total_cost INTEGER,
+      unit_price INTEGER,
+      total_price INTEGER,
+      customer TEXT,
+      payment_status TEXT,
+      payment_method TEXT,
+      account_id TEXT,
+      transaction_id TEXT,
+      debt_id TEXT,
+      related_operation_id TEXT,
+      reason TEXT,
+      supplier TEXT,
+      notes TEXT,
+      date INTEGER NOT NULL,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY(product_id) REFERENCES photo_products(id) ON DELETE CASCADE,
+      FOREIGN KEY(account_id) REFERENCES accounts(id),
+      FOREIGN KEY(transaction_id) REFERENCES transactions(id),
+      FOREIGN KEY(debt_id) REFERENCES debts(id)
+    );
 
     CREATE TABLE IF NOT EXISTS photo_product_prices (
       id TEXT PRIMARY KEY,
@@ -168,53 +250,72 @@ export function inicializarBaseDatos(): void {
       updated_at INTEGER NOT NULL,
       FOREIGN KEY(product_id) REFERENCES photo_products(id) ON DELETE CASCADE
     );
-
-    CREATE INDEX IF NOT EXISTS idx_photo_product_prices_product ON photo_product_prices(product_id);
-    CREATE INDEX IF NOT EXISTS idx_photo_product_prices_valid ON photo_product_prices(valid_from, valid_to);
   `);
 
-  // Migraciones no destructivas
+  // 2. Migraciones incrementales no destructivas de columnas (si las tablas ya existían con estructura anterior)
+  asegurarColumna(db, 'transactions', 'payee', 'TEXT');
+
+  asegurarColumna(db, 'photo_products', 'sku', 'TEXT');
+  asegurarColumna(db, 'photo_products', 'category', "TEXT NOT NULL DEFAULT 'General'");
+  asegurarColumna(db, 'photo_products', 'size_format', 'TEXT');
+  asegurarColumna(db, 'photo_products', 'sale_unit', "TEXT NOT NULL DEFAULT 'Unidad'");
+  asegurarColumna(db, 'photo_products', 'description', 'TEXT');
+  asegurarColumna(db, 'photo_products', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
+  asegurarColumna(db, 'photo_products', 'base_price', 'INTEGER DEFAULT 0');
+  asegurarColumna(db, 'photo_products', 'cost_price', 'INTEGER DEFAULT 0');
+  asegurarColumna(db, 'photo_products', 'current_stock', 'REAL DEFAULT 0');
+  asegurarColumna(db, 'photo_products', 'min_stock', 'REAL DEFAULT 0');
+  asegurarColumna(db, 'photo_products', 'supplier', 'TEXT');
+  asegurarColumna(db, 'photo_products', 'cost_usd', 'REAL');
+  asegurarColumna(db, 'photo_products', 'exchange_rate', 'REAL');
+  asegurarColumna(db, 'photo_products', 'price_valid_from', 'TEXT');
+  asegurarColumna(db, 'photo_products', 'currency', 'TEXT DEFAULT "UYU"');
+
+  asegurarColumna(db, 'photo_product_prices', 'currency', 'TEXT DEFAULT "UYU"');
+  asegurarColumna(db, 'photo_product_prices', 'cost_usd', 'REAL');
+  asegurarColumna(db, 'photo_product_prices', 'exchange_rate', 'REAL');
+
+  asegurarColumna(db, 'inventory_operations', 'unit_price', 'INTEGER');
+  asegurarColumna(db, 'inventory_operations', 'total_price', 'INTEGER');
+  asegurarColumna(db, 'inventory_operations', 'customer', 'TEXT');
+  asegurarColumna(db, 'inventory_operations', 'payment_status', 'TEXT');
+  asegurarColumna(db, 'inventory_operations', 'payment_method', 'TEXT');
+  asegurarColumna(db, 'inventory_operations', 'account_id', 'TEXT');
+  asegurarColumna(db, 'inventory_operations', 'transaction_id', 'TEXT');
+  asegurarColumna(db, 'inventory_operations', 'debt_id', 'TEXT');
+  asegurarColumna(db, 'inventory_operations', 'related_operation_id', 'TEXT');
+  asegurarColumna(db, 'inventory_operations', 'reason', 'TEXT');
+  asegurarColumna(db, 'inventory_operations', 'supplier', 'TEXT');
+  asegurarColumna(db, 'inventory_operations', 'notes', 'TEXT');
+
+  // 3. Crear índices de forma segura (una vez que todas las columnas existen)
+  asegurarIndices(db);
+
+  // 4. Sembrado si la base de datos está vacía
   try {
-    db.execSync('ALTER TABLE transactions ADD COLUMN payee TEXT;');
+    const countRow = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM categories');
+    if (!countRow || countRow.count === 0) {
+      sembrarCategoriasPredeterminadas(db);
+    }
   } catch {
-    // Columna ya existe
+    // Ignorar si falla sembrado
   }
 
   try {
-    db.execSync('ALTER TABLE photo_products ADD COLUMN cost_usd REAL;');
+    const accCountRow = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM accounts');
+    if (!accCountRow || accCountRow.count === 0) {
+      sembrarCuentasPredeterminadas(db);
+    }
   } catch {
-    // Columna ya existe
+    // Ignorar si falla sembrado
   }
 
-  try {
-    db.execSync('ALTER TABLE photo_products ADD COLUMN exchange_rate REAL;');
-  } catch {
-    // Columna ya existe
-  }
+  esquemaVerificado = true;
+}
 
-  try {
-    db.execSync('ALTER TABLE photo_products ADD COLUMN price_valid_from TEXT;');
-  } catch {
-    // Columna ya existe
-  }
-
-  try {
-    db.execSync('ALTER TABLE photo_product_prices ADD COLUMN currency TEXT DEFAULT "UYU";');
-  } catch {
-    // Columna ya existe
-  }
-
-  // Sembrar categorías predeterminadas si la base de datos está vacía
-  const countRow = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM categories');
-  if (!countRow || countRow.count === 0) {
-    sembrarCategoriasPredeterminadas(db);
-  }
-
-  // Sembrar cuenta predeterminada si no existe ninguna
-  const accCountRow = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM accounts');
-  if (!accCountRow || accCountRow.count === 0) {
-    sembrarCuentasPredeterminadas(db);
-  }
+export function inicializarBaseDatos(): void {
+  esquemaVerificado = false;
+  asegurarEsquemaBaseDatos();
 }
 
 // Alias compatible
