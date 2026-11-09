@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import {
   gatillarSeleccion as triggerSelection,
@@ -48,6 +47,15 @@ type SubModalAccion =
   | 'DEVOLUCION_CLIENTE'
   | 'AJUSTE';
 
+const getProductIcon = (nombre?: string) => {
+  const nom = (nombre || '').toLowerCase();
+  if (nom.includes('caf')) return 'local-cafe';
+  if (nom.includes('foto') || nom.includes('cuadro') || nom.includes('lienzo')) return 'image';
+  if (nom.includes('taza') || nom.includes('vaso')) return 'emoji-food-beverage';
+  if (nom.includes('remera') || nom.includes('ropa')) return 'checkroom';
+  return 'inventory-2';
+};
+
 export const ModalDetalleProducto: React.FC<PropiedadesModalDetalleProducto> = ({
   visible,
   onClose,
@@ -57,13 +65,22 @@ export const ModalDetalleProducto: React.FC<PropiedadesModalDetalleProducto> = (
 }) => {
   const { products } = useProductosBoveda();
   const productoActual = producto ? products.find(p => p.id === producto.id) || producto : null;
+  const cerrarSubModalRef = useRef<(() => void) | null>(null);
+
+  const handleRequestClose = () => {
+    if (cerrarSubModalRef.current) {
+      cerrarSubModalRef.current();
+    } else {
+      onClose();
+    }
+  };
 
   return (
     <Modal
       visible={visible && !!productoActual}
       animationType="slide"
       transparent
-      onRequestClose={onClose}
+      onRequestClose={handleRequestClose}
     >
       {productoActual ? (
         <ContenidoModalDetalleProducto
@@ -72,6 +89,9 @@ export const ModalDetalleProducto: React.FC<PropiedadesModalDetalleProducto> = (
           onClose={onClose}
           onEditProduct={onEditProduct}
           accionInicial={accionInicial}
+          onSubModalChange={cerrarFn => {
+            cerrarSubModalRef.current = cerrarFn;
+          }}
         />
       ) : null}
     </Modal>
@@ -83,6 +103,7 @@ interface PropiedadesContenidoModalDetalleProducto {
   onClose: () => void;
   onEditProduct?: (product: Producto) => void;
   accionInicial?: SubModalAccion;
+  onSubModalChange?: (cerrarFn: (() => void) | null) => void;
 }
 
 const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetalleProducto> = ({
@@ -90,6 +111,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
   onClose,
   onEditProduct,
   accionInicial,
+  onSubModalChange,
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -183,12 +205,30 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
     setSubModal('AJUSTE');
   };
 
+  const handleCerrarSubModal = useCallback(() => {
+    setSubModal('NINGUNA');
+    setOperacionVentaSeleccionada(null);
+    if (accionInicial) {
+      onClose();
+    }
+  }, [accionInicial, onClose]);
+
+  useEffect(() => {
+    if (onSubModalChange) {
+      if (subModal !== 'NINGUNA') {
+        onSubModalChange(handleCerrarSubModal);
+      } else {
+        onSubModalChange(null);
+      }
+    }
+  }, [subModal, onSubModalChange, handleCerrarSubModal]);
+
   const renderBadgeTipoOperacion = (tipo: OperacionInventario['type']) => {
     switch (tipo) {
       case 'SALE':
         return (
           <View style={[styles.opBadge, styles.opBadgeSale]}>
-            <MaterialIcons name="shopping-bag" size={12} color="#57F5AB" />
+            <MaterialIcons name="point-of-sale" size={12} color="#57F5AB" />
             <Text style={[styles.opBadgeText, { color: '#57F5AB' }]}>VENTA</Text>
           </View>
         );
@@ -202,8 +242,8 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
       case 'PURCHASE':
         return (
           <View style={[styles.opBadge, styles.opBadgePurchase]}>
-            <MaterialIcons name="add-circle-outline" size={12} color="#00E676" />
-            <Text style={[styles.opBadgeText, { color: '#00E676' }]}>COMPRA</Text>
+            <MaterialIcons name="add-shopping-cart" size={12} color="#10B981" />
+            <Text style={[styles.opBadgeText, { color: '#10B981' }]}>COMPRA</Text>
           </View>
         );
       case 'SUPPLIER_RETURN':
@@ -234,19 +274,25 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
       />
 
       <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-        {/* Header */}
+        {/* Indicador de arrastre superior */}
+        <View style={styles.dragHandleContainer}>
+          <View style={styles.dragHandle} />
+        </View>
+
+        {/* Header con icono ámbar Stitch, Nombre, Badges y Acciones */}
         <View style={styles.headerRow}>
+          <View style={styles.productIconBox}>
+            <MaterialIcons name={getProductIcon(productoActual.name)} size={22} color="#FBBF24" />
+          </View>
+
           <View style={styles.headerTitleCol}>
             <View style={styles.headerBadgesRow}>
               {productoActual.sku ? (
                 <View style={styles.skuBadge}>
-                  <MaterialIcons name="qr-code" size={11} color={COLORS.secondary} />
+                  <MaterialIcons name="qr-code" size={11} color="#00D2FF" />
                   <Text style={styles.skuBadgeText}>{productoActual.sku}</Text>
                 </View>
               ) : null}
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryBadgeText}>{productoActual.category}</Text>
-              </View>
               <View
                 style={[
                   styles.statusPill,
@@ -259,7 +305,12 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
                     productoActual.isActive ? styles.statusDotActive : styles.statusDotInactive,
                   ]}
                 />
-                <Text style={styles.statusPillText}>
+                <Text
+                  style={[
+                    styles.statusPillText,
+                    { color: productoActual.isActive ? '#34D399' : '#94A3B8' },
+                  ]}
+                >
                   {productoActual.isActive ? 'Activo' : 'Archivado'}
                 </Text>
               </View>
@@ -280,8 +331,9 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
                 }}
                 style={styles.iconBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Editar producto"
               >
-                <MaterialIcons name="edit" size={20} color={COLORS.onSurfaceVariant} />
+                <MaterialIcons name="edit" size={18} color="#94A3B8" />
               </TouchableOpacity>
             )}
             <TouchableOpacity
@@ -291,8 +343,9 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
               }}
               style={styles.iconBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Cerrar modal"
             >
-              <MaterialIcons name="close" size={20} color={COLORS.onSurfaceVariant} />
+              <MaterialIcons name="close" size={18} color="#94A3B8" />
             </TouchableOpacity>
           </View>
         </View>
@@ -302,11 +355,11 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Tarjeta Destacada de Stock */}
-          <GlassCard variant="surface" style={styles.stockHeroCard}>
+          {/* Tarjeta Destacada de Stock (Stitch Card) */}
+          <View style={styles.stockHeroCard}>
             <View style={styles.stockHeroHeader}>
               <View style={styles.stockHeroLabelGroup}>
-                <MaterialIcons name="inventory-2" size={18} color={COLORS.secondary} />
+                <MaterialIcons name="inventory-2" size={18} color="#00D2FF" />
                 <Text style={[styles.stockHeroLabel, TYPOGRAPHY.etiquetaMayusculas]}>
                   Stock Actual Disponible
                 </Text>
@@ -326,13 +379,13 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
                 <MaterialIcons
                   name={isOutOfStock ? 'error' : isLowStock ? 'warning' : 'check-circle'}
                   size={14}
-                  color={isOutOfStock ? '#FF5252' : isLowStock ? '#FFB300' : '#00E676'}
+                  color={isOutOfStock ? '#EF4444' : isLowStock ? '#F59E0B' : '#10B981'}
                 />
                 <Text
                   style={[
                     styles.stockAlertText,
                     {
-                      color: isOutOfStock ? '#FF5252' : isLowStock ? '#FFB300' : '#00E676',
+                      color: isOutOfStock ? '#FCA5A5' : isLowStock ? '#FCD34D' : '#34D399',
                     },
                   ]}
                 >
@@ -366,17 +419,17 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
                 <Text style={styles.stockMetaValue}>{formatCurrency(totalStockSale)}</Text>
               </View>
             </View>
-          </GlassCard>
+          </View>
 
           {/* BOTONES PRINCIPALES DE OPERACIÓN: VENTA Y COMPRA */}
           <View style={styles.primaryActionRow}>
-            {/* Botón Destacado: Registrar Venta */}
+            {/* Botón Destacado: Registrar Venta con icono point-of-sale */}
             <TouchableOpacity
               style={[styles.primaryActionBtn, styles.btnSalePrimary]}
               onPress={handleAbrirVenta}
               activeOpacity={0.8}
             >
-              <View style={[styles.primaryActionIconBadge, { backgroundColor: 'rgba(87, 245, 171, 0.2)' }]}>
+              <View style={[styles.primaryActionIconBadge, { backgroundColor: 'rgba(87, 245, 171, 0.15)' }]}>
                 <MaterialIcons name="point-of-sale" size={20} color="#57F5AB" />
               </View>
               <View style={styles.primaryActionTextCol}>
@@ -391,11 +444,11 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
               onPress={handleAbrirCompra}
               activeOpacity={0.8}
             >
-              <View style={[styles.primaryActionIconBadge, { backgroundColor: 'rgba(0, 230, 118, 0.15)' }]}>
-                <MaterialIcons name="add-shopping-cart" size={20} color="#00E676" />
+              <View style={[styles.primaryActionIconBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                <MaterialIcons name="add-shopping-cart" size={20} color="#10B981" />
               </View>
               <View style={styles.primaryActionTextCol}>
-                <Text style={[styles.primaryActionTitle, { color: '#00E676' }]}>Registrar Compra</Text>
+                <Text style={[styles.primaryActionTitle, { color: '#10B981' }]}>Registrar Compra</Text>
                 <Text style={styles.primaryActionSubtitle}>Ingreso de mercadería</Text>
               </View>
             </TouchableOpacity>
@@ -437,7 +490,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
           {/* Métricas de Rendimiento Comercial del Producto */}
           <View style={styles.productPerformanceCard}>
             <View style={styles.performanceHeader}>
-              <MaterialIcons name="trending-up" size={16} color={COLORS.secondary} />
+              <MaterialIcons name="trending-up" size={16} color="#00D2FF" />
               <Text style={[styles.performanceTitle, TYPOGRAPHY.etiquetaMayusculas]}>
                 Rendimiento de Ventas de este Producto
               </Text>
@@ -505,7 +558,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
               <View style={styles.extraMetadataCard}>
                 {productoActual.supplier ? (
                   <View style={styles.metaRow}>
-                    <MaterialIcons name="local-shipping" size={15} color={COLORS.onSurfaceVariant} />
+                    <MaterialIcons name="local-shipping" size={15} color="#94A3B8" />
                     <Text style={styles.metaKey}>Proveedor:</Text>
                     <Text style={styles.metaVal}>{productoActual.supplier}</Text>
                   </View>
@@ -513,7 +566,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
 
                 {productoActual.sizeFormat ? (
                   <View style={styles.metaRow}>
-                    <MaterialIcons name="crop" size={15} color={COLORS.onSurfaceVariant} />
+                    <MaterialIcons name="crop" size={15} color="#94A3B8" />
                     <Text style={styles.metaKey}>Formato / Medida:</Text>
                     <Text style={styles.metaVal}>{productoActual.sizeFormat}</Text>
                   </View>
@@ -533,7 +586,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
           <View style={styles.historySection}>
             <View style={styles.historyHeader}>
               <View style={styles.historyTitleRow}>
-                <MaterialIcons name="receipt-long" size={18} color={COLORS.secondary} />
+                <MaterialIcons name="receipt-long" size={18} color="#00D2FF" />
                 <Text style={[styles.historyTitle, TYPOGRAPHY.titularPequeno]}>
                   Historial de Operaciones
                 </Text>
@@ -545,7 +598,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
 
             {operations.length === 0 ? (
               <View style={styles.emptyHistoryBox}>
-                <MaterialIcons name="history-toggle-off" size={32} color={COLORS.onSurfaceVariant + '60'} />
+                <MaterialIcons name="history-toggle-off" size={32} color="rgba(148, 163, 184, 0.4)" />
                 <Text style={styles.emptyHistoryTitle}>Sin operaciones registradas</Text>
                 <Text style={styles.emptyHistoryText}>
                   Las ventas, compras, devoluciones y ajustes de inventario quedarán registrados aquí.
@@ -657,7 +710,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
 
                         {op.customer && (
                           <View style={styles.opDetailRow}>
-                            <MaterialIcons name="person" size={13} color={COLORS.onSurfaceVariant} />
+                            <MaterialIcons name="person" size={13} color="#94A3B8" />
                             <Text style={styles.opDetailLabel}>Cliente:</Text>
                             <Text style={styles.opDetailVal}>{op.customer}</Text>
                           </View>
@@ -665,7 +718,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
 
                         {op.reason && (
                           <View style={styles.opDetailRow}>
-                            <MaterialIcons name="info-outline" size={13} color={COLORS.onSurfaceVariant} />
+                            <MaterialIcons name="info-outline" size={13} color="#94A3B8" />
                             <Text style={styles.opDetailLabel}>Motivo:</Text>
                             <Text style={styles.opDetailVal}>{op.reason}</Text>
                           </View>
@@ -673,7 +726,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
 
                         {op.supplier && (
                           <View style={styles.opDetailRow}>
-                            <MaterialIcons name="local-shipping" size={13} color={COLORS.onSurfaceVariant} />
+                            <MaterialIcons name="local-shipping" size={13} color="#94A3B8" />
                             <Text style={styles.opDetailLabel}>Proveedor:</Text>
                             <Text style={styles.opDetailVal}>{op.supplier}</Text>
                           </View>
@@ -711,42 +764,54 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
       {/* =========================================================================
           SUB-MODALES MODULARIZADOS
       ========================================================================= */}
-      <SubModalVenta
-        visible={subModal === 'VENTA'}
-        onClose={() => setSubModal('NINGUNA')}
-        producto={productoActual}
-        cuentas={accounts}
-      />
+      {subModal === 'VENTA' && (
+        <SubModalVenta
+          visible={true}
+          onClose={handleCerrarSubModal}
+          onSuccess={handleCerrarSubModal}
+          producto={productoActual}
+          cuentas={accounts}
+        />
+      )}
 
-      <SubModalCompra
-        visible={subModal === 'COMPRA'}
-        onClose={() => setSubModal('NINGUNA')}
-        producto={productoActual}
-      />
+      {subModal === 'COMPRA' && (
+        <SubModalCompra
+          visible={true}
+          onClose={handleCerrarSubModal}
+          onSuccess={handleCerrarSubModal}
+          producto={productoActual}
+        />
+      )}
 
-      <SubModalAjuste
-        visible={subModal === 'AJUSTE'}
-        onClose={() => setSubModal('NINGUNA')}
-        producto={productoActual}
-      />
+      {subModal === 'AJUSTE' && (
+        <SubModalAjuste
+          visible={true}
+          onClose={handleCerrarSubModal}
+          onSuccess={handleCerrarSubModal}
+          producto={productoActual}
+        />
+      )}
 
-      <SubModalDevolucionProveedor
-        visible={subModal === 'DEVOLUCION_PROVEEDOR'}
-        onClose={() => setSubModal('NINGUNA')}
-        producto={productoActual}
-      />
+      {subModal === 'DEVOLUCION_PROVEEDOR' && (
+        <SubModalDevolucionProveedor
+          visible={true}
+          onClose={handleCerrarSubModal}
+          onSuccess={handleCerrarSubModal}
+          producto={productoActual}
+        />
+      )}
 
-      <SubModalDevolucionCliente
-        visible={subModal === 'DEVOLUCION_CLIENTE'}
-        onClose={() => {
-          setSubModal('NINGUNA');
-          setOperacionVentaSeleccionada(null);
-        }}
-        producto={productoActual}
-        cuentas={accounts}
-        operacionesVenta={operacionesVenta}
-        operacionVentaInicial={operacionVentaSeleccionada}
-      />
+      {subModal === 'DEVOLUCION_CLIENTE' && (
+        <SubModalDevolucionCliente
+          visible={true}
+          onClose={handleCerrarSubModal}
+          onSuccess={handleCerrarSubModal}
+          producto={productoActual}
+          cuentas={accounts}
+          operacionesVenta={operacionesVenta}
+          operacionVentaInicial={operacionVentaSeleccionada}
+        />
+      )}
     </View>
   );
 };
@@ -758,74 +823,90 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#0E1214',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    backgroundColor: '#131A1D',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: '#223037',
     maxHeight: '92%',
     flexShrink: 1,
   },
+  dragHandleContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  dragHandle: {
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#374151',
+  },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 10,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    borderBottomColor: '#223037',
+    gap: 12,
+  },
+  productIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitleCol: {
     flex: 1,
-    gap: 6,
-    paddingRight: 10,
+    gap: 5,
   },
   headerBadgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     flexWrap: 'wrap',
   },
   skuBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(87, 245, 171, 0.1)',
+    backgroundColor: '#0F1619',
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(87, 245, 171, 0.25)',
+    borderColor: '#223037',
   },
   skuBadgeText: {
-    color: COLORS.secondary,
+    color: '#00D2FF',
     fontSize: 11,
     fontWeight: '700',
-  },
-  categoryBadge: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  categoryBadgeText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
   },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingVertical: 2.5,
+    borderRadius: 9999,
   },
   statusPillActive: {
-    backgroundColor: 'rgba(87, 245, 171, 0.12)',
+    backgroundColor: 'rgba(6, 78, 59, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.35)',
   },
   statusPillInactive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: '#0F1619',
+    borderWidth: 1,
+    borderColor: '#223037',
   },
   statusDot: {
     width: 6,
@@ -833,18 +914,19 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   statusDotActive: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: '#10B981',
   },
   statusDotInactive: {
-    backgroundColor: COLORS.onSurfaceVariant,
+    backgroundColor: '#64748B',
   },
   statusPillText: {
     fontSize: 10,
-    color: COLORS.onSurfaceVariant,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   productNameTitle: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
   },
   headerActionBtns: {
     flexDirection: 'row',
@@ -855,7 +937,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: '#182226',
+    borderWidth: 1,
+    borderColor: '#223037',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -870,8 +954,11 @@ const styles = StyleSheet.create({
 
   // Stock Hero Card
   stockHeroCard: {
-    padding: 16,
+    backgroundColor: '#182226',
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#223037',
+    padding: 16,
     gap: 12,
   },
   stockHeroHeader: {
@@ -885,26 +972,32 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   stockHeroLabel: {
-    color: COLORS.onSurfaceVariant,
+    color: '#94A3B8',
     fontSize: 11,
     letterSpacing: 0.8,
   },
   stockAlertBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 9999,
   },
   stockAlertNormal: {
-    backgroundColor: 'rgba(0, 230, 118, 0.12)',
+    backgroundColor: 'rgba(6, 78, 59, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.35)',
   },
   stockAlertLowStock: {
-    backgroundColor: 'rgba(255, 179, 0, 0.12)',
+    backgroundColor: 'rgba(120, 53, 15, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.35)',
   },
   stockAlertOutOfStock: {
-    backgroundColor: 'rgba(255, 82, 82, 0.12)',
+    backgroundColor: 'rgba(127, 29, 29, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.35)',
   },
   stockAlertText: {
     fontSize: 11,
@@ -916,13 +1009,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stockBigNumber: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 38,
     fontWeight: '800',
     lineHeight: 44,
   },
   stockUnitText: {
-    color: COLORS.onSurfaceVariant,
+    color: '#94A3B8',
   },
   stockMetaRow: {
     flexDirection: 'row',
@@ -930,26 +1023,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    borderTopColor: '#223037',
   },
   stockMetaItem: {
     flex: 1,
     gap: 2,
   },
   stockMetaLabel: {
-    color: COLORS.onSurfaceVariant + '90',
+    color: '#64748B',
     fontSize: 10,
     textTransform: 'uppercase',
   },
   stockMetaValue: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   stockMetaDivider: {
     width: 1,
     height: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#223037',
     marginHorizontal: 8,
   },
 
@@ -963,22 +1056,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: '#182226',
     borderRadius: 18,
     padding: 12,
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   btnSalePrimary: {
-    borderColor: 'rgba(87, 245, 171, 0.4)',
-    backgroundColor: 'rgba(87, 245, 171, 0.06)',
+    borderColor: 'rgba(87, 245, 171, 0.35)',
+    backgroundColor: 'rgba(87, 245, 171, 0.08)',
   },
   btnPurchasePrimary: {
-    borderColor: 'rgba(0, 230, 118, 0.25)',
+    borderColor: 'rgba(16, 185, 129, 0.35)',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
   },
   primaryActionIconBadge: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -990,7 +1084,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   primaryActionSubtitle: {
-    color: COLORS.onSurfaceVariant,
+    color: '#94A3B8',
     fontSize: 10,
   },
 
@@ -1005,12 +1099,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: '#182226',
     borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: '#223037',
   },
   btnSecondaryCustomerReturn: {
     borderColor: 'rgba(0, 210, 255, 0.25)',
@@ -1028,12 +1122,12 @@ const styles = StyleSheet.create({
 
   // Performance Card
   productPerformanceCard: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 16,
+    backgroundColor: '#182226',
+    borderRadius: 18,
     padding: 14,
     gap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: '#223037',
   },
   performanceHeader: {
     flexDirection: 'row',
@@ -1041,7 +1135,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   performanceTitle: {
-    color: COLORS.secondary,
+    color: '#00D2FF',
     fontSize: 11,
     letterSpacing: 0.8,
   },
@@ -1058,20 +1152,20 @@ const styles = StyleSheet.create({
   perfDivider: {
     width: 1,
     height: 36,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#223037',
   },
   perfLabel: {
-    color: COLORS.onSurfaceVariant,
+    color: '#64748B',
     fontSize: 9,
     textTransform: 'uppercase',
   },
   perfValue: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
   },
   perfSub: {
-    color: COLORS.onSurfaceVariant + '90',
+    color: '#94A3B8',
     fontSize: 10,
   },
 
@@ -1085,36 +1179,36 @@ const styles = StyleSheet.create({
   },
   finBox: {
     flex: 1,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: '#182226',
     borderRadius: 14,
     padding: 12,
     gap: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: '#223037',
   },
   finBoxLabel: {
-    color: COLORS.onSurfaceVariant,
+    color: '#64748B',
     fontSize: 10,
     textTransform: 'uppercase',
   },
   finBoxValue: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
   },
   profitPositive: {
-    color: COLORS.secondary,
+    color: '#57F5AB',
   },
   profitNegative: {
     color: '#FF6E6E',
   },
   extraMetadataCard: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: '#182226',
     borderRadius: 14,
     padding: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: '#223037',
   },
   metaRow: {
     flexDirection: 'row',
@@ -1122,11 +1216,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   metaKey: {
-    color: COLORS.onSurfaceVariant,
+    color: '#94A3B8',
     fontSize: 12,
   },
   metaVal: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -1135,7 +1229,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   descriptionVal: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 12,
     lineHeight: 16,
   },
@@ -1156,35 +1250,37 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   historyTitle: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
   },
   historyCountBadge: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: '#0F1619',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#223037',
   },
   historyCountText: {
-    color: COLORS.secondary,
+    color: '#00D2FF',
     fontSize: 11,
     fontWeight: '700',
   },
   emptyHistoryBox: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 16,
+    backgroundColor: '#182226',
+    borderRadius: 18,
     padding: 24,
     alignItems: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.04)',
+    borderColor: '#223037',
   },
   emptyHistoryTitle: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '600',
   },
   emptyHistoryText: {
-    color: COLORS.onSurfaceVariant,
+    color: '#94A3B8',
     fontSize: 11,
     textAlign: 'center',
     lineHeight: 15,
@@ -1193,12 +1289,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   operationCard: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 14,
+    backgroundColor: '#182226',
+    borderRadius: 16,
     padding: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: '#223037',
   },
   opCardHeader: {
     flexDirection: 'row',
@@ -1220,13 +1316,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 210, 255, 0.15)',
   },
   opBadgePurchase: {
-    backgroundColor: 'rgba(0, 230, 118, 0.12)',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
   },
   opBadgeReturn: {
-    backgroundColor: 'rgba(255, 145, 0, 0.12)',
+    backgroundColor: 'rgba(255, 145, 0, 0.15)',
   },
   opBadgeAdjustment: {
-    backgroundColor: 'rgba(209, 188, 255, 0.12)',
+    backgroundColor: 'rgba(209, 188, 255, 0.15)',
   },
   opBadgeText: {
     fontSize: 9,
@@ -1234,7 +1330,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   opDateText: {
-    color: COLORS.onSurfaceVariant,
+    color: '#94A3B8',
     fontSize: 10,
   },
   opCardBody: {
@@ -1250,13 +1346,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   deltaPositive: {
-    color: '#00E676',
+    color: '#10B981',
   },
   deltaNegative: {
     color: '#FF6E6E',
   },
   opStockTransition: {
-    color: COLORS.onSurfaceVariant,
+    color: '#94A3B8',
     fontSize: 11,
   },
   opCostCol: {
@@ -1264,29 +1360,31 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   opCostLabel: {
-    color: COLORS.onSurfaceVariant,
+    color: '#64748B',
     fontSize: 9,
     textTransform: 'uppercase',
   },
   opCostVal: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
   },
   opProfitVal: {
-    color: COLORS.secondary,
+    color: '#57F5AB',
     fontSize: 10,
     fontWeight: '700',
   },
   opUnitCostVal: {
-    color: COLORS.onSurfaceVariant,
+    color: '#94A3B8',
     fontSize: 10,
   },
   opDetailsBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 8,
+    backgroundColor: '#0F1619',
+    borderRadius: 10,
     padding: 8,
     gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 48, 55, 0.6)',
   },
   saleFinancialAuditRow: {
     flexDirection: 'row',
@@ -1294,7 +1392,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 4,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
+    borderBottomColor: '#223037',
   },
   auditItem: {
     flexDirection: 'row',
@@ -1302,11 +1400,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   auditKey: {
-    color: COLORS.onSurfaceVariant,
+    color: '#64748B',
     fontSize: 10,
   },
   auditVal: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '600',
   },
@@ -1314,13 +1412,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0, 230, 118, 0.1)',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 6,
   },
   auditPaidText: {
-    color: '#00E676',
+    color: '#34D399',
     fontSize: 10,
     fontWeight: '600',
   },
@@ -1328,13 +1426,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255, 179, 0, 0.12)',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 6,
   },
   auditPendingText: {
-    color: '#FFB300',
+    color: '#FCD34D',
     fontSize: 10,
     fontWeight: '600',
   },
@@ -1344,16 +1442,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   opDetailLabel: {
-    color: COLORS.onSurfaceVariant,
+    color: '#64748B',
     fontSize: 10,
     fontWeight: '600',
   },
   opDetailVal: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 11,
   },
   opNotesVal: {
-    color: COLORS.onSurfaceVariant,
+    color: '#94A3B8',
     fontSize: 11,
     fontStyle: 'italic',
   },
@@ -1367,6 +1465,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
     marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.2)',
   },
   cardCustomerReturnBtnText: {
     color: '#00D2FF',

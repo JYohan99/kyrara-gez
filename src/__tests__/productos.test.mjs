@@ -47,7 +47,6 @@ function setupTestDb() {
     CREATE TABLE IF NOT EXISTS photo_products (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      category TEXT NOT NULL DEFAULT 'General',
       size_format TEXT,
       sale_unit TEXT NOT NULL DEFAULT 'Unidad',
       description TEXT,
@@ -63,7 +62,6 @@ function setupTestDb() {
     );
 
     CREATE INDEX IF NOT EXISTS idx_photo_products_name ON photo_products(name);
-    CREATE INDEX IF NOT EXISTS idx_photo_products_category ON photo_products(category);
     CREATE INDEX IF NOT EXISTS idx_photo_products_active ON photo_products(is_active);
 
     CREATE TABLE IF NOT EXISTS photo_product_prices (
@@ -126,7 +124,6 @@ function crearProducto(db, datos) {
 
   const ahora = Date.now();
   const id = 'prod_' + Math.random().toString(36).substring(2, 10);
-  const categoria = datos.category?.trim() || 'General';
   const formato = datos.sizeFormat?.trim() || null;
   const descripcion = datos.description?.trim() || null;
   const activo = datos.isActive === false ? 0 : 1;
@@ -139,12 +136,12 @@ function crearProducto(db, datos) {
 
   const stmt = db.prepare(`
     INSERT INTO photo_products (
-      id, name, category, size_format, sale_unit, description,
+      id, name, size_format, sale_unit, description,
       is_active, base_price, cost_price, cost_usd, exchange_rate, price_valid_from,
       currency, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  stmt.run(id, nombreLimpio, categoria, formato, unidadLimpia, descripcion, activo, precioBase, costoBase, costoUsd, tipoCambio, fechaVigencia, moneda, ahora, ahora);
+  stmt.run(id, nombreLimpio, formato, unidadLimpia, descripcion, activo, precioBase, costoBase, costoUsd, tipoCambio, fechaVigencia, moneda, ahora, ahora);
 
   if (precioBase > 0 || costoBase > 0 || costoUsd !== null) {
     const tariffStmt = db.prepare(`
@@ -161,7 +158,6 @@ function crearProducto(db, datos) {
   return {
     id,
     name: nombreLimpio,
-    category: categoria,
     sizeFormat: formato,
     saleUnit: unidadLimpia,
     description: descripcion,
@@ -295,9 +291,9 @@ function obtenerHistorialCambiosPrecios(db, filtros = {}) {
     queryProductos += ' WHERE id = ?';
     paramsProd.push(filtros.productId);
   } else if (filtros.search) {
-    queryProductos += ' WHERE (LOWER(name) LIKE ? OR LOWER(size_format) LIKE ? OR LOWER(category) LIKE ?)';
+    queryProductos += ' WHERE (LOWER(name) LIKE ? OR LOWER(size_format) LIKE ?)';
     const term = `%${filtros.search.trim().toLowerCase()}%`;
-    paramsProd.push(term, term, term);
+    paramsProd.push(term, term);
   }
   queryProductos += ' ORDER BY name COLLATE NOCASE ASC';
 
@@ -353,7 +349,6 @@ function obtenerHistorialCambiosPrecios(db, filtros = {}) {
         productId: prod.id,
         productName: prod.name,
         sizeFormat: prod.size_format || undefined,
-        category: prod.category || 'General',
         saleUnit: prod.sale_unit || 'Unidad',
         currency,
         newSalePrice,
@@ -533,7 +528,6 @@ test('1. Crear producto con campos válidos y valores predeterminados', () => {
   const db = setupTestDb();
   const prod = crearProducto(db, {
     name: 'Copia 15x21 cm Brillante',
-    category: 'Copias y Ampliaciones',
     sizeFormat: '15x21 cm',
     saleUnit: 'Copia',
     description: 'Papel satinado premium',
@@ -1396,7 +1390,6 @@ test('25. Nombres generalizados: catálogo aplicable a cualquier producto comerc
   // Crear artículos diversos comerciales (remeras, tazas, servicios de diseño, asesorías)
   const articulo = crearProducto(db, {
     name: 'Taza Térmica Personalizada',
-    category: 'Artículos',
     sizeFormat: '350 ml',
     saleUnit: 'Unidad',
     basePrice: 45000,
@@ -1406,7 +1399,6 @@ test('25. Nombres generalizados: catálogo aplicable a cualquier producto comerc
 
   const servicio = crearProducto(db, {
     name: 'Sesión de Asesoría 1 a 1',
-    category: 'Servicios',
     sizeFormat: '1 hora',
     saleUnit: 'Servicio',
     basePrice: 120000,
@@ -1415,11 +1407,9 @@ test('25. Nombres generalizados: catálogo aplicable a cualquier producto comerc
   });
 
   assert.equal(articulo.name, 'Taza Térmica Personalizada');
-  assert.equal(articulo.category, 'Artículos');
   assert.equal(articulo.grossProfit, 25000);
 
   assert.equal(servicio.name, 'Sesión de Asesoría 1 a 1');
-  assert.equal(servicio.category, 'Servicios');
   assert.equal(servicio.grossProfit, 90000);
 
   // Calcular totales

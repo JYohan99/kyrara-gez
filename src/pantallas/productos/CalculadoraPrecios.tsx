@@ -278,11 +278,6 @@ export const CalculadoraPrecios: React.FC<PropiedadesCalculadoraPrecios> = ({
                             {producto.saleUnit}
                           </Text>
                         </View>
-                        <View style={styles.categoryTag}>
-                          <Text style={styles.categoryTagText}>
-                            {producto.category}
-                          </Text>
-                        </View>
                         <View style={styles.currencyTag}>
                           <Text style={styles.currencyTagText}>
                             {moneda}
@@ -746,16 +741,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   unitTagText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-  },
-  categoryTag: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  categoryTagText: {
     color: COLORS.onSurfaceVariant,
     fontSize: 11,
   },

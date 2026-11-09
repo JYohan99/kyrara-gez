@@ -8,7 +8,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import { Producto } from '@/datos/tipos';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
@@ -26,10 +26,20 @@ export interface PropiedadesTarjetaProducto {
   onDelete: (product: Producto) => void;
 }
 
+const getProductIcon = (nombre?: string) => {
+  const nom = (nombre || '').toLowerCase();
+  if (nom.includes('caf')) return 'local-cafe';
+  if (nom.includes('foto') || nom.includes('cuadro') || nom.includes('lienzo')) return 'image';
+  if (nom.includes('taza') || nom.includes('vaso')) return 'emoji-food-beverage';
+  if (nom.includes('remera') || nom.includes('ropa')) return 'checkroom';
+  return 'inventory-2';
+};
+
 /**
  * Tarjeta de producto adaptada al diseño visual Stitch de Kyrara Gez (Productos - Catálogo e Inventario).
- * Estilo Luminous Glassmorphism con Deep Midnight (#101415 y #181c1d),
- * badges de stock inteligentes, precios en tipografía numérica y acciones rápidas integradas.
+ * Estilo Midnight Slate (#131A1D, #182226, #0F1619, #223037),
+ * icono ámbar de producto, badges de stock esmeralda, precios en tipografía numérica
+ * y botón de venta directa con icono point-of-sale.
  */
 export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
   product,
@@ -83,8 +93,12 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
         accessibilityRole="button"
         accessibilityLabel={`Producto ${product.name}, precio ${formatCurrency(product.basePrice || 0)}, stock ${currentStock}`}
       >
-        {/* FILA 1: Nombre, SKU, Subtítulo y Botón Más Opciones */}
+        {/* FILA 1: Icono del Producto, Nombre, SKU, Subtítulo y Botón Más Opciones */}
         <View style={styles.headerRow}>
+          <View style={styles.productIconBox}>
+            <MaterialIcons name={getProductIcon(product.name)} size={20} color="#FBBF24" />
+          </View>
+
           <View style={styles.headerInfoCol}>
             <View style={styles.titleWrap}>
               <Text
@@ -105,11 +119,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
               ) : null}
             </View>
 
-            <Text style={[styles.productSubtitle, TYPOGRAPHY.cuerpoPequeno]} numberOfLines={1}>
-              {product.category}
-              {product.saleUnit ? ` • ${product.saleUnit}` : ''}
-              {product.supplier ? ` • ${product.supplier}` : ''}
-            </Text>
+
           </View>
 
           <TouchableOpacity
@@ -119,11 +129,11 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel="Opciones de producto"
           >
-            <MaterialIcons name="more-vert" size={20} color={COLORS.bordeContorno} />
+            <MaterialIcons name="more-vert" size={20} color="#94A3B8" />
           </TouchableOpacity>
         </View>
 
-        {/* FILA 2: Sección Financiera (Precio de venta, Costo y Badge de Margen con divisor limpio) */}
+        {/* FILA 2: Sección Financiera (Precio de venta, Costo y Badge de Margen) */}
         <View style={styles.financialRow}>
           <View style={styles.priceCol}>
             <Text style={[styles.salePriceText, TYPOGRAPHY.numericTable]}>
@@ -163,15 +173,15 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
 
         {/* FILA 3: Estado de Stock (Izquierda) y Acciones Rápidas (Derecha) */}
         <View style={styles.footerRow}>
-          {/* Indicador de Stock con Punto Lente / Resplandor */}
+          {/* Indicador de Stock con Punto Resplandor */}
           <View
             style={[
               styles.stockPill,
               isOutOfStock
                 ? styles.stockPillOut
                 : isLowStock
-                ? styles.stockPillLow
-                : styles.stockPillOptimal,
+                  ? styles.stockPillLow
+                  : styles.stockPillOptimal,
             ]}
           >
             <View
@@ -180,8 +190,8 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                 isOutOfStock
                   ? styles.stockDotOut
                   : isLowStock
-                  ? styles.stockDotLow
-                  : styles.stockDotOptimal,
+                    ? styles.stockDotLow
+                    : styles.stockDotOptimal,
               ]}
             />
             <Text
@@ -190,22 +200,22 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                 isOutOfStock
                   ? styles.stockTextOut
                   : isLowStock
-                  ? styles.stockTextLow
-                  : styles.stockTextOptimal,
+                    ? styles.stockTextLow
+                    : styles.stockTextOptimal,
               ]}
               numberOfLines={1}
             >
               {isOutOfStock
                 ? `0 ${product.saleUnit}s • Agotado`
                 : isLowStock
-                ? `${currentStock} ${product.saleUnit}s • Mín. ${minStock}`
-                : `${currentStock} ${product.saleUnit}s • Óptimo`}
+                  ? `${currentStock} ${product.saleUnit}s • Mín. ${minStock}`
+                  : `${currentStock} ${product.saleUnit}s • Óptimo`}
             </Text>
           </View>
 
-          {/* Acciones Rápidas Directas en la Tarjeta */}
+          {/* Acciones Rápidas Directas en la Ficha */}
           <View style={styles.quickActionsRow}>
-            {/* Botón Vender (rápido) */}
+            {/* Botón Vender (rápido con icono point-of-sale asociado a Venta) */}
             {product.isActive && currentStock > 0 && (
               <TouchableOpacity
                 style={styles.btnQuickSale}
@@ -220,7 +230,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                 activeOpacity={0.8}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <MaterialIcons name="remove" size={15} color={COLORS.gasto} />
+                <MaterialIcons name="point-of-sale" size={14} color="#57F5AB" />
                 <Text style={styles.btnQuickSaleText}>Vender</Text>
               </TouchableOpacity>
             )}
@@ -241,8 +251,8 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
             >
               <MaterialIcons
                 name={isOutOfStock ? 'add-shopping-cart' : 'add'}
-                size={isOutOfStock ? 15 : 17}
-                color={isOutOfStock ? COLORS.primario : COLORS.enPrimarioContenedor}
+                size={isOutOfStock ? 14 : 16}
+                color={isOutOfStock ? '#34D399' : '#FFFFFF'}
               />
               {isOutOfStock && <Text style={styles.btnQuickRestockText}>Reponer</Text>}
             </TouchableOpacity>
@@ -268,7 +278,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                       {product.name}
                     </Text>
                     <Text style={styles.menuHeaderSubtitle}>
-                      {product.isActive ? 'Producto Activo' : 'Producto Inactivo'} • {product.category}
+                      {product.isActive ? 'Producto Activo' : 'Producto Inactivo'}
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -276,7 +286,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                     style={styles.menuCloseBtn}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   >
-                    <MaterialIcons name="close" size={18} color={COLORS.enSuperficieVariante} />
+                    <MaterialIcons name="close" size={18} color="#94A3B8" />
                   </TouchableOpacity>
                 </View>
 
@@ -289,7 +299,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                   }}
                   activeOpacity={0.7}
                 >
-                  <MaterialIcons name="visibility" size={18} color={COLORS.secundario} />
+                  <MaterialIcons name="visibility" size={18} color="#00D2FF" />
                   <Text style={styles.menuItemText}>Ver detalles y kardex</Text>
                 </TouchableOpacity>
 
@@ -301,7 +311,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                   }}
                   activeOpacity={0.7}
                 >
-                  <MaterialIcons name="edit" size={18} color={COLORS.primario} />
+                  <MaterialIcons name="edit" size={18} color="#A78BFA" />
                   <Text style={styles.menuItemText}>Editar producto</Text>
                 </TouchableOpacity>
 
@@ -313,7 +323,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                   }}
                   activeOpacity={0.7}
                 >
-                  <MaterialIcons name="trending-up" size={18} color={COLORS.ingreso} />
+                  <MaterialIcons name="trending-up" size={18} color="#57F5AB" />
                   <Text style={styles.menuItemText}>Gestionar tarifas y precios</Text>
                 </TouchableOpacity>
 
@@ -326,7 +336,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                     }}
                     activeOpacity={0.7}
                   >
-                    <MaterialIcons name="calculate" size={18} color={COLORS.secundarioContenedor} />
+                    <MaterialIcons name="calculate" size={18} color="#00D2FF" />
                     <Text style={styles.menuItemText}>Calcular en calculadora</Text>
                   </TouchableOpacity>
                 )}
@@ -339,7 +349,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                   }}
                   activeOpacity={0.7}
                 >
-                  <MaterialIcons name="history" size={18} color={COLORS.enSuperficieVariante} />
+                  <MaterialIcons name="history" size={18} color="#94A3B8" />
                   <Text style={styles.menuItemText}>Historial de precios</Text>
                 </TouchableOpacity>
 
@@ -356,7 +366,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                   <MaterialIcons
                     name={product.isActive ? 'toggle-on' : 'toggle-off'}
                     size={20}
-                    color={product.isActive ? COLORS.ingreso : COLORS.bordeContorno}
+                    color={product.isActive ? '#57F5AB' : '#64748B'}
                   />
                   <Text style={styles.menuItemText}>
                     {product.isActive ? 'Desactivar producto' : 'Activar producto'}
@@ -371,8 +381,8 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                   }}
                   activeOpacity={0.7}
                 >
-                  <MaterialIcons name="delete-outline" size={18} color={COLORS.gasto} />
-                  <Text style={[styles.menuItemText, { color: COLORS.gasto }]}>
+                  <MaterialIcons name="delete-outline" size={18} color="#FF6E6E" />
+                  <Text style={[styles.menuItemText, { color: '#FF6E6E' }]}>
                     Eliminar producto
                   </Text>
                 </TouchableOpacity>
@@ -387,30 +397,39 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: COLORS.superficieContenedorBajo, // #181c1d
-    borderRadius: 16,
+    backgroundColor: '#182226',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: COLORS.bordeCristal, // rgba(209, 188, 255, 0.12)
+    borderColor: '#223037',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 4,
     overflow: 'hidden',
     marginBottom: 10,
   },
   cardContainerInactive: {
-    opacity: 0.65,
+    opacity: 0.6,
   },
   cardTouchable: {
-    padding: 12,
-    gap: 8,
+    padding: 14,
+    gap: 10,
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 8,
+    alignItems: 'center',
+    gap: 12,
+  },
+  productIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerInfoCol: {
     flex: 1,
@@ -424,30 +443,30 @@ const styles = StyleSheet.create({
   },
   productTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.enSuperficie, // #e0e3e4
+    fontWeight: '700',
+    color: '#FFFFFF',
     lineHeight: 21,
   },
   productTitleInactive: {
-    color: COLORS.enSuperficieVariante,
+    color: '#94A3B8',
     textDecorationLine: 'line-through',
   },
   skuBadge: {
-    backgroundColor: COLORS.superficieContenedorMasAlto, // #313536
+    backgroundColor: '#0F1619',
     paddingHorizontal: 7,
     paddingVertical: 1.5,
-    borderRadius: 4,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: COLORS.bordeCristal,
+    borderColor: '#223037',
   },
   skuBadgeText: {
-    color: COLORS.secundario, // #a5e7ff
+    color: '#00D2FF',
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
   productSubtitle: {
-    color: COLORS.enSuperficieVariante, // #ccc3d8
+    color: '#94A3B8',
     fontSize: 12,
     lineHeight: 16,
   },
@@ -457,17 +476,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    marginRight: -4,
-    marginTop: -2,
+    backgroundColor: '#0F1619',
+    borderWidth: 1,
+    borderColor: '#223037',
   },
   financialRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 8,
+    borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(34, 48, 55, 0.7)',
   },
   priceCol: {
     flexDirection: 'row',
@@ -476,45 +496,51 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   salePriceText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.enSuperficie,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
     letterSpacing: -0.2,
   },
   costPriceText: {
     fontSize: 12,
-    color: COLORS.bordeContorno, // #958da1
+    color: '#94A3B8',
     fontWeight: '500',
   },
   marginBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 2.5,
+    paddingVertical: 3,
     borderRadius: 9999,
   },
   marginBadgePositive: {
     backgroundColor: 'rgba(87, 245, 171, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(87, 245, 171, 0.25)',
   },
   marginBadgeNegative: {
-    backgroundColor: 'rgba(255, 138, 158, 0.15)',
+    backgroundColor: 'rgba(255, 110, 110, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 110, 110, 0.25)',
   },
   marginBadgeNeutral: {
-    backgroundColor: COLORS.superficieContenedorMasAlto,
+    backgroundColor: '#0F1619',
     paddingHorizontal: 8,
-    paddingVertical: 2.5,
+    paddingVertical: 3,
     borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: '#223037',
   },
   marginBadgeText: {
     fontSize: 11,
     fontWeight: '700',
   },
   marginTextPositive: {
-    color: COLORS.ingreso, // #57F5AB
+    color: '#57F5AB',
   },
   marginTextNegative: {
-    color: COLORS.gasto, // #FF8A9E
+    color: '#FF6E6E',
   },
   marginTextNeutral: {
-    color: COLORS.enSuperficieVariante,
+    color: '#94A3B8',
     fontSize: 11,
     fontWeight: '600',
   },
@@ -522,7 +548,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 4,
+    paddingTop: 2,
     gap: 8,
   },
   stockPill: {
@@ -535,13 +561,19 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   stockPillOptimal: {
-    backgroundColor: 'rgba(87, 245, 171, 0.12)',
+    backgroundColor: 'rgba(6, 78, 59, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.35)',
   },
   stockPillLow: {
-    backgroundColor: 'rgba(255, 138, 158, 0.15)',
+    backgroundColor: 'rgba(120, 53, 15, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.35)',
   },
   stockPillOut: {
-    backgroundColor: COLORS.superficieContenedorMasAlto,
+    backgroundColor: 'rgba(127, 29, 29, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.35)',
   },
   stockDot: {
     width: 6,
@@ -549,21 +581,21 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   stockDotOptimal: {
-    backgroundColor: COLORS.ingreso,
-    shadowColor: COLORS.ingreso,
+    backgroundColor: '#10B981',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 4,
   },
   stockDotLow: {
-    backgroundColor: COLORS.gasto,
-    shadowColor: COLORS.gasto,
+    backgroundColor: '#F59E0B',
+    shadowColor: '#F59E0B',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 4,
   },
   stockDotOut: {
-    backgroundColor: COLORS.bordeContorno,
+    backgroundColor: '#EF4444',
   },
   stockPillText: {
     fontSize: 11,
@@ -571,13 +603,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   stockTextOptimal: {
-    color: COLORS.ingreso,
+    color: '#34D399',
   },
   stockTextLow: {
-    color: COLORS.gasto,
+    color: '#FCD34D',
   },
   stockTextOut: {
-    color: COLORS.bordeContorno,
+    color: '#FCA5A5',
   },
   quickActionsRow: {
     flexDirection: 'row',
@@ -587,27 +619,27 @@ const styles = StyleSheet.create({
   btnQuickSale: {
     height: 32,
     paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: COLORS.superficieContenedorAlto, // #272b2c
+    borderRadius: 10,
+    backgroundColor: 'rgba(87, 245, 171, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(87, 245, 171, 0.28)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    gap: 5,
   },
   btnQuickSaleText: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.enSuperficie,
+    color: '#57F5AB',
   },
   btnQuickAdd: {
     width: 32,
     height: 32,
-    borderRadius: 8,
-    backgroundColor: COLORS.primarioContenedor, // #8a4fff
+    borderRadius: 10,
+    backgroundColor: '#8A4FFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: COLORS.primarioContenedor,
+    shadowColor: '#8A4FFF',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.35,
     shadowRadius: 5,
@@ -616,22 +648,22 @@ const styles = StyleSheet.create({
   btnQuickRestock: {
     height: 32,
     paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: 'rgba(209, 188, 255, 0.15)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.35)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(209, 188, 255, 0.3)',
+    gap: 5,
   },
   btnQuickRestockText: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.primario,
+    color: '#34D399',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(11, 15, 16, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -639,15 +671,15 @@ const styles = StyleSheet.create({
   menuContainer: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: COLORS.superficieContenedorAlto,
-    borderRadius: 18,
+    backgroundColor: '#182226',
+    borderRadius: 20,
     padding: 14,
     gap: 4,
     borderWidth: 1,
-    borderColor: COLORS.bordeCristal,
+    borderColor: '#223037',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.6,
     shadowRadius: 20,
     elevation: 10,
   },
@@ -657,7 +689,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: '#223037',
     marginBottom: 4,
   },
   menuHeaderTitleWrap: {
@@ -665,17 +697,17 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   menuHeaderTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
-    color: COLORS.enSuperficie,
+    color: '#FFFFFF',
   },
   menuHeaderSubtitle: {
     fontSize: 11,
-    color: COLORS.enSuperficieVariante,
+    color: '#94A3B8',
     marginTop: 2,
   },
   menuCloseBtn: {
-    padding: 2,
+    padding: 4,
   },
   menuItem: {
     flexDirection: 'row',
@@ -683,19 +715,19 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 10,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   menuItemText: {
     fontSize: 13,
     fontWeight: '500',
-    color: COLORS.enSuperficie,
+    color: '#E2E8F0',
   },
   menuDivider: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: '#223037',
     marginVertical: 4,
   },
   menuItemDelete: {
-    backgroundColor: 'rgba(255, 138, 158, 0.08)',
+    backgroundColor: 'rgba(255, 110, 110, 0.08)',
   },
 });

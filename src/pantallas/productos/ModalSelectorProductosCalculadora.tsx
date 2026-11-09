@@ -51,12 +51,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
       if (!q) return true;
       const nombre = (p.name || '').toLowerCase();
       const formato = (p.sizeFormat || '').toLowerCase();
-      const categoria = (p.category || '').toLowerCase();
-      return (
-        nombre.includes(q) ||
-        formato.includes(q) ||
-        categoria.includes(q)
-      );
+      return nombre.includes(q) || formato.includes(q);
     });
 
     const activos = filtrados.filter(p => p.isActive);
@@ -161,7 +156,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
               <TextInput
                 value={busqueda}
                 onChangeText={setBusqueda}
-                placeholder="Buscar por nombre, formato o categoría..."
+                placeholder="Buscar por nombre o formato..."
                 placeholderTextColor={COLORS.onSurfaceVariant + '80'}
                 style={[styles.searchInput, TYPOGRAPHY.cuerpoMedio]}
                 clearButtonMode="while-editing"
@@ -242,11 +237,6 @@ export const ModalSelectorProductosCalculadora: React.FC<
                               <View style={styles.unitChip}>
                                 <Text style={styles.unitChipText}>
                                   {producto.saleUnit}
-                                </Text>
-                              </View>
-                              <View style={styles.categoryChip}>
-                                <Text style={styles.categoryChipText}>
-                                  {producto.category}
                                 </Text>
                               </View>
                             </View>
@@ -422,7 +412,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
                               {prod.name}
                             </Text>
                             <Text style={styles.inactiveProductFormat}>
-                              {prod.sizeFormat || prod.category} • {prod.saleUnit}
+                              {prod.sizeFormat ? `${prod.sizeFormat} • ` : ''}{prod.saleUnit}
                             </Text>
                           </View>
                           <View style={styles.inactiveBadge}>
@@ -594,16 +584,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   unitChipText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-  },
-  categoryChip: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  categoryChipText: {
     color: COLORS.onSurfaceVariant,
     fontSize: 11,
   },

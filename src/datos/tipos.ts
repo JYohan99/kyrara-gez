@@ -215,7 +215,6 @@ export interface Producto {
   id: string;
   name: string;
   sku?: string;
-  category: string;
   sizeFormat?: string;
   saleUnit: string;
   description?: string;
@@ -317,7 +316,6 @@ export type TipoFiltroPeriodoInventario =
 export interface RankingProductoVenta {
   productId: string;
   productName: string;
-  category: string;
   saleUnit: string;
   sizeFormat?: string;
   unitsSold: number;
@@ -358,7 +356,6 @@ export interface AnalisisVentasInventario {
 export interface ProductoImportadoExcel {
   id?: string;
   name: string;
-  category: string;
   saleUnit: string;
   sizeFormat?: string;
   costPrice: number; // en centavos
@@ -379,7 +376,6 @@ export type InventorySummary = ResumenInventario;
 export type FiltroEstadoProducto = 'TODOS' | 'ACTIVOS' | 'INACTIVOS';
 
 export interface FiltroProductos {
-  category?: string;
   search?: string;
   statusFilter?: FiltroEstadoProducto;
 }
@@ -461,7 +457,6 @@ export interface CambioPrecioHistorial {
   productId: string;
   productName: string;
   sizeFormat?: string;
-  category: string;
   saleUnit: string;
   currency: string;
   // Valores nuevos/vigentes del cambio

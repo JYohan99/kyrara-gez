@@ -39,19 +39,16 @@ export interface PropiedadesModalProducto {
   visible: boolean;
   onClose: () => void;
   productoParaEditar?: Producto | null;
-  categoriaInicial?: string;
 }
 
 
 interface PropiedadesContenidoModalProducto {
   productoParaEditar?: Producto | null;
-  categoriaInicial?: string;
   onClose: () => void;
 }
 
 const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
   productoParaEditar,
-  categoriaInicial,
   onClose,
 }) => {
   const insets = useSafeAreaInsets();
@@ -102,7 +99,6 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
       return;
     }
 
-    const categoriaFinal = productoParaEditar?.category || categoriaInicial || 'General';
     const formatoFinal = productoParaEditar?.sizeFormat || undefined;
     const unidadFinal = mostrarOtraUnidad && otraUnidad.trim() ? otraUnidad.trim() : unidadVenta.trim();
 
@@ -124,7 +120,6 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
         actualizarProducto(productoParaEditar.id, {
           name: nombreFinal,
           sku: skuFinal,
-          category: categoriaFinal,
           sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
           description: descripcion.trim() || undefined,
@@ -139,7 +134,6 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
         crearProducto({
           name: nombreFinal,
           sku: skuFinal,
-          category: categoriaFinal,
           sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
           description: descripcion.trim() || undefined,
@@ -433,7 +427,6 @@ export const ModalProducto: React.FC<PropiedadesModalProducto> = ({
   visible,
   onClose,
   productoParaEditar,
-  categoriaInicial,
 }) => {
   return (
     <Modal
@@ -445,7 +438,6 @@ export const ModalProducto: React.FC<PropiedadesModalProducto> = ({
       {visible ? (
         <ContenidoModalProducto
           productoParaEditar={productoParaEditar}
-          categoriaInicial={categoriaInicial}
           onClose={onClose}
         />
       ) : null}

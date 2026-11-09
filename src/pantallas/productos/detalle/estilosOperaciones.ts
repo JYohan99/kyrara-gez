@@ -3,8 +3,18 @@ import { COLORES as COLORS } from '@/compartido/tema';
 
 export const estilosOperaciones = StyleSheet.create({
   modalOverlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(11, 15, 16, 0.85)',
+    justifyContent: 'flex-end',
+    zIndex: 9999,
+    elevation: 30,
+  },
+  keyboardAvoid: {
+    width: '100%',
     justifyContent: 'flex-end',
   },
   modalSheet: {

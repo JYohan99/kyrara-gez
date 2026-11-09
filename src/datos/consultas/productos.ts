@@ -15,17 +15,6 @@ import {
 } from '../tipos';
 import { emitirCambioBoveda } from '../sincronizacion';
 
-export const CATEGORIAS_PRODUCTOS_SUGERIDAS = [
-  'General',
-  'Artículos',
-  'Servicios',
-  'Impresiones',
-  'Digital',
-  'Packs',
-  'Personalizados',
-  'Accesorios',
-];
-
 export const FORMATOS_PRODUCTOS_SUGERIDOS = [
   'Estándar',
   'Chico',
@@ -52,7 +41,6 @@ interface FilaProducto {
   id: string;
   name: string;
   sku: string | null;
-  category: string;
   size_format: string | null;
   sale_unit: string;
   description: string | null;
@@ -122,7 +110,6 @@ function mapearFilaAProducto(fila: FilaProducto, tariffsCount?: number): Product
     id: fila.id,
     name: fila.name,
     sku: fila.sku || undefined,
-    category: fila.category || 'General',
     sizeFormat: fila.size_format || undefined,
     saleUnit: fila.sale_unit || 'Unidad',
     description: fila.description || undefined,
@@ -205,15 +192,10 @@ export function obtenerProductos(filtros?: FiltroProductos): Producto[] {
     query += ' AND p.is_active = 0';
   }
 
-  if (filtros?.category && filtros.category !== 'TODAS') {
-    query += ' AND p.category = ?';
-    params.push(filtros.category);
-  }
-
   if (filtros?.search && filtros.search.trim()) {
     const searchPattern = `%${filtros.search.trim()}%`;
-    query += ' AND (p.name LIKE ? OR p.sku LIKE ? OR p.supplier LIKE ? OR p.size_format LIKE ? OR p.category LIKE ? OR p.description LIKE ?)';
-    params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
+    query += ' AND (p.name LIKE ? OR p.sku LIKE ? OR p.supplier LIKE ? OR p.size_format LIKE ? OR p.description LIKE ?)';
+    params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
   }
 
   // Ordenar: primero los activos, luego alfabéticamente por nombre
@@ -523,22 +505,15 @@ export function eliminarTarifaProducto(tariffId: string): void {
 }
 
 /**
- * Obtiene las categorías actualmente en uso más las sugeridas.
+ * Retorna lista vacía tras eliminación de categorías de productos.
  */
 export function obtenerCategoriasProductos(): string[] {
-  const db = obtenerBaseDatos();
-  const rows = db.getAllSync<{ category: string }>(
-    'SELECT DISTINCT category FROM photo_products WHERE category IS NOT NULL AND TRIM(category) != "" ORDER BY category ASC'
-  );
-  const usadas = rows.map(r => r.category);
-  const todas = Array.from(new Set([...CATEGORIAS_PRODUCTOS_SUGERIDAS, ...usadas]));
-  return todas;
+  return [];
 }
 
 export interface DatosCrearProducto {
   name: string;
   sku?: string;
-  category?: string;
   sizeFormat?: string;
   saleUnit: string;
   description?: string;
@@ -577,7 +552,6 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
   const ahora = Date.now();
   const id = 'prod_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 7);
   const sku = datos.sku?.trim() || null;
-  const categoria = datos.category?.trim() || 'General';
   const formato = datos.sizeFormat?.trim() || null;
   const descripcion = datos.description?.trim() || null;
   const activo = datos.isActive === false ? 0 : 1;
@@ -594,15 +568,14 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
   db.withTransactionSync(() => {
     db.runSync(
       `INSERT INTO photo_products (
-        id, name, sku, category, size_format, sale_unit, description,
+        id, name, sku, size_format, sale_unit, description,
         is_active, base_price, cost_price, current_stock, min_stock, supplier,
         cost_usd, exchange_rate, price_valid_from, currency, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         nombreLimpio,
         sku,
-        categoria,
         formato,
         unidadLimpia,
         descripcion,
@@ -674,7 +647,6 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
 export interface DatosActualizarProducto {
   name?: string;
   sku?: string;
-  category?: string;
   sizeFormat?: string;
   saleUnit?: string;
   description?: string;
@@ -722,7 +694,6 @@ export function actualizarProducto(
   }
 
   const skuFinal = datos.sku !== undefined ? (datos.sku.trim() || null) : (actual.sku || null);
-  const categoriaFinal = datos.category !== undefined ? (datos.category.trim() || 'General') : actual.category;
   const formatoFinal = datos.sizeFormat !== undefined ? (datos.sizeFormat.trim() || null) : (actual.sizeFormat || null);
   const descripcionFinal = datos.description !== undefined ? (datos.description.trim() || null) : (actual.description || null);
   const activoFinal = datos.isActive !== undefined ? (datos.isActive ? 1 : 0) : (actual.isActive ? 1 : 0);
@@ -743,7 +714,6 @@ export function actualizarProducto(
       `UPDATE photo_products SET
         name = ?,
         sku = ?,
-        category = ?,
         size_format = ?,
         sale_unit = ?,
         description = ?,
@@ -761,7 +731,6 @@ export function actualizarProducto(
       [
         nombreFinal,
         skuFinal,
-        categoriaFinal,
         formatoFinal,
         unidadFinal,
         descripcionFinal,
@@ -1058,7 +1027,7 @@ export function obtenerHistorialCambiosPrecios(
 ): CambioPrecioHistorial[] {
   const db = obtenerBaseDatos();
 
-  let sqlProd = 'SELECT id, name, category, size_format, sale_unit, currency, is_active FROM photo_products WHERE 1=1';
+  let sqlProd = 'SELECT id, name, size_format, sale_unit, currency, is_active FROM photo_products WHERE 1=1';
   const paramsProd: (string | number)[] = [];
 
   if (filtros?.productId) {
@@ -1073,14 +1042,13 @@ export function obtenerHistorialCambiosPrecios(
 
   if (filtros?.search && filtros.search.trim()) {
     const pattern = `%${filtros.search.trim()}%`;
-    sqlProd += ' AND (name LIKE ? OR size_format LIKE ? OR category LIKE ?)';
-    paramsProd.push(pattern, pattern, pattern);
+    sqlProd += ' AND (name LIKE ? OR size_format LIKE ?)';
+    paramsProd.push(pattern, pattern);
   }
 
   const productos = db.getAllSync<{
     id: string;
     name: string;
-    category: string;
     size_format: string | null;
     sale_unit: string;
     currency: string | null;
@@ -1154,7 +1122,6 @@ export function obtenerHistorialCambiosPrecios(
         productId: prod.id,
         productName: prod.name,
         sizeFormat: prod.size_format || undefined,
-        category: prod.category || 'General',
         saleUnit: prod.sale_unit || 'Unidad',
         currency,
         newSalePrice,

@@ -16,7 +16,6 @@ import {
   obtenerDeudas,
   obtenerResumenDeudas,
   obtenerProductos,
-  obtenerCategoriasProductos,
   obtenerTarifasProducto,
   obtenerTarifaVigente,
   obtenerHistorialCambiosPrecios,
@@ -376,36 +375,25 @@ export function useDeudasBoveda(filtros?: {
 }
 
 /**
- * Hook reactivo para consultar productos y categorías del catálogo.
+ * Hook reactivo para consultar productos del catálogo.
  */
 export function useProductosBoveda(filtros?: {
-  category?: string;
   search?: string;
   statusFilter?: FiltroEstadoProducto;
 }) {
   const version = useSyncExternalStore(suscribirCambiosBoveda, obtenerVersionBoveda);
 
-  const category = filtros?.category;
   const search = filtros?.search;
   const statusFilter = filtros?.statusFilter;
 
   const products = useMemo(() => {
     void version;
     try {
-      return obtenerProductos({ category, search, statusFilter });
+      return obtenerProductos({ search, statusFilter });
     } catch {
       return [];
     }
-  }, [version, category, search, statusFilter]);
-
-  const categories = useMemo(() => {
-    void version;
-    try {
-      return obtenerCategoriasProductos();
-    } catch {
-      return [];
-    }
-  }, [version]);
+  }, [version, search, statusFilter]);
 
   const reloadProducts = useCallback(() => {
     emitirCambioBoveda();
@@ -413,7 +401,7 @@ export function useProductosBoveda(filtros?: {
 
   return {
     products,
-    categories,
+    categories: [] as string[],
     reloadProducts,
   };
 }

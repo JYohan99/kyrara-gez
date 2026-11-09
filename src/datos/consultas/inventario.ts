@@ -1030,7 +1030,6 @@ export function obtenerAnalisisVentasInventario(
   const productRows = db.getAllSync<{
     product_id: string;
     product_name: string;
-    category: string;
     sale_unit: string;
     size_format: string | null;
     units_sold: number;
@@ -1041,7 +1040,6 @@ export function obtenerAnalisisVentasInventario(
     SELECT
       p.id as product_id,
       p.name as product_name,
-      p.category,
       p.sale_unit,
       p.size_format,
       SUM(CASE
@@ -1079,7 +1077,6 @@ export function obtenerAnalisisVentasInventario(
     return {
       productId: r.product_id,
       productName: r.product_name,
-      category: r.category,
       saleUnit: r.sale_unit,
       sizeFormat: r.size_format || undefined,
       unitsSold: Math.max(0, r.units_sold),
@@ -1202,7 +1199,6 @@ export function obtenerProductosConAlertasStock(): Producto[] {
     id: r.id,
     name: r.name,
     sku: r.sku || undefined,
-    category: r.category || 'General',
     sizeFormat: r.size_format || undefined,
     saleUnit: r.sale_unit || 'Unidad',
     description: r.description || undefined,
@@ -1235,7 +1231,6 @@ export function obtenerProductosConAlertasStock(): Producto[] {
 export const PRODUCTOS_EXCEL_INVERSIONES_SUGERIDOS: ProductoImportadoExcel[] = [
   {
     name: 'Cuadros 12x18',
-    category: 'Cuadros',
     saleUnit: 'Unidad',
     sizeFormat: '12x18',
     costPrice: 165000, // $1.650,00 (en centavos)
@@ -1248,7 +1243,6 @@ export const PRODUCTOS_EXCEL_INVERSIONES_SUGERIDOS: ProductoImportadoExcel[] = [
   },
   {
     name: 'Cuadros 8x10',
-    category: 'Cuadros',
     saleUnit: 'Unidad',
     sizeFormat: '8x10',
     costPrice: 85000, // $850,00 (en centavos)
@@ -1261,7 +1255,6 @@ export const PRODUCTOS_EXCEL_INVERSIONES_SUGERIDOS: ProductoImportadoExcel[] = [
   },
   {
     name: 'Álbum 5x7',
-    category: 'Álbumes',
     saleUnit: 'Unidad',
     sizeFormat: '5x7',
     costPrice: 80000, // $800,00 (en centavos)
@@ -1274,7 +1267,6 @@ export const PRODUCTOS_EXCEL_INVERSIONES_SUGERIDOS: ProductoImportadoExcel[] = [
   },
   {
     name: 'Álbum 8x10',
-    category: 'Álbumes',
     saleUnit: 'Unidad',
     sizeFormat: '8x10',
     costPrice: 90000, // $900,00 (en centavos)
@@ -1287,7 +1279,6 @@ export const PRODUCTOS_EXCEL_INVERSIONES_SUGERIDOS: ProductoImportadoExcel[] = [
   },
   {
     name: 'Café',
-    category: 'Cafetería',
     saleUnit: 'Unidad',
     costPrice: 0,
     basePrice: 70000, // $700,00 (en centavos)
@@ -1299,7 +1290,6 @@ export const PRODUCTOS_EXCEL_INVERSIONES_SUGERIDOS: ProductoImportadoExcel[] = [
   },
   {
     name: 'Café Dayli',
-    category: 'Cafetería',
     saleUnit: 'Unidad',
     costPrice: 0,
     basePrice: 60000, // $600,00 (en centavos)
@@ -1343,7 +1333,6 @@ export function importarProductosDesdeExcel(
             base_price = ?,
             cost_price = ?,
             size_format = COALESCE(?, size_format),
-            category = COALESCE(?, category),
             min_stock = COALESCE(?, min_stock),
             updated_at = ?
           WHERE id = ?`,
@@ -1351,7 +1340,6 @@ export function importarProductosDesdeExcel(
             p.basePrice,
             p.costPrice,
             p.sizeFormat || null,
-            p.category || null,
             p.minStock ?? 2,
             ahora,
             existente.id,
@@ -1380,7 +1368,6 @@ export function importarProductosDesdeExcel(
         // Crear nuevo producto en el catálogo
         crearProducto({
           name: nombreLimpio,
-          category: p.category || 'General',
           saleUnit: p.saleUnit || 'Unidad',
           sizeFormat: p.sizeFormat,
           basePrice: p.basePrice,

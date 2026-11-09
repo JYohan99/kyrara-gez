@@ -61,8 +61,7 @@ export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
       if (!q) return true;
       const nom = (p.name || '').toLowerCase();
       const fmt = (p.sizeFormat || '').toLowerCase();
-      const cat = (p.category || '').toLowerCase();
-      return nom.includes(q) || fmt.includes(q) || cat.includes(q);
+      return nom.includes(q) || fmt.includes(q);
     });
   }, [allProducts, busquedaRentabilidad, filtroEstadoRentabilidad]);
 
@@ -295,11 +294,6 @@ export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
                 <View style={styles.profileTag}>
                   <Text style={styles.profileTagText}>
                     {selectedProduct.saleUnit}
-                  </Text>
-                </View>
-                <View style={styles.profileTag}>
-                  <Text style={styles.profileTagText}>
-                    {selectedProduct.category}
                   </Text>
                 </View>
                 <View style={styles.profileCurrencyTag}>
@@ -535,7 +529,7 @@ export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
                       {p.name}
                     </Text>
                     <Text style={styles.rentProductFormat}>
-                      {p.sizeFormat || p.category} • {p.saleUnit} ({mon})
+                      {p.sizeFormat ? `${p.sizeFormat} • ` : ''}{p.saleUnit} ({mon})
                     </Text>
                   </View>
 

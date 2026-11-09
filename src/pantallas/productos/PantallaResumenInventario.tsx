@@ -261,8 +261,8 @@ export const PantallaResumenInventario: React.FC<PropiedadesPantallaResumenInven
                     <Text style={styles.alertProductName} numberOfLines={1}>
                       {prod.name}
                     </Text>
-                    <Text style={styles.alertProductCategory}>
-                      {prod.category} • Min: {prod.minStock} {prod.saleUnit}s
+                    <Text style={styles.alertProductSub}>
+                      {prod.sizeFormat ? `${prod.sizeFormat} • ` : ''}Mín: {prod.minStock} {prod.saleUnit}s
                     </Text>
                   </View>
                 </View>
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  alertProductCategory: {
+  alertProductSub: {
     color: COLORS.onSurfaceVariant,
     fontSize: 10,
   },

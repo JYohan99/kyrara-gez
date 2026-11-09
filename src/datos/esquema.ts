@@ -40,7 +40,6 @@ function asegurarIndices(db: SQLiteDatabase): void {
     'CREATE INDEX IF NOT EXISTS idx_debts_due_date ON debts(due_date);',
     'CREATE INDEX IF NOT EXISTS idx_debt_payments_debt_id ON debt_payments(debt_id);',
     'CREATE INDEX IF NOT EXISTS idx_photo_products_name ON photo_products(name);',
-    'CREATE INDEX IF NOT EXISTS idx_photo_products_category ON photo_products(category);',
     'CREATE INDEX IF NOT EXISTS idx_photo_products_active ON photo_products(is_active);',
     'CREATE INDEX IF NOT EXISTS idx_photo_products_sku ON photo_products(sku);',
     'CREATE INDEX IF NOT EXISTS idx_inv_ops_product ON inventory_operations(product_id);',
@@ -56,6 +55,12 @@ function asegurarIndices(db: SQLiteDatabase): void {
     } catch {
       // Ignorar si el índice ya existe
     }
+  }
+
+  try {
+    db.execSync('DROP INDEX IF EXISTS idx_photo_products_category;');
+  } catch {
+    // Ignorar si no existe
   }
 }
 
@@ -191,7 +196,6 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       sku TEXT,
-      category TEXT NOT NULL DEFAULT 'General',
       size_format TEXT,
       sale_unit TEXT NOT NULL DEFAULT 'Unidad',
       description TEXT,
@@ -256,7 +260,14 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
   asegurarColumna(db, 'transactions', 'payee', 'TEXT');
 
   asegurarColumna(db, 'photo_products', 'sku', 'TEXT');
-  asegurarColumna(db, 'photo_products', 'category', "TEXT NOT NULL DEFAULT 'General'");
+  try {
+    const tableInfo = db.getAllSync<{ name: string }>('PRAGMA table_info(photo_products)');
+    if (tableInfo.some(col => col.name === 'category')) {
+      db.execSync('ALTER TABLE photo_products DROP COLUMN category;');
+    }
+  } catch {
+    // Si la versión de SQLite no admite DROP COLUMN o ya fue eliminada, continuar
+  }
   asegurarColumna(db, 'photo_products', 'size_format', 'TEXT');
   asegurarColumna(db, 'photo_products', 'sale_unit', "TEXT NOT NULL DEFAULT 'Unidad'");
   asegurarColumna(db, 'photo_products', 'description', 'TEXT');

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Modal,
+  StyleSheet,
   TouchableOpacity,
   ScrollView,
   TextInput,
@@ -121,13 +121,23 @@ export const SubModalAjuste: React.FC<PropiedadesSubModalAjuste> = ({
     }
   };
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <View style={styles.modalOverlay}>
+      <TouchableOpacity
+        style={StyleSheet.absoluteFill}
+        activeOpacity={1}
+        onPress={onClose}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.modalOverlay}
+        style={styles.keyboardAvoid}
       >
-        <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+        <View
+          style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}
+          onStartShouldSetResponder={() => true}
+        >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
@@ -298,6 +308,6 @@ export const SubModalAjuste: React.FC<PropiedadesSubModalAjuste> = ({
           </View>
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </View>
   );
 };

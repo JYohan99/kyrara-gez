@@ -45,7 +45,6 @@ export interface PropiedadesPestanaProductos {
 export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewProduct, onNewProductRef }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<FiltroEstadoProducto>('TODOS');
-  const [selectedCategory, setSelectedCategory] = useState<string>('TODAS');
   const [soloAlertasStock, setSoloAlertasStock] = useState(false);
   const [soloAgotados, setSoloAgotados] = useState(false);
 
@@ -71,9 +70,8 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
   const [productoParaHistorial, setProductoParaHistorial] = useState<string | undefined>(undefined);
 
   // Hooks reactivos a la bóveda SQLite
-  const { products: allProducts, categories } = useProductosBoveda({
+  const { products: allProducts } = useProductosBoveda({
     search,
-    category: selectedCategory,
     statusFilter,
   });
   const { summary: inventorySummary } = useResumenInventarioBoveda();
@@ -488,7 +486,7 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
             <TextInput
               value={search}
               onChangeText={setSearch}
-              placeholder="Buscar por nombre, SKU o categoría..."
+              placeholder="Buscar por nombre o SKU..."
               placeholderTextColor={COLORS.bordeContorno}
               style={styles.searchTextInput}
               autoCorrect={false}
@@ -522,12 +520,11 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
             <TouchableOpacity
               style={[
                 styles.chipItem,
-                statusFilter === 'TODOS' && selectedCategory === 'TODAS' && !soloAlertasStock && !soloAgotados && styles.chipItemActive,
+                statusFilter === 'TODOS' && !soloAlertasStock && !soloAgotados && styles.chipItemActive,
               ]}
               onPress={() => {
                 triggerSelection();
                 setStatusFilter('TODOS');
-                setSelectedCategory('TODAS');
                 setSoloAlertasStock(false);
                 setSoloAgotados(false);
               }}
@@ -536,12 +533,14 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
               <Text
                 style={[
                   styles.chipText,
-                  statusFilter === 'TODOS' && selectedCategory === 'TODAS' && !soloAlertasStock && !soloAgotados && styles.chipTextActive,
+                  statusFilter === 'TODOS' && !soloAlertasStock && !soloAgotados && styles.chipTextActive,
                 ]}
               >
                 Todos ({totalCount})
               </Text>
             </TouchableOpacity>
+
+
 
             {/* Chip: Stock Bajo */}
             <TouchableOpacity
@@ -592,29 +591,6 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
                 Agotados ({inventorySummary.outOfStockCount})
               </Text>
             </TouchableOpacity>
-
-            {/* Categorías de productos */}
-            {categories.filter(c => c !== 'TODAS').map(cat => {
-              const isSelected = selectedCategory === cat && !soloAlertasStock && !soloAgotados;
-              const count = allProducts.filter(p => p.category === cat).length;
-              return (
-                <TouchableOpacity
-                  key={cat}
-                  style={[styles.chipItem, isSelected && styles.chipItemActive]}
-                  onPress={() => {
-                    triggerSelection();
-                    setSoloAlertasStock(false);
-                    setSoloAgotados(false);
-                    setSelectedCategory(prev => (prev === cat ? 'TODAS' : cat));
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
-                    {cat} ({count})
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
           </ScrollView>
 
           {/* LISTA DEL CATÁLOGO DE PRODUCTOS */}
@@ -626,19 +602,19 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
                 soloAgotados
                   ? 'Sin productos agotados'
                   : soloAlertasStock
-                  ? 'Sin alertas de stock'
-                  : search
-                  ? 'Sin coincidencias'
-                  : 'Sin productos en el catálogo'
+                    ? 'Sin alertas de stock'
+                    : search
+                      ? 'Sin coincidencias'
+                      : 'Sin productos en el catálogo'
               }
               descripcion={
                 soloAgotados
                   ? 'No hay productos con stock en cero en este momento.'
                   : soloAlertasStock
-                  ? 'Ningún producto presenta stock bajo o agotado en este momento.'
-                  : search
-                  ? 'No se encontraron productos que coincidan con los filtros seleccionados.'
-                  : 'Agrega los primeros productos, servicios o artículos de tu negocio.'
+                    ? 'Ningún producto presenta stock bajo o agotado en este momento.'
+                    : search
+                      ? 'No se encontraron productos que coincidan con los filtros seleccionados.'
+                      : 'Agrega los primeros productos, servicios o artículos de tu negocio.'
               }
             >
               {soloAlertasStock || soloAgotados ? (

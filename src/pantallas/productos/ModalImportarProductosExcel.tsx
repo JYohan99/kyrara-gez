@@ -179,9 +179,11 @@ export const ModalImportarProductosExcel: React.FC<PropiedadesModalImportarProdu
                         <Text style={styles.productName} numberOfLines={1}>
                           {prod.name}
                         </Text>
-                        <View style={styles.badgeCategory}>
-                          <Text style={styles.badgeCategoryText}>{prod.category}</Text>
-                        </View>
+                        {prod.sizeFormat ? (
+                          <View style={styles.badgeFormat}>
+                            <Text style={styles.badgeFormatText}>{prod.sizeFormat}</Text>
+                          </View>
+                        ) : null}
                       </View>
 
                       <View style={styles.cardPricingRow}>
@@ -399,13 +401,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     flex: 1,
   },
-  badgeCategory: {
+  badgeFormat: {
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
   },
-  badgeCategoryText: {
+  badgeFormatText: {
     color: COLORS.onSurfaceVariant,
     fontSize: 10,
     fontWeight: '600',

@@ -296,7 +296,9 @@ export const PantallaAnalisisInventario: React.FC<PropiedadesPantallaAnalisisInv
                       <Text style={styles.rankingProductName} numberOfLines={1}>
                         {item.productName}
                       </Text>
-                      <Text style={styles.rankingCategory}>{item.category}</Text>
+                      {item.sizeFormat ? (
+                        <Text style={styles.rankingFormat}>{item.sizeFormat}</Text>
+                      ) : null}
                     </View>
 
                     {/* Barra de progreso visual relativa */}
@@ -658,7 +660,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     flex: 1,
   },
-  rankingCategory: {
+  rankingFormat: {
     color: COLORS.onSurfaceVariant,
     fontSize: 10,
   },
