@@ -159,8 +159,8 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
     if (Array.isArray(data.transactions)) {
       for (const t of data.transactions) {
         db.runSync(
-          `INSERT INTO transactions (id, amount, type, source_account_id, target_account_id, category_id, date, note, payee, tags)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO transactions (id, amount, type, source_account_id, target_account_id, category_id, date, note, payee)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             t.id,
             t.amount,
@@ -171,7 +171,6 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
             t.date,
             t.note || null,
             t.payee || null,
-            t.tags || null,
           ]
         );
         txCount++;
@@ -305,16 +304,17 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
       for (const p of data.photo_products) {
         db.runSync(
           `INSERT INTO photo_products (
-            id, name, sku, size_format, sale_unit, description,
+            id, name, sku, size_format, sale_unit, icon, description,
             is_active, base_price, cost_price, current_stock, min_stock, supplier,
             currency, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             p.id,
             p.name,
             p.sku || null,
             p.size_format || p.sizeFormat || null,
             p.sale_unit || p.saleUnit || 'Unidad',
+            p.icon || 'inventory-2',
             p.description || null,
             p.is_active !== undefined ? (p.is_active ? 1 : 0) : (p.isActive ? 1 : 0),
             p.base_price ?? p.basePrice ?? 0,

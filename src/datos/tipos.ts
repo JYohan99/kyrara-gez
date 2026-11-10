@@ -35,7 +35,6 @@ export interface Movimiento {
   date: number; // timestamp
   note?: string;
   payee?: string;
-  tags?: string;
 }
 
 export interface MovimientoEnriquecido extends Movimiento {
@@ -214,6 +213,7 @@ export interface TarifaProducto {
 export interface Producto {
   id: string;
   name: string;
+  icon?: string; // Nombre de MaterialIcons o Emoji
   sku?: string;
   sizeFormat?: string;
   saleUnit: string;
@@ -351,21 +351,6 @@ export interface AnalisisVentasInventario {
   topSellingProducts: RankingProductoVenta[];
   topProfitableProducts: RankingProductoVenta[];
   evolution: PuntoEvolucionVentas[];
-}
-
-export interface ProductoImportadoExcel {
-  id?: string;
-  name: string;
-  saleUnit: string;
-  sizeFormat?: string;
-  costPrice: number; // en centavos
-  basePrice: number; // en centavos
-  initialStock: number; // 0
-  minStock: number;
-  supplier?: string;
-  sourceSheet: string;
-  sourceRow: number;
-  isSelected?: boolean;
 }
 
 export type InventoryOperationType = TipoOperacionInventario;

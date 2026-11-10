@@ -28,6 +28,7 @@ import { SubModalCompra } from './detalle/SubModalCompra';
 import { SubModalAjuste } from './detalle/SubModalAjuste';
 import { SubModalDevolucionProveedor } from './detalle/SubModalDevolucionProveedor';
 import { SubModalDevolucionCliente } from './detalle/SubModalDevolucionCliente';
+import { IconoProducto } from '@/compartido/iconosProductos';
 
 export interface PropiedadesModalDetalleProducto {
   visible: boolean;
@@ -46,15 +47,6 @@ type SubModalAccion =
   | 'DEVOLUCION_PROVEEDOR'
   | 'DEVOLUCION_CLIENTE'
   | 'AJUSTE';
-
-const getProductIcon = (nombre?: string) => {
-  const nom = (nombre || '').toLowerCase();
-  if (nom.includes('caf')) return 'local-cafe';
-  if (nom.includes('foto') || nom.includes('cuadro') || nom.includes('lienzo')) return 'image';
-  if (nom.includes('taza') || nom.includes('vaso')) return 'emoji-food-beverage';
-  if (nom.includes('remera') || nom.includes('ropa')) return 'checkroom';
-  return 'inventory-2';
-};
 
 export const ModalDetalleProducto: React.FC<PropiedadesModalDetalleProducto> = ({
   visible,
@@ -279,10 +271,10 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
           <View style={styles.dragHandle} />
         </View>
 
-        {/* Header con icono ámbar Stitch, Nombre, Badges y Acciones */}
+        {/* Header con icono cian Stitch, Nombre, Badges y Acciones */}
         <View style={styles.headerRow}>
           <View style={styles.productIconBox}>
-            <MaterialIcons name={getProductIcon(productoActual.name)} size={22} color="#FBBF24" />
+            <IconoProducto icono={productoActual.icon} nombre={productoActual.name} size={22} color="#00D2FF" />
           </View>
 
           <View style={styles.headerTitleCol}>
@@ -858,9 +850,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: 'rgba(0, 210, 255, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderColor: 'rgba(0, 210, 255, 0.28)',
     alignItems: 'center',
     justifyContent: 'center',
   },

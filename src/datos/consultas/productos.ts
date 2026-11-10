@@ -40,6 +40,7 @@ export const UNIDADES_VENTA_SUGERIDAS = [
 interface FilaProducto {
   id: string;
   name: string;
+  icon: string | null;
   sku: string | null;
   size_format: string | null;
   sale_unit: string;
@@ -109,6 +110,7 @@ function mapearFilaAProducto(fila: FilaProducto, tariffsCount?: number): Product
   return {
     id: fila.id,
     name: fila.name,
+    icon: fila.icon || undefined,
     sku: fila.sku || undefined,
     sizeFormat: fila.size_format || undefined,
     saleUnit: fila.sale_unit || 'Unidad',
@@ -504,15 +506,9 @@ export function eliminarTarifaProducto(tariffId: string): void {
   emitirCambioBoveda();
 }
 
-/**
- * Retorna lista vacía tras eliminación de categorías de productos.
- */
-export function obtenerCategoriasProductos(): string[] {
-  return [];
-}
-
 export interface DatosCrearProducto {
   name: string;
+  icon?: string;
   sku?: string;
   sizeFormat?: string;
   saleUnit: string;
@@ -553,6 +549,7 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
   const id = 'prod_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 7);
   const sku = datos.sku?.trim() || null;
   const formato = datos.sizeFormat?.trim() || null;
+  const icono = datos.icon?.trim() || 'inventory-2';
   const descripcion = datos.description?.trim() || null;
   const activo = datos.isActive === false ? 0 : 1;
   const precioBase = datos.basePrice !== undefined ? Math.round(datos.basePrice) : 0;
@@ -568,16 +565,17 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
   db.withTransactionSync(() => {
     db.runSync(
       `INSERT INTO photo_products (
-        id, name, sku, size_format, sale_unit, description,
+        id, name, sku, size_format, sale_unit, icon, description,
         is_active, base_price, cost_price, current_stock, min_stock, supplier,
         cost_usd, exchange_rate, price_valid_from, currency, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         nombreLimpio,
         sku,
         formato,
         unidadLimpia,
+        icono,
         descripcion,
         activo,
         precioBase,
@@ -646,6 +644,7 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
 
 export interface DatosActualizarProducto {
   name?: string;
+  icon?: string;
   sku?: string;
   sizeFormat?: string;
   saleUnit?: string;
@@ -695,6 +694,7 @@ export function actualizarProducto(
 
   const skuFinal = datos.sku !== undefined ? (datos.sku.trim() || null) : (actual.sku || null);
   const formatoFinal = datos.sizeFormat !== undefined ? (datos.sizeFormat.trim() || null) : (actual.sizeFormat || null);
+  const iconoFinal = datos.icon !== undefined ? (datos.icon.trim() || 'inventory-2') : (actual.icon || 'inventory-2');
   const descripcionFinal = datos.description !== undefined ? (datos.description.trim() || null) : (actual.description || null);
   const activoFinal = datos.isActive !== undefined ? (datos.isActive ? 1 : 0) : (actual.isActive ? 1 : 0);
   const precioFinal = datos.basePrice !== undefined ? Math.round(datos.basePrice) : (actual.basePrice ?? 0);
@@ -716,6 +716,7 @@ export function actualizarProducto(
         sku = ?,
         size_format = ?,
         sale_unit = ?,
+        icon = ?,
         description = ?,
         is_active = ?,
         base_price = ?,
@@ -733,6 +734,7 @@ export function actualizarProducto(
         skuFinal,
         formatoFinal,
         unidadFinal,
+        iconoFinal,
         descripcionFinal,
         activoFinal,
         precioFinal,

@@ -12,6 +12,7 @@ import { TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import { Producto } from '@/datos/tipos';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
+import { IconoProducto } from '@/compartido/iconosProductos';
 
 export interface PropiedadesTarjetaProducto {
   product: Producto;
@@ -25,15 +26,6 @@ export interface PropiedadesTarjetaProducto {
   onToggleActive: (product: Producto) => void;
   onDelete: (product: Producto) => void;
 }
-
-const getProductIcon = (nombre?: string) => {
-  const nom = (nombre || '').toLowerCase();
-  if (nom.includes('caf')) return 'local-cafe';
-  if (nom.includes('foto') || nom.includes('cuadro') || nom.includes('lienzo')) return 'image';
-  if (nom.includes('taza') || nom.includes('vaso')) return 'emoji-food-beverage';
-  if (nom.includes('remera') || nom.includes('ropa')) return 'checkroom';
-  return 'inventory-2';
-};
 
 /**
  * Tarjeta de producto adaptada al diseño visual Stitch de Kyrara Gez (Productos - Catálogo e Inventario).
@@ -96,7 +88,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
         {/* FILA 1: Icono del Producto, Nombre, SKU, Subtítulo y Botón Más Opciones */}
         <View style={styles.headerRow}>
           <View style={styles.productIconBox}>
-            <MaterialIcons name={getProductIcon(product.name)} size={20} color="#FBBF24" />
+            <IconoProducto icono={product.icon} nombre={product.name} size={20} color="#00D2FF" />
           </View>
 
           <View style={styles.headerInfoCol}>
@@ -425,9 +417,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: 'rgba(0, 210, 255, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderColor: 'rgba(0, 210, 255, 0.28)',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -189,18 +189,6 @@ export function PantallaAgenda() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Main Title Row */}
-        <View style={styles.mainTitleRow}>
-          <View>
-            <Text style={[styles.mainSectionTitle, TYPOGRAPHY.headlineLg]}>
-              Agenda
-            </Text>
-            <Text style={[styles.mainSectionSubtitle, TYPOGRAPHY.bodySm]}>
-              Compromisos y Recordatorios
-            </Text>
-          </View>
-        </View>
-
         {/* Selector de Mes y Control de Hoy */}
         <View style={styles.monthHeaderRow}>
           <View style={styles.monthTitleBox}>
@@ -324,7 +312,7 @@ export function PantallaAgenda() {
         <View style={styles.sectionHeaderRow}>
           <View style={styles.sectionTitleCol}>
             <Text style={[styles.sectionTitle, TYPOGRAPHY.headlineSm]}>
-              Compromisos: {tituloDiaSeleccionado}
+              {tituloDiaSeleccionado}
             </Text>
             <Text style={[styles.sectionSubtitle, TYPOGRAPHY.labelCaps]}>
               {selectedDayOccurrences.length}{' '}
@@ -344,7 +332,7 @@ export function PantallaAgenda() {
             </Text>
             <TouchableOpacity onPress={handleOpenNew} style={styles.emptyDayActionLink}>
               <Text style={[styles.emptyDayActionText, TYPOGRAPHY.labelCaps]}>
-                + Añadir un compromiso
+                Añadir un compromiso
               </Text>
             </TouchableOpacity>
           </GlassCard>

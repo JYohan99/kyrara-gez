@@ -27,13 +27,7 @@ export function completarOnboarding(): void {
 
 export function restablecerBaseDatos(): void {
   const db = obtenerBaseDatos();
-  db.execSync(`
-    DROP TABLE IF EXISTS transactions;
-    DROP TABLE IF EXISTS budgets;
-    DROP TABLE IF EXISTS accounts;
-    DROP TABLE IF EXISTS categories;
-    DROP TABLE IF EXISTS settings;
-  `);
+  db.execSync('DROP TABLE IF EXISTS inventory_operations; DROP TABLE IF EXISTS photo_product_prices; DROP TABLE IF EXISTS photo_products; DROP TABLE IF EXISTS debt_payments; DROP TABLE IF EXISTS debts; DROP TABLE IF EXISTS reminders; DROP TABLE IF EXISTS recurrence_exceptions; DROP TABLE IF EXISTS commitments; DROP TABLE IF EXISTS transactions; DROP TABLE IF EXISTS budgets; DROP TABLE IF EXISTS accounts; DROP TABLE IF EXISTS categories; DROP TABLE IF EXISTS settings;');
   inicializarBaseDatos();
   emitirCambioBoveda();
 }

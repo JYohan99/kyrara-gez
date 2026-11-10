@@ -25,6 +25,7 @@ import {
 } from '@/compartido/utilidades/hapticos';
 import { Producto, Cuenta } from '@/datos/tipos';
 import { registrarVentaInventario } from '@/datos/consultas/inventario';
+import { IconoProducto } from '@/compartido/iconosProductos';
 
 export interface PropiedadesSubModalVenta {
   visible: boolean;
@@ -69,15 +70,6 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
     const actual = Math.max(0, parseFloat(cantidad.replace(',', '.')) || 0);
     const nueva = Math.max(1, actual + delta);
     setCantidad(String(nueva));
-  };
-
-  const getProductIcon = () => {
-    const nom = (producto.name || '').toLowerCase();
-    if (nom.includes('caf')) return 'local-cafe';
-    if (nom.includes('foto') || nom.includes('cuadro') || nom.includes('lienzo')) return 'image';
-    if (nom.includes('taza') || nom.includes('vaso')) return 'emoji-food-beverage';
-    if (nom.includes('remera') || nom.includes('ropa')) return 'checkroom';
-    return 'inventory-2';
   };
 
   const handleGuardarVenta = () => {
@@ -198,7 +190,7 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
               <View style={styles.productCard}>
                 <View style={styles.productLeft}>
                   <View style={styles.productIconBox}>
-                    <MaterialIcons name={getProductIcon()} size={22} color="#FBBF24" />
+                    <IconoProducto icono={producto.icon} nombre={producto.name} size={22} color="#00D2FF" />
                   </View>
                   <Text style={styles.productName} numberOfLines={1}>
                     {producto.name}
@@ -568,9 +560,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: 'rgba(0, 210, 255, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderColor: 'rgba(0, 210, 255, 0.28)',
     alignItems: 'center',
     justifyContent: 'center',
   },

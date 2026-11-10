@@ -358,7 +358,6 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
 
         {/* Input: Nombre de la Cuenta */}
         <View style={styles.inputContainer}>
-          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nombre de la cuenta</Text>
           <View style={styles.modernInputBox}>
             <MaterialIcons
               name="badge"
@@ -370,7 +369,7 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
               style={styles.modernTextInput}
               value={name}
               onChangeText={setName}
-              placeholder="Ej. Banco Santander, Efectivo, Prex"
+              placeholder="Nombre de la cuenta"
               placeholderTextColor={COLORS.outline}
             />
           </View>

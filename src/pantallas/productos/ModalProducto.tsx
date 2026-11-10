@@ -34,6 +34,8 @@ import {
 } from '@/datos/consultas/productos';
 import { SelectorChips } from './SelectorChips';
 import { BadgeRentabilidad } from './BadgeRentabilidad';
+import { IconoProducto } from '@/compartido/iconosProductos';
+import { ModalSelectorIconoProducto } from './ModalSelectorIconoProducto';
 
 export interface PropiedadesModalProducto {
   visible: boolean;
@@ -54,6 +56,8 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
   const insets = useSafeAreaInsets();
 
   const [nombre, setNombre] = useState(() => productoParaEditar?.name || '');
+  const [icono, setIcono] = useState(() => productoParaEditar?.icon || 'inventory-2');
+  const [selectorIconoVisible, setSelectorIconoVisible] = useState(false);
 
   const [unidadVenta, setUnidadVenta] = useState(() => productoParaEditar?.saleUnit || 'Unidad');
   const [otraUnidad, setOtraUnidad] = useState(() => {
@@ -119,6 +123,7 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
       if (productoParaEditar) {
         actualizarProducto(productoParaEditar.id, {
           name: nombreFinal,
+          icon: icono,
           sku: skuFinal,
           sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
@@ -133,6 +138,7 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
         const initialStockNum = Math.max(0, parseFloat(stockInicialTexto.replace(',', '.')) || 0);
         crearProducto({
           name: nombreFinal,
+          icon: icono,
           sku: skuFinal,
           sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
@@ -196,87 +202,70 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
         >
-            {/* Campo: Nombre del producto (Obligatorio) */}
-            <View style={styles.formGroup}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, TYPOGRAPHY.etiquetaMayusculas]}>
-                  Nombre del producto
-                </Text>
-                <Text style={styles.requiredBadge}>* Obligatorio</Text>
-              </View>
-              <View style={styles.inputContainer}>
-                <MaterialIcons
-                  name="label"
-                  size={18}
-                  color={COLORS.onSurfaceVariant}
-                  style={styles.inputIcon}
-                />
+          {/* Campo: Icono y Nombre del producto (Obligatorio) */}
+          <View style={styles.formGroup}>
+            <View style={styles.nameAndIconRow}>
+              {/* Botón selector de icono */}
+              <TouchableOpacity
+                style={styles.iconSelectorButton}
+                onPress={() => {
+                  triggerSelection();
+                  setSelectorIconoVisible(true);
+                }}
+                activeOpacity={0.8}
+                accessibilityLabel="Seleccionar icono del producto"
+              >
+                <IconoProducto icono={icono} nombre={nombre} size={26} color="#00D2FF" />
+                <View style={styles.editIconBadge}>
+                  <MaterialIcons name="edit" size={10} color="#0B0F10" />
+                </View>
+              </TouchableOpacity>
+
+              {/* Input Nombre */}
+              <View style={[styles.inputContainer, styles.nameInputContainer]}>
                 <TextInput
                   value={nombre}
                   onChangeText={setNombre}
-                  placeholder="ej. Taza personalizada, Cuadro decorativo, Pack remeras..."
+                  placeholder="Nombre del producto"
                   placeholderTextColor={COLORS.onSurfaceVariant + '80'}
                   style={[styles.textInput, TYPOGRAPHY.cuerpoGrande]}
                   autoFocus={!productoParaEditar}
                 />
               </View>
             </View>
+          </View>
 
-            {/* Selector: Unidad de venta */}
-            <SelectorChips
-              titulo="Unidad de Venta"
-              opciones={UNIDADES_VENTA_SUGERIDAS}
-              seleccionada={unidadVenta}
-              onSeleccionar={setUnidadVenta}
-              etiquetaPersonalizado="+ Otra"
-              valorPersonalizado={otraUnidad}
-              onChangeValorPersonalizado={setOtraUnidad}
-              mostrarPersonalizado={mostrarOtraUnidad}
-              onToggleMostrarPersonalizado={setMostrarOtraUnidad}
-              placeholderPersonalizado="ej. Rollo, Pliego, etc..."
-            />
+          {/* Selector: Unidad de venta */}
+          <SelectorChips
+            titulo="Unidad de Venta"
+            opciones={UNIDADES_VENTA_SUGERIDAS}
+            seleccionada={unidadVenta}
+            onSeleccionar={setUnidadVenta}
+            etiquetaPersonalizado="+ Otra"
+            valorPersonalizado={otraUnidad}
+            onChangeValorPersonalizado={setOtraUnidad}
+            mostrarPersonalizado={mostrarOtraUnidad}
+            onToggleMostrarPersonalizado={setMostrarOtraUnidad}
+            placeholderPersonalizado="ej. Rollo, Pliego, etc..."
+          />
 
-            {/* Inventario y Control de Stock */}
-            <View style={styles.stockSectionBox}>
-              <View style={styles.pricingHeader}>
-                <MaterialIcons name="inventory" size={16} color={COLORS.secondary} />
-                <Text style={[styles.pricingSectionTitle, TYPOGRAPHY.etiquetaMayusculas]}>
-                  Inventario y Control de Stock
-                </Text>
-              </View>
+          {/* Inventario y Control de Stock */}
+          <View style={styles.stockSectionBox}>
+            <View style={styles.pricingHeader}>
+              <MaterialIcons name="inventory" size={16} color={COLORS.secondary} />
+              <Text style={[styles.pricingSectionTitle, TYPOGRAPHY.etiquetaMayusculas]}>
+                Inventario y Control de Stock
+              </Text>
+            </View>
 
-              <View style={styles.pricingInputsRow}>
-                {!productoParaEditar ? (
-                  <View style={styles.pricingInputCol}>
-                    <Text style={styles.subLabel}>Stock inicial (Unidades)</Text>
-                    <View style={styles.inputContainerCompact}>
-                      <TextInput
-                        value={stockInicialTexto}
-                        onChangeText={setStockInicialTexto}
-                        placeholder="0"
-                        placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                        keyboardType="numeric"
-                        style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
-                      />
-                    </View>
-                  </View>
-                ) : (
-                  <View style={styles.pricingInputCol}>
-                    <Text style={styles.subLabel}>Stock actual registrado</Text>
-                    <View style={[styles.inputContainerCompact, styles.stockDisplayBox]}>
-                      <Text style={[styles.stockDisplayText, TYPOGRAPHY.titularPequeno]}>
-                        {productoParaEditar.currentStock} {productoParaEditar.saleUnit}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-
+            <View style={styles.pricingInputsRow}>
+              {!productoParaEditar ? (
                 <View style={styles.pricingInputCol}>
-                  <Text style={styles.subLabel}>Stock mínimo (Alerta)</Text>
+                  <Text style={styles.subLabel}>Stock inicial (Unidades)</Text>
                   <View style={styles.inputContainerCompact}>
                     <TextInput
-                      value={stockMinimoTexto}
-                      onChangeText={setStockMinimoTexto}
+                      value={stockInicialTexto}
+                      onChangeText={setStockInicialTexto}
                       placeholder="0"
                       placeholderTextColor={COLORS.onSurfaceVariant + '80'}
                       keyboardType="numeric"
@@ -284,143 +273,159 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
                     />
                   </View>
                 </View>
-              </View>
-
-              {productoParaEditar ? (
-                <Text style={styles.pricingHint}>
-                  El stock no se altera directamente aquí: se gestiona mediante compras, devoluciones o ajustes desde el detalle del producto.
-                </Text>
               ) : (
-                <Text style={styles.pricingHint}>
-                  Si ingresas stock inicial, se creará automáticamente la operación correspondiente en el historial.
-                </Text>
-              )}
-            </View>
-
-            {/* Precios opcionales */}
-            <View style={styles.pricingOptionalBox}>
-              <View style={styles.pricingHeader}>
-                <MaterialIcons name="sell" size={16} color={COLORS.secondary} />
-                <Text style={[styles.pricingSectionTitle, TYPOGRAPHY.etiquetaMayusculas]}>
-                  Precios referenciales (Opcional)
-                </Text>
-              </View>
-              <Text style={styles.pricingHint}>
-                Puedes dejar estos campos en $ 0 y asignar precios detallados luego.
-              </Text>
-
-              <View style={styles.pricingInputsRow}>
                 <View style={styles.pricingInputCol}>
-                  <Text style={styles.subLabel}>Precio venta base</Text>
-                  <View style={styles.inputContainerCompact}>
-                    <Text style={styles.currencyPrefix}>$</Text>
-                    <TextInput
-                      value={precioTexto}
-                      onChangeText={val => setPrecioTexto(formatearEntradaDinero(val))}
-                      placeholder="0,00"
-                      placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                      keyboardType="numeric"
-                      style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
-                    />
+                  <Text style={styles.subLabel}>Stock actual registrado</Text>
+                  <View style={[styles.inputContainerCompact, styles.stockDisplayBox]}>
+                    <Text style={[styles.stockDisplayText, TYPOGRAPHY.titularPequeno]}>
+                      {productoParaEditar.currentStock} {productoParaEditar.saleUnit}
+                    </Text>
                   </View>
                 </View>
-
-                <View style={styles.pricingInputCol}>
-                  <Text style={styles.subLabel}>Costo base</Text>
-                  <View style={styles.inputContainerCompact}>
-                    <Text style={styles.currencyPrefix}>$</Text>
-                    <TextInput
-                      value={costoTexto}
-                      onChangeText={val => setCostoTexto(formatearEntradaDinero(val))}
-                      placeholder="0,00"
-                      placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                      keyboardType="numeric"
-                      style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
-                    />
-                  </View>
-                </View>
-              </View>
-
-              {(livePrecioCentavos > 0 || liveCostoCentavos > 0) && (
-                <View style={styles.liveCalcPill}>
-                  <MaterialIcons name="trending-up" size={14} color={COLORS.secondary} />
-                  <Text style={styles.liveCalcText}>
-                    Ganancia estimada: {formatCurrency(liveProfit)}
-                  </Text>
-                  {liveMargin !== null && (
-                    <BadgeRentabilidad margen={liveMargin} />
-                  )}
-                </View>
               )}
+
+              <View style={styles.pricingInputCol}>
+                <Text style={styles.subLabel}>Stock mínimo (Alerta)</Text>
+                <View style={styles.inputContainerCompact}>
+                  <TextInput
+                    value={stockMinimoTexto}
+                    onChangeText={setStockMinimoTexto}
+                    placeholder="0"
+                    placeholderTextColor={COLORS.onSurfaceVariant + '80'}
+                    keyboardType="numeric"
+                    style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
+                  />
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Precios opcionales */}
+          <View style={styles.pricingOptionalBox}>
+            <View style={styles.pricingHeader}>
+              <MaterialIcons name="sell" size={16} color={COLORS.secondary} />
+              <Text style={[styles.pricingSectionTitle, TYPOGRAPHY.etiquetaMayusculas]}>
+                Precios referenciales
+              </Text>
             </View>
 
-            {/* Campo: Descripción o notas */}
-            <View style={styles.formGroup}>
-              <Text style={[styles.label, TYPOGRAPHY.etiquetaMayusculas]}>
-                Descripción o notas
-              </Text>
-              <View style={[styles.inputContainer, styles.textAreaContainer]}>
-                <TextInput
-                  value={descripcion}
-                  onChangeText={setDescripcion}
-                  placeholder="Detalles sobre materiales, proveedor, acabado o notas de venta..."
-                  placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                  style={[styles.textInput, styles.textAreaInput, TYPOGRAPHY.cuerpoMedio]}
-                  multiline
-                  numberOfLines={3}
-                />
+            <View style={styles.pricingInputsRow}>
+              <View style={styles.pricingInputCol}>
+                <Text style={styles.subLabel}>Precio venta</Text>
+                <View style={styles.inputContainerCompact}>
+                  <Text style={styles.currencyPrefix}>$</Text>
+                  <TextInput
+                    value={precioTexto}
+                    onChangeText={val => setPrecioTexto(formatearEntradaDinero(val))}
+                    placeholder="0,00"
+                    placeholderTextColor={COLORS.onSurfaceVariant + '80'}
+                    keyboardType="numeric"
+                    style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.pricingInputCol}>
+                <Text style={styles.subLabel}>Costo base</Text>
+                <View style={styles.inputContainerCompact}>
+                  <Text style={styles.currencyPrefix}>$</Text>
+                  <TextInput
+                    value={costoTexto}
+                    onChangeText={val => setCostoTexto(formatearEntradaDinero(val))}
+                    placeholder="0,00"
+                    placeholderTextColor={COLORS.onSurfaceVariant + '80'}
+                    keyboardType="numeric"
+                    style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
+                  />
+                </View>
               </View>
             </View>
 
-            {/* Interruptor: Producto activo */}
-            <View style={styles.switchRow}>
-              <View style={styles.switchLabelCol}>
-                <Text style={[styles.switchTitle, TYPOGRAPHY.cuerpoGrande]}>
-                  Producto activo
+            {(livePrecioCentavos > 0 || liveCostoCentavos > 0) && (
+              <View style={styles.liveCalcPill}>
+                <MaterialIcons name="trending-up" size={14} color={COLORS.secondary} />
+                <Text style={styles.liveCalcText}>
+                  Ganancia estimada: {formatCurrency(liveProfit)}
                 </Text>
-                <Text style={[styles.switchSubtitle, TYPOGRAPHY.cuerpoPequeno]}>
-                  Los productos activos aparecen disponibles para ventas y calculadora
-                </Text>
+                {liveMargin !== null && (
+                  <BadgeRentabilidad margen={liveMargin} />
+                )}
               </View>
-              <Switch
-                value={activo}
-                onValueChange={val => {
-                  triggerSelection();
-                  setActivo(val);
-                }}
-                trackColor={{ false: COLORS.surfaceContainerLowest, true: 'rgba(87, 245, 171, 0.4)' }}
-                thumbColor={activo ? COLORS.secondary : COLORS.onSurfaceVariant}
-              />
-            </View>
-          </ScrollView>
+            )}
+          </View>
 
-          {/* Footer de Acciones */}
-          <View style={styles.footerRow}>
-            <TouchableOpacity
-              style={styles.cancelBtn}
-              onPress={() => {
-                triggerSelection();
-                onClose();
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.cancelBtnText, TYPOGRAPHY.cuerpoMedio]}>
-                Cancelar
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.saveBtnWrapper}>
-              <BotonBrillante
-                title={guardando ? 'Guardando...' : productoParaEditar ? 'Guardar cambios' : 'Crear producto'}
-                onPress={handleGuardar}
-                disabled={guardando}
-                icon={<MaterialIcons name="check" size={18} color="#06120D" />}
+          {/* Campo: Descripción o notas */}
+          <View style={styles.formGroup}>
+            <View style={[styles.inputContainer, styles.textAreaContainer]}>
+              <TextInput
+                value={descripcion}
+                onChangeText={setDescripcion}
+                placeholder="Descripción o notas"
+                placeholderTextColor={COLORS.onSurfaceVariant + '80'}
+                style={[styles.textInput, styles.textAreaInput, TYPOGRAPHY.cuerpoMedio]}
+                multiline
+                numberOfLines={3}
               />
             </View>
           </View>
+
+          {/* Interruptor: Producto activo */}
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabelCol}>
+              <Text style={[styles.switchTitle, TYPOGRAPHY.cuerpoGrande]}>
+                Producto activo
+              </Text>
+              <Text style={[styles.switchSubtitle, TYPOGRAPHY.cuerpoPequeno]}>
+                Los productos activos aparecen disponibles para ventas y calculadora
+              </Text>
+            </View>
+            <Switch
+              value={activo}
+              onValueChange={val => {
+                triggerSelection();
+                setActivo(val);
+              }}
+              trackColor={{ false: COLORS.surfaceContainerLowest, true: 'rgba(87, 245, 171, 0.4)' }}
+              thumbColor={activo ? COLORS.secondary : COLORS.onSurfaceVariant}
+            />
+          </View>
+        </ScrollView>
+
+        {/* Footer de Acciones */}
+        <View style={styles.footerRow}>
+          <TouchableOpacity
+            style={styles.cancelBtn}
+            onPress={() => {
+              triggerSelection();
+              onClose();
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.cancelBtnText, TYPOGRAPHY.cuerpoMedio]}>
+              Cancelar
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.saveBtnWrapper}>
+            <BotonBrillante
+              title={guardando ? 'Guardando...' : productoParaEditar ? 'Guardar cambios' : 'Crear producto'}
+              onPress={handleGuardar}
+              disabled={guardando}
+              icon={<MaterialIcons name="check" size={18} color="#06120D" />}
+            />
+          </View>
         </View>
-      </KeyboardAvoidingView>
-    );
+
+        <ModalSelectorIconoProducto
+          visible={selectorIconoVisible}
+          iconoActual={icono}
+          nombreProducto={nombre}
+          onSelectIcon={setIcono}
+          onClose={() => setSelectorIconoVisible(false)}
+        />
+      </View>
+    </KeyboardAvoidingView>
+  );
 };
 
 export const ModalProducto: React.FC<PropiedadesModalProducto> = ({
@@ -662,6 +667,36 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
   },
   saveBtnWrapper: {
+    flex: 1,
+  },
+  nameAndIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconSelectorButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 210, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  editIconBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#00D2FF',
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nameInputContainer: {
     flex: 1,
   },
 });

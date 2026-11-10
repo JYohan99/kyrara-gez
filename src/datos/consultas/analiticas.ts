@@ -65,7 +65,7 @@ export function obtenerMayoresGastos(
   let query = `
     SELECT 
       t.id, t.amount, t.type, t.source_account_id, t.target_account_id,
-      t.category_id, t.date, t.note, t.payee, t.tags,
+      t.category_id, t.date, t.note, t.payee,
       sa.name as source_account_name,
       ta.name as target_account_name,
       c.name as category_name,
@@ -99,7 +99,6 @@ export function obtenerMayoresGastos(
     date: number;
     note?: string;
     payee?: string;
-    tags?: string;
     source_account_name?: string;
     target_account_name?: string;
     category_name?: string;
@@ -117,7 +116,6 @@ export function obtenerMayoresGastos(
     date: r.date,
     note: r.note,
     payee: r.payee,
-    tags: r.tags,
     sourceAccountName: r.source_account_name || 'Desconocida',
     targetAccountName: r.target_account_name,
     categoryName: r.category_name || 'Sin Categoría',

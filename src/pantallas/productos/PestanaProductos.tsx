@@ -32,7 +32,6 @@ import { EstadisticasPrecios } from './EstadisticasPrecios';
 import { TarjetaProducto } from './TarjetaProducto';
 import { PantallaResumenInventario } from './PantallaResumenInventario';
 import { PantallaAnalisisInventario } from './PantallaAnalisisInventario';
-import { ModalImportarProductosExcel } from './ModalImportarProductosExcel';
 
 export type SeccionModuloProductos = 'RESUMEN' | 'CATALOGO' | 'ANALISIS' | 'CALCULADORA' | 'HISTORIAL' | 'ESTADISTICAS';
 
@@ -60,9 +59,6 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
   // Modal de gestión de precios y tarifas
   const [priceModalVisible, setPriceModalVisible] = useState(false);
   const [productForPrices, setProductForPrices] = useState<Producto | null>(null);
-
-  // Modal de importación de Excel (hoja INVERSIONES)
-  const [importModalVisible, setImportModalVisible] = useState(false);
 
   // Sub-módulo activo: Resumen | Catálogo | Análisis | Calculadora
   const [seccionModulo, setSeccionModulo] = useState<SeccionModuloProductos>('CATALOGO');
@@ -344,11 +340,7 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
             setSeccionModulo('ANALISIS');
           }}
           onAbrirDetalleProducto={handleOpenDetail}
-          onNuevoProducto={handleOpenNew}
-          onImportarExcel={() => {
-            triggerSelection();
-            setImportModalVisible(true);
-          }}
+          onNuevoProducto={onNewProduct}
         />
       ) : seccionModulo === 'ANALISIS' ? (
         <PantallaAnalisisInventario
@@ -374,42 +366,7 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
         />
       ) : (
         <>
-          {/* BARRA DE TÍTULO DE LA PANTALLA Y BOTÓN DE ACCIÓN (Diseño Stitch) */}
-          <View style={styles.titleBarRow}>
-            <View style={styles.titleWithBadge}>
-              <Text style={styles.screenTitleText}>Productos</Text>
-              <View style={styles.itemsBadgePill}>
-                <Text style={styles.itemsBadgeText}>{totalCount} ítems</Text>
-              </View>
-            </View>
 
-            <View style={styles.titleActionsRow}>
-              {/* Botón Excel */}
-              <TouchableOpacity
-                style={styles.btnExcelHeader}
-                onPress={() => {
-                  triggerSelection();
-                  setImportModalVisible(true);
-                }}
-                activeOpacity={0.8}
-                accessibilityLabel="Importar desde Excel"
-              >
-                <MaterialIcons name="table-view" size={15} color={COLORS.secundarioContenedor} />
-                <Text style={styles.btnExcelHeaderText}>Excel</Text>
-              </TouchableOpacity>
-
-              {/* Botón Nuevo con resplandor neón violeta */}
-              <TouchableOpacity
-                style={styles.btnNuevoHeader}
-                onPress={handleOpenNew}
-                activeOpacity={0.85}
-                accessibilityLabel="Crear nuevo producto"
-              >
-                <MaterialIcons name="add" size={18} color="#FFFFFF" />
-                <Text style={styles.btnNuevoHeaderText}>NUEVO</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
 
           {/* DECK DE MICRO-INDICADORES (3 COLUMNAS - STITCH) */}
           <View style={styles.metricsDeckRow}>
@@ -475,7 +432,7 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
             </View>
           </View>
 
-          {/* BARRA DE BÚSQUEDA (Stitch Style) */}
+          {/* BARRA DE BÚSQUEDA */}
           <View style={styles.searchBarWrapper}>
             <MaterialIcons
               name="search"
@@ -510,7 +467,7 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
             )}
           </View>
 
-          {/* CHIPS SEGMENTADOS DE FILTROS HORIZONTALES (Stitch Style) */}
+          {/* CHIPS SEGMENTADOS DE FILTROS HORIZONTALES*/}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -658,22 +615,7 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
             </View>
           )}
 
-          {/* BARRA DE ACCIÓN INFERIOR / DOCK (Diseño Stitch) */}
-          <View style={styles.bottomDockContainer}>
-            <TouchableOpacity
-              style={styles.bottomDockBtn}
-              onPress={() => {
-                triggerSelection();
-                setImportModalVisible(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons name="table-view" size={18} color={COLORS.secundarioContenedor} />
-              <Text style={styles.bottomDockBtnText}>
-                Importar productos desde Excel (INVERSIONES)
-              </Text>
-            </TouchableOpacity>
-          </View>
+
         </>
       )}
 
@@ -703,11 +645,7 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
         producto={productForPrices}
       />
 
-      {/* Modal de Importación de Excel (hoja INVERSIONES) */}
-      <ModalImportarProductosExcel
-        visible={importModalVisible}
-        onClose={() => setImportModalVisible(false)}
-      />
+
     </View>
   );
 };
@@ -789,22 +727,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  btnExcelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    height: 34,
-    paddingHorizontal: 10,
-    borderRadius: 9999,
-    backgroundColor: COLORS.superficieContenedorAlto,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.25)',
-  },
-  btnExcelHeaderText: {
-    color: COLORS.secundarioContenedor, // #00D2FF
-    fontSize: 11,
-    fontWeight: '700',
-  },
+
   btnNuevoHeader: {
     flexDirection: 'row',
     alignItems: 'center',

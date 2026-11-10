@@ -8,13 +8,11 @@ import {
   RankingProductoVenta,
   PuntoEvolucionVentas,
   AnalisisVentasInventario,
-  ProductoImportadoExcel,
   Producto,
 } from '../tipos';
 import { emitirCambioBoveda } from '../sincronizacion';
 import {
   obtenerProductoPorId,
-  crearProducto,
 } from './productos';
 
 interface FilaOperacionInventario {
@@ -519,8 +517,8 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
       db.runSync(
         `INSERT INTO transactions (
           id, amount, type, source_account_id, target_account_id,
-          category_id, date, note, payee, tags
-        ) VALUES (?, ?, 'INCOME', ?, NULL, ?, ?, ?, ?, 'VENTA')`,
+          category_id, date, note, payee
+        ) VALUES (?, ?, 'INCOME', ?, NULL, ?, ?, ?, ?)`,
         [
           transactionId,
           totalPrice,
@@ -719,8 +717,8 @@ export function registrarDevolucionCliente(datos: DatosRegistrarDevolucionClient
       db.runSync(
         `INSERT INTO transactions (
           id, amount, type, source_account_id, target_account_id,
-          category_id, date, note, payee, tags
-        ) VALUES (?, ?, 'EXPENSE', ?, NULL, ?, ?, ?, ?, 'DEVOLUCION_VENTA')`,
+          category_id, date, note, payee
+        ) VALUES (?, ?, 'EXPENSE', ?, NULL, ?, ?, ?, ?)`,
         [
           transactionId,
           totalRefund,
@@ -1219,169 +1217,3 @@ export function obtenerProductosConAlertasStock(): Producto[] {
   }));
 }
 
-/**
- * Productos extraídos fielmente de la hoja INVERSIONES del archivo Excel de compromisos.
- *
- * NOTA DE AUDITORÍA:
- * En el archivo original, las celdas de cantidades (D) y ventas (F) no tienen cantidades registradas
- * (evalúan a 0 o están vacías), y las fórmulas presentes representan proyecciones/plantillas.
- * Conforme a las instrucciones del usuario, NO se importan fórmulas como operaciones reales ni se
- * inventan compras o ventas ficticias. Se importan los productos con sus precios y costos unitarios confirmados.
- */
-export const PRODUCTOS_EXCEL_INVERSIONES_SUGERIDOS: ProductoImportadoExcel[] = [
-  {
-    name: 'Cuadros 12x18',
-    saleUnit: 'Unidad',
-    sizeFormat: '12x18',
-    costPrice: 165000, // $1.650,00 (en centavos)
-    basePrice: 350000, // $3.500,00 (en centavos)
-    initialStock: 0,
-    minStock: 2,
-    sourceSheet: 'INVERSIONES',
-    sourceRow: 2,
-    isSelected: true,
-  },
-  {
-    name: 'Cuadros 8x10',
-    saleUnit: 'Unidad',
-    sizeFormat: '8x10',
-    costPrice: 85000, // $850,00 (en centavos)
-    basePrice: 250000, // $2.500,00 (en centavos)
-    initialStock: 0,
-    minStock: 2,
-    sourceSheet: 'INVERSIONES',
-    sourceRow: 3,
-    isSelected: true,
-  },
-  {
-    name: 'Álbum 5x7',
-    saleUnit: 'Unidad',
-    sizeFormat: '5x7',
-    costPrice: 80000, // $800,00 (en centavos)
-    basePrice: 130000, // $1.300,00 (en centavos)
-    initialStock: 0,
-    minStock: 2,
-    sourceSheet: 'INVERSIONES',
-    sourceRow: 4,
-    isSelected: true,
-  },
-  {
-    name: 'Álbum 8x10',
-    saleUnit: 'Unidad',
-    sizeFormat: '8x10',
-    costPrice: 90000, // $900,00 (en centavos)
-    basePrice: 200000, // $2.000,00 (en centavos)
-    initialStock: 0,
-    minStock: 2,
-    sourceSheet: 'INVERSIONES',
-    sourceRow: 5,
-    isSelected: true,
-  },
-  {
-    name: 'Café',
-    saleUnit: 'Unidad',
-    costPrice: 0,
-    basePrice: 70000, // $700,00 (en centavos)
-    initialStock: 0,
-    minStock: 5,
-    sourceSheet: 'INVERSIONES',
-    sourceRow: 8,
-    isSelected: true,
-  },
-  {
-    name: 'Café Dayli',
-    saleUnit: 'Unidad',
-    costPrice: 0,
-    basePrice: 60000, // $600,00 (en centavos)
-    initialStock: 0,
-    minStock: 5,
-    sourceSheet: 'INVERSIONES',
-    sourceRow: 9,
-    isSelected: true,
-  },
-];
-
-/**
- * Importa los productos seleccionados de la hoja INVERSIONES a la base de datos SQLite.
- * Si un producto con el mismo nombre ya existe, actualiza sus precios de referencia.
- * Si no existe, lo crea con stock 0 y su tarifa inicial.
- */
-export function importarProductosDesdeExcel(
-  productos: ProductoImportadoExcel[]
-): { importados: number; actualizados: number } {
-  asegurarEsquemaBaseDatos();
-  const db = obtenerBaseDatos();
-  let importados = 0;
-  let actualizados = 0;
-  const ahora = Date.now();
-  const fechaISO = new Date().toISOString().slice(0, 10);
-
-  db.withTransactionSync(() => {
-    for (const p of productos) {
-      if (p.isSelected === false) continue;
-
-      const nombreLimpio = p.name.trim();
-      const existente = db.getFirstSync<{ id: string }>(
-        'SELECT id FROM photo_products WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))',
-        [nombreLimpio]
-      );
-
-      if (existente) {
-        // Actualizar datos comerciales de referencia
-        db.runSync(
-          `UPDATE photo_products SET
-            base_price = ?,
-            cost_price = ?,
-            size_format = COALESCE(?, size_format),
-            min_stock = COALESCE(?, min_stock),
-            updated_at = ?
-          WHERE id = ?`,
-          [
-            p.basePrice,
-            p.costPrice,
-            p.sizeFormat || null,
-            p.minStock ?? 2,
-            ahora,
-            existente.id,
-          ]
-        );
-
-        // Crear tarifa actualizada en historial
-        const tarifaId = 'tariff_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 6);
-        db.runSync(
-          `INSERT INTO photo_product_prices (
-            id, product_id, sale_price, cost_price, valid_from, notes, currency, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, 'UYU', ?, ?)`,
-          [
-            tarifaId,
-            existente.id,
-            p.basePrice,
-            p.costPrice,
-            fechaISO,
-            `Actualizado desde ${p.sourceSheet} (${p.name})`,
-            ahora,
-            ahora,
-          ]
-        );
-        actualizados++;
-      } else {
-        // Crear nuevo producto en el catálogo
-        crearProducto({
-          name: nombreLimpio,
-          saleUnit: p.saleUnit || 'Unidad',
-          sizeFormat: p.sizeFormat,
-          basePrice: p.basePrice,
-          costPrice: p.costPrice,
-          initialStock: 0, // Sin inventar compras no confirmadas
-          minStock: p.minStock ?? 2,
-          supplier: p.supplier,
-          description: `Importado de Excel (${p.sourceSheet}, fila ${p.sourceRow})`,
-        });
-        importados++;
-      }
-    }
-  });
-
-  emitirCambioBoveda();
-  return { importados, actualizados };
-}

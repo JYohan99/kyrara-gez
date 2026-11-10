@@ -22,9 +22,8 @@ export interface PropiedadesPantallaResumenInventario {
   onVerCatalogo: () => void;
   onVerCatalogoAlertas: () => void;
   onVerAnalisis: () => void;
-  onAbrirDetalleProducto: (producto: Producto) => void;
-  onNuevoProducto: () => void;
-  onImportarExcel: () => void;
+  onAbrirDetalleProducto?: (producto: Producto) => void;
+  onNuevoProducto?: () => void;
 }
 
 const OPCIONES_PERIODO: { key: TipoFiltroPeriodoInventario; label: string }[] = [
@@ -41,7 +40,6 @@ export const PantallaResumenInventario: React.FC<PropiedadesPantallaResumenInven
   onVerAnalisis,
   onAbrirDetalleProducto,
   onNuevoProducto,
-  onImportarExcel,
 }) => {
   const [periodo, setPeriodo] = useState<TipoFiltroPeriodoInventario>('ESTE_MES');
 
@@ -247,7 +245,7 @@ export const PantallaResumenInventario: React.FC<PropiedadesPantallaResumenInven
               <TouchableOpacity
                 key={prod.id}
                 style={[styles.alertProductCard, isOut ? styles.cardOutOfStock : styles.cardLowStock]}
-                onPress={() => onAbrirDetalleProducto(prod)}
+                onPress={() => onAbrirDetalleProducto?.(prod)}
                 activeOpacity={0.8}
               >
                 <View style={styles.alertCardLeft}>
@@ -313,7 +311,7 @@ export const PantallaResumenInventario: React.FC<PropiedadesPantallaResumenInven
           {/* Botón: Nuevo Producto */}
           <TouchableOpacity
             style={styles.quickActionBtn}
-            onPress={onNuevoProducto}
+            onPress={() => onNuevoProducto?.()}
             activeOpacity={0.8}
           >
             <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(87, 245, 171, 0.12)' }]}>
@@ -322,21 +320,6 @@ export const PantallaResumenInventario: React.FC<PropiedadesPantallaResumenInven
             <View style={styles.quickActionTextCol}>
               <Text style={styles.quickActionBtnTitle}>Nuevo Producto</Text>
               <Text style={styles.quickActionBtnSub}>Crear en el catálogo</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Botón: Importar desde Excel */}
-          <TouchableOpacity
-            style={styles.quickActionBtn}
-            onPress={onImportarExcel}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(0, 210, 255, 0.12)' }]}>
-              <MaterialIcons name="table-view" size={22} color="#00D2FF" />
-            </View>
-            <View style={styles.quickActionTextCol}>
-              <Text style={styles.quickActionBtnTitle}>Importar Excel</Text>
-              <Text style={styles.quickActionBtnSub}>Hoja INVERSIONES</Text>
             </View>
           </TouchableOpacity>
 

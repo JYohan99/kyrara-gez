@@ -11,20 +11,18 @@ export function crearMovimiento(datos: {
   date?: number; // timestamp
   note?: string;
   payee?: string;
-  tags?: string;
 }): Movimiento {
   const db = obtenerBaseDatos();
   const id = 'tx_' + Math.random().toString(36).substring(2, 10);
   const date = datos.date || Date.now();
   const payee = datos.payee?.trim() || '';
   const note = datos.note?.trim() || '';
-  const tags = datos.tags?.trim() || '';
 
   // Operación atómica: insertar transacción y actualizar saldos de cuentas
   db.withTransactionSync(() => {
     db.runSync(
-      `INSERT INTO transactions (id, amount, type, source_account_id, target_account_id, category_id, date, note, payee, tags)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO transactions (id, amount, type, source_account_id, target_account_id, category_id, date, note, payee)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         datos.amount,
@@ -35,7 +33,6 @@ export function crearMovimiento(datos: {
         date,
         note,
         payee,
-        tags,
       ]
     );
 
@@ -73,7 +70,6 @@ export function crearMovimiento(datos: {
     date,
     note,
     payee,
-    tags,
   };
 }
 
@@ -90,7 +86,7 @@ export function obtenerMovimientos(filtros?: {
   let consulta = `
     SELECT 
       t.id, t.amount, t.type, t.source_account_id, t.target_account_id,
-      t.category_id, t.date, t.note, t.payee, t.tags,
+      t.category_id, t.date, t.note, t.payee,
       sa.name as source_account_name,
       ta.name as target_account_name,
       c.name as category_name,
@@ -147,7 +143,6 @@ export function obtenerMovimientos(filtros?: {
     date: number;
     note?: string;
     payee?: string;
-    tags?: string;
     source_account_name?: string;
     target_account_name?: string;
     category_name?: string;
@@ -165,7 +160,6 @@ export function obtenerMovimientos(filtros?: {
     date: r.date,
     note: r.note || undefined,
     payee: r.payee || undefined,
-    tags: r.tags || undefined,
     sourceAccountName: r.source_account_name || 'Cuenta',
     targetAccountName: r.target_account_name || undefined,
     categoryName: r.category_name || (r.type === 'TRANSFER' ? 'Transferencia' : 'General'),

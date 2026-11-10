@@ -512,8 +512,8 @@ export function registrarPagoDeuda(
       db.runSync(
         `INSERT INTO transactions (
           id, amount, type, source_account_id, target_account_id, category_id,
-          date, note, payee, tags
-        ) VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?, 'deuda')`,
+          date, note, payee
+        ) VALUES (?, ?, ?, ?, NULL, NULL, ?, ?, ?)`,
         [
           transactionId,
           pago.amount,

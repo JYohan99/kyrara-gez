@@ -103,7 +103,6 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
       date INTEGER NOT NULL,
       note TEXT,
       payee TEXT,
-      tags TEXT,
       FOREIGN KEY(source_account_id) REFERENCES accounts(id),
       FOREIGN KEY(target_account_id) REFERENCES accounts(id),
       FOREIGN KEY(category_id) REFERENCES categories(id)
@@ -198,6 +197,7 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
       sku TEXT,
       size_format TEXT,
       sale_unit TEXT NOT NULL DEFAULT 'Unidad',
+      icon TEXT DEFAULT 'inventory-2',
       description TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
       base_price INTEGER DEFAULT 0,
@@ -205,6 +205,9 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
       current_stock REAL DEFAULT 0,
       min_stock REAL DEFAULT 0,
       supplier TEXT,
+      cost_usd REAL,
+      exchange_rate REAL,
+      price_valid_from TEXT,
       currency TEXT DEFAULT 'UYU',
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
@@ -256,20 +259,15 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
     );
   `);
 
-  // 2. Migraciones incrementales no destructivas de columnas (si las tablas ya existían con estructura anterior)
+  // 2. Migraciones incrementales de columnas
   asegurarColumna(db, 'transactions', 'payee', 'TEXT');
+  try { db.execSync('ALTER TABLE transactions DROP COLUMN tags;'); } catch {}
+  try { db.execSync('ALTER TABLE photo_products DROP COLUMN category;'); } catch {}
 
   asegurarColumna(db, 'photo_products', 'sku', 'TEXT');
-  try {
-    const tableInfo = db.getAllSync<{ name: string }>('PRAGMA table_info(photo_products)');
-    if (tableInfo.some(col => col.name === 'category')) {
-      db.execSync('ALTER TABLE photo_products DROP COLUMN category;');
-    }
-  } catch {
-    // Si la versión de SQLite no admite DROP COLUMN o ya fue eliminada, continuar
-  }
   asegurarColumna(db, 'photo_products', 'size_format', 'TEXT');
   asegurarColumna(db, 'photo_products', 'sale_unit', "TEXT NOT NULL DEFAULT 'Unidad'");
+  asegurarColumna(db, 'photo_products', 'icon', "TEXT DEFAULT 'inventory-2'");
   asegurarColumna(db, 'photo_products', 'description', 'TEXT');
   asegurarColumna(db, 'photo_products', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
   asegurarColumna(db, 'photo_products', 'base_price', 'INTEGER DEFAULT 0');
@@ -302,7 +300,18 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
   // 3. Crear índices de forma segura (una vez que todas las columnas existen)
   asegurarIndices(db);
 
-  // 4. Sembrado si la base de datos está vacía
+  // 4. Vaciado preventivo de datos de prueba existentes a solicitud del usuario (ejecución única)
+  try {
+    const vaciadoPrevio = db.getFirstSync<{ value: string }>("SELECT value FROM settings WHERE key = 'vaciado_pruebas_limpio_v1'");
+    if (!vaciadoPrevio) {
+      db.execSync('DELETE FROM inventory_operations; DELETE FROM photo_product_prices; DELETE FROM photo_products; DELETE FROM debt_payments; DELETE FROM debts; DELETE FROM reminders; DELETE FROM recurrence_exceptions; DELETE FROM commitments; DELETE FROM transactions; DELETE FROM budgets; DELETE FROM accounts; DELETE FROM categories;');
+      sembrarCategoriasPredeterminadas(db);
+      sembrarCuentasPredeterminadas(db);
+      db.runSync("INSERT OR REPLACE INTO settings (key, value) VALUES ('vaciado_pruebas_limpio_v1', '1')");
+    }
+  } catch {}
+
+  // 5. Sembrado si la base de datos está vacía
   try {
     const countRow = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM categories');
     if (!countRow || countRow.count === 0) {

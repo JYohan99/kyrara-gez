@@ -39,7 +39,6 @@ function setupTestDb() {
       date INTEGER NOT NULL,
       note TEXT,
       payee TEXT,
-      tags TEXT,
       FOREIGN KEY(source_account_id) REFERENCES accounts(id)
     );
 
@@ -127,8 +126,8 @@ test('2. Registro de cobro parcial vinculando cuenta actualiza saldo y transacci
   // Ejecución transaccional atómica
   db.exec('BEGIN TRANSACTION');
   db.prepare(`
-    INSERT INTO transactions (id, amount, type, source_account_id, date, note, payee, tags)
-    VALUES (?, ?, 'INCOME', 'acc_main', 1700000100000, 'Abono de deuda: Diseño Web (Lucía)', 'Lucía', 'deuda')
+    INSERT INTO transactions (id, amount, type, source_account_id, date, note, payee)
+    VALUES (?, ?, 'INCOME', 'acc_main', 1700000100000, 'Abono de deuda: Diseño Web (Lucía)', 'Lucía')
   `).run(txId, payAmount);
 
   db.prepare('UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?').run(payAmount, 'acc_main');
@@ -174,8 +173,8 @@ test('3. Pago total salda la deuda (PAID) con saldo restante en 0', () => {
   const payId = 'pay_full';
   const txId = 'tx_pay_full';
   db.prepare(`
-    INSERT INTO transactions (id, amount, type, source_account_id, date, note, payee, tags)
-    VALUES (?, 400000, 'EXPENSE', 'acc_main', 1700000200000, 'Pago de deuda', 'Ferretería Central', 'deuda')
+    INSERT INTO transactions (id, amount, type, source_account_id, date, note, payee)
+    VALUES (?, 400000, 'EXPENSE', 'acc_main', 1700000200000, 'Pago de deuda', 'Ferretería Central')
   `).run(txId);
 
   db.prepare('UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?').run(400000, 'acc_main');

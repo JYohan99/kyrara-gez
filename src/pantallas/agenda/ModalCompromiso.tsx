@@ -237,10 +237,9 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
 
         {/* Campo: Título (Obligatorio) */}
         <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Título *</Text>
           <TextInput
             style={[styles.textInput, TYPOGRAPHY.bodySm]}
-            placeholder="Ej: Reunión de equipo, Pago de alquiler, Cita médica"
+            placeholder="Título"
             placeholderTextColor={COLORS.outline}
             value={title}
             onChangeText={setTitle}
@@ -363,12 +362,11 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
 
         {/* Campo: Persona relacionada (Opcional) */}
         <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Persona relacionada (Opcional)</Text>
           <View style={styles.inputWithIconRow}>
             <MaterialIcons name="person-outline" size={18} color={COLORS.onSurfaceVariant} />
             <TextInput
               style={[styles.textInputInside, TYPOGRAPHY.bodySm]}
-              placeholder="Ej: Dr. Pérez, Carlos, Proveedor"
+              placeholder="Persona relacionada"
               placeholderTextColor={COLORS.outline}
               value={relatedPerson}
               onChangeText={setRelatedPerson}
@@ -378,10 +376,9 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
 
         {/* Campo: Notas / Descripción (Opcional) */}
         <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Notas o descripción (Opcional)</Text>
           <TextInput
             style={[styles.textInput, styles.textAreaInput, TYPOGRAPHY.bodySm]}
-            placeholder="Detalles adicionales, recordatorios especiales o ubicación..."
+            placeholder="Notas o descripción"
             placeholderTextColor={COLORS.outline}
             value={description}
             onChangeText={setDescription}
@@ -406,7 +403,6 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
               activeOpacity={0.7}
             >
               <MaterialIcons name="add" size={14} color={COLORS.primary} />
-              <Text style={[styles.addReminderPillText, TYPOGRAPHY.labelCaps]}>Añadir aviso</Text>
             </TouchableOpacity>
           </View>
 

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { COLORES as COLORS } from '@/compartido/tema';
 import { EncabezadoSuperior, BotonFlotanteAccion } from '@/compartido/componentes';
