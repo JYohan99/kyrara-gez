@@ -115,10 +115,11 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
   const [subModal, setSubModal] = useState<SubModalAccion>(accionInicial || 'NINGUNA');
   const [operacionVentaSeleccionada, setOperacionVentaSeleccionada] = useState<OperacionInventario | null>(null);
 
+  const isService = (productoActual.saleUnit || '').trim().toLowerCase() === 'servicio';
   const currentStock = productoActual.currentStock ?? 0;
   const minStock = productoActual.minStock ?? 0;
-  const isOutOfStock = currentStock <= 0;
-  const isLowStock = currentStock > 0 && currentStock <= minStock;
+  const isOutOfStock = !isService && currentStock <= 0;
+  const isLowStock = !isService && currentStock > 0 && currentStock <= minStock;
   const calculatedProfit = productoActual.grossProfit ?? ((productoActual.basePrice || 0) - (productoActual.costPrice || 0));
   const totalStockCost = Math.round(currentStock * (productoActual.costPrice || 0));
   const totalStockSale = Math.round(currentStock * (productoActual.basePrice || 0));
@@ -347,77 +348,133 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Tarjeta Destacada de Stock (Stitch Card) */}
-          <View style={styles.stockHeroCard}>
-            <View style={styles.stockHeroHeader}>
-              <View style={styles.stockHeroLabelGroup}>
-                <MaterialIcons name="inventory-2" size={18} color="#00D2FF" />
-                <Text style={[styles.stockHeroLabel, TYPOGRAPHY.etiquetaMayusculas]}>
-                  Stock Actual Disponible
-                </Text>
+          {/* Tarjeta Destacada de Stock o Servicio */}
+          {isService ? (
+            <View style={styles.serviceHeroCard}>
+              <View style={styles.serviceHeroHeader}>
+                <View style={styles.serviceHeroLeft}>
+                  <MaterialIcons name="design-services" size={18} color="#00D2FF" />
+                  <Text style={[styles.stockHeroLabel, { color: '#00D2FF' }, TYPOGRAPHY.etiquetaMayusculas]}>
+                    Servicio / Mano de obra
+                  </Text>
+                </View>
+                <View style={styles.serviceHeroBadge}>
+                  <Text style={styles.serviceHeroBadgeText}>Ilimitado / Por demanda</Text>
+                </View>
               </View>
+              <Text style={styles.serviceHeroDesc}>
+                {productoActual.description || 'Servicio bajo demanda sin control de existencias físicas en almacén.'}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.stockHeroCard}>
+              <View style={styles.stockHeroHeader}>
+                <View style={styles.stockHeroLabelGroup}>
+                  <MaterialIcons name="inventory-2" size={18} color="#00D2FF" />
+                  <Text style={[styles.stockHeroLabel, TYPOGRAPHY.etiquetaMayusculas]}>
+                    Stock Actual Disponible
+                  </Text>
+                </View>
 
-              {/* Badge Alerta de Stock */}
-              <View
-                style={[
-                  styles.stockAlertBadge,
-                  isOutOfStock
-                    ? styles.stockAlertOutOfStock
-                    : isLowStock
-                    ? styles.stockAlertLowStock
-                    : styles.stockAlertNormal,
-                ]}
-              >
-                <MaterialIcons
-                  name={isOutOfStock ? 'error' : isLowStock ? 'warning' : 'check-circle'}
-                  size={14}
-                  color={isOutOfStock ? '#EF4444' : isLowStock ? '#F59E0B' : '#10B981'}
-                />
-                <Text
+                {/* Badge Alerta de Stock */}
+                <View
                   style={[
-                    styles.stockAlertText,
-                    {
-                      color: isOutOfStock ? '#FCA5A5' : isLowStock ? '#FCD34D' : '#34D399',
-                    },
+                    styles.stockAlertBadge,
+                    isOutOfStock
+                      ? styles.stockAlertOutOfStock
+                      : isLowStock
+                      ? styles.stockAlertLowStock
+                      : styles.stockAlertNormal,
                   ]}
                 >
-                  {isOutOfStock ? 'Sin stock' : isLowStock ? 'Stock bajo' : 'Stock óptimo'}
+                  <MaterialIcons
+                    name={isOutOfStock ? 'error' : isLowStock ? 'warning' : 'check-circle'}
+                    size={14}
+                    color={isOutOfStock ? '#EF4444' : isLowStock ? '#F59E0B' : '#10B981'}
+                  />
+                  <Text
+                    style={[
+                      styles.stockAlertText,
+                      {
+                        color: isOutOfStock ? '#FCA5A5' : isLowStock ? '#FCD34D' : '#34D399',
+                      },
+                    ]}
+                  >
+                    {isOutOfStock ? 'Sin stock' : isLowStock ? 'Stock bajo' : 'Stock óptimo'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.stockNumbersRow}>
+                <Text style={[styles.stockBigNumber, TYPOGRAPHY.titularHero]}>
+                  {currentStock}
+                </Text>
+                <Text style={[styles.stockUnitText, TYPOGRAPHY.titularPequeno]}>
+                  {productoActual.saleUnit}s
                 </Text>
               </View>
-            </View>
 
-            <View style={styles.stockNumbersRow}>
-              <Text style={[styles.stockBigNumber, TYPOGRAPHY.titularHero]}>
-                {currentStock}
-              </Text>
-              <Text style={[styles.stockUnitText, TYPOGRAPHY.titularPequeno]}>
-                {productoActual.saleUnit}s
-              </Text>
+              <View style={styles.stockMetaRow}>
+                <View style={styles.stockMetaItem}>
+                  <Text style={styles.stockMetaLabel}>Stock Mínimo</Text>
+                  <Text style={styles.stockMetaValue}>{minStock} {productoActual.saleUnit}s</Text>
+                </View>
+                <View style={styles.stockMetaDivider} />
+                <View style={styles.stockMetaItem}>
+                  <Text style={styles.stockMetaLabel}>Valuación Costo</Text>
+                  <Text style={styles.stockMetaValue}>{formatCurrency(totalStockCost)}</Text>
+                </View>
+                <View style={styles.stockMetaDivider} />
+                <View style={styles.stockMetaItem}>
+                  <Text style={styles.stockMetaLabel}>Valuación Venta</Text>
+                  <Text style={styles.stockMetaValue}>{formatCurrency(totalStockSale)}</Text>
+                </View>
+              </View>
             </View>
+          )}
 
-            <View style={styles.stockMetaRow}>
-              <View style={styles.stockMetaItem}>
-                <Text style={styles.stockMetaLabel}>Stock Mínimo</Text>
-                <Text style={styles.stockMetaValue}>{minStock} {productoActual.saleUnit}s</Text>
+          {/* TABLA DE FORMATOS Y TARIFAS (Si el producto/servicio tiene múltiples variantes) */}
+          {productoActual.formats && productoActual.formats.length > 0 && (
+            <View style={styles.formatsCard}>
+              <View style={styles.formatsHeader}>
+                <MaterialIcons name="photo-size-select-actual" size={18} color="#00D2FF" />
+                <Text style={styles.formatsTitle}>
+                  Formatos y Tarifas ({productoActual.formats.length})
+                </Text>
               </View>
-              <View style={styles.stockMetaDivider} />
-              <View style={styles.stockMetaItem}>
-                <Text style={styles.stockMetaLabel}>Valuación Costo</Text>
-                <Text style={styles.stockMetaValue}>{formatCurrency(totalStockCost)}</Text>
-              </View>
-              <View style={styles.stockMetaDivider} />
-              <View style={styles.stockMetaItem}>
-                <Text style={styles.stockMetaLabel}>Valuación Venta</Text>
-                <Text style={styles.stockMetaValue}>{formatCurrency(totalStockSale)}</Text>
+              <View style={styles.formatsTable}>
+                <View style={styles.formatsTableRowHeader}>
+                  <Text style={[styles.formatColHeader, { flex: 1.2 }]}>Formato</Text>
+                  <Text style={[styles.formatColHeader, { flex: 1, textAlign: 'right' }]}>Precio</Text>
+                  <Text style={[styles.formatColHeader, { flex: 1, textAlign: 'right' }]}>Costo</Text>
+                  <Text style={[styles.formatColHeader, { flex: 1, textAlign: 'right' }]}>Ganancia</Text>
+                </View>
+                {productoActual.formats.map(fmt => {
+                  const profit = (fmt.salePrice ?? 0) - (fmt.costPrice ?? 0);
+                  return (
+                    <View key={fmt.id} style={styles.formatsTableRow}>
+                      <Text style={[styles.formatCellName, { flex: 1.2 }]}>{fmt.name}</Text>
+                      <Text style={[styles.formatCellPrice, { flex: 1, textAlign: 'right' }]}>
+                        {formatCurrency(fmt.salePrice)}
+                      </Text>
+                      <Text style={[styles.formatCellCost, { flex: 1, textAlign: 'right' }]}>
+                        {fmt.costPrice > 0 ? formatCurrency(fmt.costPrice) : '--'}
+                      </Text>
+                      <Text style={[styles.formatCellProfit, { flex: 1, textAlign: 'right' }]}>
+                        {formatCurrency(profit)}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
             </View>
-          </View>
+          )}
 
           {/* BOTONES PRINCIPALES DE OPERACIÓN: VENTA Y COMPRA */}
           <View style={styles.primaryActionRow}>
             {/* Botón Destacado: Registrar Venta con icono point-of-sale */}
             <TouchableOpacity
-              style={[styles.primaryActionBtn, styles.btnSalePrimary]}
+              style={[styles.primaryActionBtn, styles.btnSalePrimary, isService && { flex: 1 }]}
               onPress={handleAbrirVenta}
               activeOpacity={0.8}
             >
@@ -425,25 +482,31 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
                 <MaterialIcons name="point-of-sale" size={20} color="#57F5AB" />
               </View>
               <View style={styles.primaryActionTextCol}>
-                <Text style={[styles.primaryActionTitle, { color: '#57F5AB' }]}>Registrar Venta</Text>
-                <Text style={styles.primaryActionSubtitle}>Cobro y salida de stock</Text>
+                <Text style={[styles.primaryActionTitle, { color: '#57F5AB' }]}>
+                  {isService ? 'Registrar Trabajo / Venta' : 'Registrar Venta'}
+                </Text>
+                <Text style={styles.primaryActionSubtitle}>
+                  {isService ? 'Cobro y cálculo de ganancia' : 'Cobro y salida de stock'}
+                </Text>
               </View>
             </TouchableOpacity>
 
-            {/* Botón: Registrar Compra */}
-            <TouchableOpacity
-              style={[styles.primaryActionBtn, styles.btnPurchasePrimary]}
-              onPress={handleAbrirCompra}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.primaryActionIconBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-                <MaterialIcons name="add-shopping-cart" size={20} color="#10B981" />
-              </View>
-              <View style={styles.primaryActionTextCol}>
-                <Text style={[styles.primaryActionTitle, { color: '#10B981' }]}>Registrar Compra</Text>
-                <Text style={styles.primaryActionSubtitle}>Ingreso de mercadería</Text>
-              </View>
-            </TouchableOpacity>
+            {/* Botón: Registrar Compra (solo para productos físicos con stock) */}
+            {!isService && (
+              <TouchableOpacity
+                style={[styles.primaryActionBtn, styles.btnPurchasePrimary]}
+                onPress={handleAbrirCompra}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.primaryActionIconBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                  <MaterialIcons name="add-shopping-cart" size={20} color="#10B981" />
+                </View>
+                <View style={styles.primaryActionTextCol}>
+                  <Text style={[styles.primaryActionTitle, { color: '#10B981' }]}>Registrar Compra</Text>
+                  <Text style={styles.primaryActionSubtitle}>Ingreso de mercadería</Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* BOTONES SECUNDARIOS: DEVOLUCIÓN DE CLIENTE, DEV. A PROVEEDOR Y AJUSTE */}
@@ -629,7 +692,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
                             {delta > 0 ? `+${delta}` : delta} {productoActual.saleUnit}s
                           </Text>
                           <Text style={styles.opStockTransition}>
-                            {op.previousStock} → {op.newStock} en stock
+                            {isService ? 'Servicio realizado' : `${op.previousStock} → ${op.newStock} en stock`}
                           </Text>
                         </View>
 
@@ -697,6 +760,16 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
                                 <Text style={styles.auditVal}>{formatCurrency(op.totalCost)}</Text>
                               </View>
                             )}
+                          </View>
+                        )}
+
+                        {op.formatName && (
+                          <View style={styles.opDetailRow}>
+                            <MaterialIcons name="photo-size-select-actual" size={13} color="#00D2FF" />
+                            <Text style={styles.opDetailLabel}>Formato:</Text>
+                            <Text style={[styles.opDetailVal, { color: '#00D2FF', fontWeight: '700' }]}>
+                              {op.formatName}
+                            </Text>
                           </View>
                         )}
 
@@ -945,6 +1018,102 @@ const styles = StyleSheet.create({
   },
 
   // Stock Hero Card
+  serviceHeroCard: {
+    backgroundColor: '#182226',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.25)',
+    padding: 16,
+    gap: 8,
+  },
+  serviceHeroHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  serviceHeroLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  serviceHeroBadge: {
+    backgroundColor: 'rgba(0, 210, 255, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 9999,
+  },
+  serviceHeroBadgeText: {
+    color: '#00D2FF',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  serviceHeroDesc: {
+    color: '#94A3B8',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  formatsCard: {
+    backgroundColor: '#182226',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.22)',
+    padding: 14,
+    gap: 10,
+  },
+  formatsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  formatsTitle: {
+    color: '#00D2FF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  formatsTable: {
+    gap: 6,
+  },
+  formatsTableRowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  formatColHeader: {
+    color: '#64748B',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  formatsTableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  formatCellName: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  formatCellPrice: {
+    color: '#57F5AB',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  formatCellCost: {
+    color: '#94A3B8',
+    fontSize: 11,
+  },
+  formatCellProfit: {
+    color: '#00D2FF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
   stockHeroCard: {
     backgroundColor: '#182226',
     borderRadius: 20,

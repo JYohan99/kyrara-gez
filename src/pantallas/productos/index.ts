@@ -3,6 +3,7 @@ export * from './SelectorChips';
 export * from './TarjetaProducto';
 export * from './ModalProducto';
 export * from './ModalSelectorIconoProducto';
+export * from './EditorFormatosProducto';
 export * from './ModalDetalleProducto';
 export * from './PestanaProductos';
 export * from './PantallaProductos';

@@ -47,12 +47,13 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
+  const isService = (product.saleUnit || '').trim().toLowerCase() === 'servicio';
   const hasPrice = product.basePrice !== undefined && product.basePrice > 0;
   const hasCost = product.costPrice !== undefined && product.costPrice > 0;
   const currentStock = product.currentStock ?? 0;
   const minStock = product.minStock ?? 0;
-  const isOutOfStock = currentStock <= 0;
-  const isLowStock = currentStock > 0 && currentStock <= minStock;
+  const isOutOfStock = !isService && currentStock <= 0;
+  const isLowStock = !isService && currentStock > 0 && currentStock <= minStock;
 
   // Cálculo de margen y ganancia
   const marginPercent = product.grossMarginPercent;
@@ -129,9 +130,15 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
         <View style={styles.financialRow}>
           <View style={styles.priceCol}>
             <Text style={[styles.salePriceText, TYPOGRAPHY.numericTable]}>
-              {hasPrice ? formatCurrency(product.basePrice || 0) : 'Sin precio'}
+              {product.formats && product.formats.length > 0
+                ? formatCurrency(product.formats[0].salePrice)
+                : hasPrice ? formatCurrency(product.basePrice || 0) : 'Sin precio'}
             </Text>
-            {hasCost ? (
+            {product.formats && product.formats.length > 0 ? (
+              <Text style={styles.costPriceText}>
+                {product.formats.length} formato{product.formats.length > 1 ? 's' : ''} con tarifa
+              </Text>
+            ) : hasCost ? (
               <Text style={styles.costPriceText}>
                 Costo: {formatCurrency(product.costPrice || 0)}
               </Text>
@@ -166,49 +173,60 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
         {/* FILA 3: Estado de Stock (Izquierda) y Acciones Rápidas (Derecha) */}
         <View style={styles.footerRow}>
           {/* Indicador de Stock con Punto Resplandor */}
-          <View
-            style={[
-              styles.stockPill,
-              isOutOfStock
-                ? styles.stockPillOut
-                : isLowStock
-                  ? styles.stockPillLow
-                  : styles.stockPillOptimal,
-            ]}
-          >
+          {isService ? (
+            <View style={styles.stockPillService}>
+              <MaterialIcons name="design-services" size={13} color="#00D2FF" />
+              <Text style={styles.stockTextService} numberOfLines={1}>
+                {product.formats && product.formats.length > 0
+                  ? `Servicio • ${product.formats.length} formatos`
+                  : 'Servicio • Ilimitado'}
+              </Text>
+            </View>
+          ) : (
             <View
               style={[
-                styles.stockDot,
+                styles.stockPill,
                 isOutOfStock
-                  ? styles.stockDotOut
+                  ? styles.stockPillOut
                   : isLowStock
-                    ? styles.stockDotLow
-                    : styles.stockDotOptimal,
+                    ? styles.stockPillLow
+                    : styles.stockPillOptimal,
               ]}
-            />
-            <Text
-              style={[
-                styles.stockPillText,
-                isOutOfStock
-                  ? styles.stockTextOut
-                  : isLowStock
-                    ? styles.stockTextLow
-                    : styles.stockTextOptimal,
-              ]}
-              numberOfLines={1}
             >
-              {isOutOfStock
-                ? `0 ${product.saleUnit}s • Agotado`
-                : isLowStock
-                  ? `${currentStock} ${product.saleUnit}s • Mín. ${minStock}`
-                  : `${currentStock} ${product.saleUnit}s • Óptimo`}
-            </Text>
-          </View>
+              <View
+                style={[
+                  styles.stockDot,
+                  isOutOfStock
+                    ? styles.stockDotOut
+                    : isLowStock
+                      ? styles.stockDotLow
+                      : styles.stockDotOptimal,
+                ]}
+              />
+              <Text
+                style={[
+                  styles.stockPillText,
+                  isOutOfStock
+                    ? styles.stockTextOut
+                    : isLowStock
+                      ? styles.stockTextLow
+                      : styles.stockTextOptimal,
+                ]}
+                numberOfLines={1}
+              >
+                {isOutOfStock
+                  ? `0 ${product.saleUnit}s • Agotado`
+                  : isLowStock
+                    ? `${currentStock} ${product.saleUnit}s • Mín. ${minStock}`
+                    : `${currentStock} ${product.saleUnit}s • Óptimo`}
+              </Text>
+            </View>
+          )}
 
           {/* Acciones Rápidas Directas en la Ficha */}
           <View style={styles.quickActionsRow}>
             {/* Botón Vender (rápido con icono point-of-sale asociado a Venta) */}
-            {product.isActive && currentStock > 0 && (
+            {product.isActive && (currentStock > 0 || isService) && (
               <TouchableOpacity
                 style={styles.btnQuickSale}
                 onPress={() => {
@@ -227,27 +245,29 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
               </TouchableOpacity>
             )}
 
-            {/* Botón Añadir Stock / Reponer */}
-            <TouchableOpacity
-              style={isOutOfStock || isLowStock ? styles.btnQuickRestock : styles.btnQuickAdd}
-              onPress={() => {
-                triggerSelection();
-                if (onQuickPurchase) {
-                  onQuickPurchase(product);
-                } else if (onOpenDetail) {
-                  onOpenDetail(product);
-                }
-              }}
-              activeOpacity={0.8}
-              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-            >
-              <MaterialIcons
-                name={isOutOfStock ? 'add-shopping-cart' : 'add'}
-                size={isOutOfStock ? 14 : 16}
-                color={isOutOfStock ? '#34D399' : '#FFFFFF'}
-              />
-              {isOutOfStock && <Text style={styles.btnQuickRestockText}>Reponer</Text>}
-            </TouchableOpacity>
+            {/* Botón Añadir Stock / Reponer (solo para productos físicos con stock) */}
+            {!isService && (
+              <TouchableOpacity
+                style={isOutOfStock || isLowStock ? styles.btnQuickRestock : styles.btnQuickAdd}
+                onPress={() => {
+                  triggerSelection();
+                  if (onQuickPurchase) {
+                    onQuickPurchase(product);
+                  } else if (onOpenDetail) {
+                    onOpenDetail(product);
+                  }
+                }}
+                activeOpacity={0.8}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+              >
+                <MaterialIcons
+                  name={isOutOfStock ? 'add-shopping-cart' : 'add'}
+                  size={isOutOfStock ? 14 : 16}
+                  color={isOutOfStock ? '#34D399' : '#FFFFFF'}
+                />
+                {isOutOfStock && <Text style={styles.btnQuickRestockText}>Reponer</Text>}
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -566,6 +586,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(127, 29, 29, 0.45)',
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.35)',
+  },
+  stockPillService: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0, 210, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 4.5,
+    borderRadius: 9999,
+    flexShrink: 1,
+  },
+  stockTextService: {
+    color: '#00D2FF',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   stockDot: {
     width: 6,

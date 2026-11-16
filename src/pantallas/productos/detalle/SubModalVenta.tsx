@@ -23,7 +23,7 @@ import {
   gatillarError as triggerError,
   gatillarSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
-import { Producto, Cuenta } from '@/datos/tipos';
+import { Producto, Cuenta, FormatoProducto } from '@/datos/tipos';
 import { registrarVentaInventario } from '@/datos/consultas/inventario';
 import { IconoProducto } from '@/compartido/iconosProductos';
 
@@ -43,10 +43,20 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
   onSuccess,
 }) => {
   const insets = useSafeAreaInsets();
+  const isService = (producto.saleUnit || '').trim().toLowerCase() === 'servicio';
+
+  const [formatoSeleccionado, setFormatoSeleccionado] = useState<FormatoProducto | null>(() => {
+    if (producto.formats && producto.formats.length > 0) {
+      return producto.formats[0];
+    }
+    return null;
+  });
+
   const [cantidad, setCantidad] = useState('1');
   const [precioTexto, setPrecioTexto] = useState(() => {
-    if (!producto.basePrice) return '';
-    return formatearEntradaDinero((producto.basePrice / 100).toFixed(2).replace('.', ','));
+    const pBase = producto.formats && producto.formats.length > 0 ? producto.formats[0].salePrice : producto.basePrice;
+    if (!pBase) return '';
+    return formatearEntradaDinero((pBase / 100).toFixed(2).replace('.', ','));
   });
   const [modoCobro, setModoCobro] = useState<'IMMEDIATE_ACCOUNT' | 'CREDIT_PENDING'>('IMMEDIATE_ACCOUNT');
   const [cuentaId, setCuentaId] = useState(() => cuentas[0]?.id || '');
@@ -56,8 +66,10 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
   const [procesando, setProcesando] = useState(false);
 
   const cantNum = Math.max(0, parseFloat(cantidad.replace(',', '.')) || 0);
-  const precioUnitarioCentavos = precioTexto ? convertirMontoACentavos(precioTexto) : (producto.basePrice || 0);
-  const costoUnitarioCentavos = producto.costPrice || 0;
+  const precioUnitarioCentavos = precioTexto
+    ? convertirMontoACentavos(precioTexto)
+    : (formatoSeleccionado?.salePrice ?? (producto.basePrice || 0));
+  const costoUnitarioCentavos = formatoSeleccionado?.costPrice ?? (producto.costPrice || 0);
   const totalVentaCentavos = Math.round(cantNum * precioUnitarioCentavos);
   const totalCostoCentavos = Math.round(cantNum * costoUnitarioCentavos);
   const gananciaEstimada = totalVentaCentavos - totalCostoCentavos;
@@ -79,7 +91,7 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
       return;
     }
 
-    if (cantNum > currentStock) {
+    if (!isService && cantNum > currentStock) {
       triggerError();
       Alert.alert(
         'Stock insuficiente',
@@ -109,6 +121,8 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
         productId: producto.id,
         quantity: cantNum,
         unitPrice: precioUnitarioCentavos,
+        unitCost: costoUnitarioCentavos,
+        formatName: formatoSeleccionado?.name,
         paymentMode: modoCobro,
         accountId: modoCobro === 'IMMEDIATE_ACCOUNT' ? cuentaId : undefined,
         customer: cliente.trim() || undefined,
@@ -118,8 +132,8 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
 
       triggerSuccess();
       Alert.alert(
-        'Venta registrada',
-        `Se registró la salida de ${cantNum} ${producto.saleUnit}s.\nImporte: ${formatCurrency(totalVentaCentavos)}\nGanancia bruta: ${formatCurrency(gananciaEstimada)}${
+        isService ? 'Trabajo registrado' : 'Venta registrada',
+        `Se registró ${cantNum} ${isService ? 'servicio(s)' : producto.saleUnit + 's'}${formatoSeleccionado ? ` [${formatoSeleccionado.name}]` : ''}.\nImporte: ${formatCurrency(totalVentaCentavos)}\nInversión: ${formatCurrency(totalCostoCentavos)}\nGanancia: ${formatCurrency(gananciaEstimada)}${
           modoCobro === 'CREDIT_PENDING'
             ? '\n\nSe creó la cuenta por cobrar correspondiente en el módulo de Deudas.'
             : '\n\nEl importe fue acreditado en la cuenta seleccionada.'
@@ -196,13 +210,52 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
                     {producto.name}
                   </Text>
                 </View>
-                <View style={styles.stockBadge}>
-                  <View style={styles.stockDot} />
-                  <Text style={styles.stockText}>
-                    {currentStock} {producto.saleUnit}s
-                  </Text>
-                </View>
+                {isService ? (
+                  <View style={[styles.stockBadge, styles.stockBadgeService]}>
+                    <MaterialIcons name="design-services" size={13} color="#00D2FF" />
+                    <Text style={[styles.stockText, { color: '#00D2FF' }]}>Servicio</Text>
+                  </View>
+                ) : (
+                  <View style={styles.stockBadge}>
+                    <View style={styles.stockDot} />
+                    <Text style={styles.stockText}>
+                      {currentStock} {producto.saleUnit}s
+                    </Text>
+                  </View>
+                )}
               </View>
+
+              {/* Selector de Formato / Medida si existen múltiples tarifas */}
+              {producto.formats && producto.formats.length > 0 && (
+                <View style={styles.formatSelectorBox}>
+                  <Text style={styles.formatSelectorTitle}>FORMATO O MEDIDA DEL TRABAJO</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.formatChipsScroll}>
+                    {producto.formats.map(fmt => {
+                      const isSelected = formatoSeleccionado?.id === fmt.id;
+                      return (
+                        <TouchableOpacity
+                          key={fmt.id}
+                          style={[styles.formatChip, isSelected && styles.formatChipSelected]}
+                          onPress={() => {
+                            triggerSelection();
+                            setFormatoSeleccionado(fmt);
+                            const centavosStr = (fmt.salePrice / 100).toFixed(2).replace('.', ',');
+                            setPrecioTexto(formatearEntradaDinero(centavosStr));
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.formatChipText, isSelected && styles.formatChipTextSelected]}>
+                            {fmt.name}
+                          </Text>
+                          <Text style={[styles.formatChipPrice, isSelected && styles.formatChipPriceSelected]}>
+                            {formatCurrency(fmt.salePrice)}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
 
               {/* Grid 2 Columnas: Controles (Cantidad y Precio) + Total de la Venta */}
               <View style={styles.gridRow}>
@@ -582,6 +635,53 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(6, 78, 59, 0.5)',
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.35)',
+  },
+  stockBadgeService: {
+    backgroundColor: 'rgba(0, 210, 255, 0.12)',
+    borderColor: 'rgba(0, 210, 255, 0.3)',
+  },
+  formatSelectorBox: {
+    gap: 6,
+  },
+  formatSelectorTitle: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  formatChipsScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  formatChip: {
+    backgroundColor: '#182226',
+    borderWidth: 1,
+    borderColor: '#223037',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    gap: 2,
+  },
+  formatChipSelected: {
+    backgroundColor: 'rgba(0, 210, 255, 0.12)',
+    borderColor: '#00D2FF',
+  },
+  formatChipText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  formatChipTextSelected: {
+    color: '#00D2FF',
+  },
+  formatChipPrice: {
+    color: '#57F5AB',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  formatChipPriceSelected: {
+    color: '#57F5AB',
   },
   stockDot: {
     width: 6,

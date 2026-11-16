@@ -2,6 +2,7 @@ import { obtenerBaseDatos } from '../conexion';
 import { asegurarEsquemaBaseDatos } from '../esquema';
 import {
   Producto,
+  FormatoProducto,
   FiltroProductos,
   TarifaProducto,
   LineaCalculoProducto,
@@ -37,6 +38,38 @@ export const UNIDADES_VENTA_SUGERIDAS = [
   'Kit',
 ];
 
+/**
+ * Determina si una unidad de venta corresponde a un Servicio / Mano de obra.
+ * Los servicios no manejan stock físico ni alertas de agotado.
+ */
+export function esServicio(saleUnit?: string): boolean {
+  return (saleUnit || '').trim().toLowerCase() === 'servicio';
+}
+
+/**
+ * Formatos estándar comúnmente utilizados en fotografía con sus referencias y precios base.
+ */
+export const FORMATOS_FOTO_PREDETERMINADOS: { name: string; costUsd: number; salePrice: number }[] = [
+  { name: '1x1', costUsd: 0.10, salePrice: 30000 },
+  { name: '2,5x3,5', costUsd: 0.10, salePrice: 20000 },
+  { name: '3,5x5', costUsd: 0.19, salePrice: 35000 },
+  { name: '4x6', costUsd: 0.25, salePrice: 40000 },
+  { name: '5x7', costUsd: 0.35, salePrice: 68000 },
+  { name: '6x8', costUsd: 0.50, salePrice: 75000 },
+  { name: '8x10', costUsd: 0.75, salePrice: 170000 },
+  { name: '8x12', costUsd: 1.00, salePrice: 300000 },
+  { name: '8x12C', costUsd: 1.00, salePrice: 350000 },
+  { name: '10x12', costUsd: 1.35, salePrice: 470000 },
+  { name: '10x15', costUsd: 1.60, salePrice: 550000 },
+  { name: '12x16', costUsd: 1.90, salePrice: 600000 },
+  { name: '12x18', costUsd: 2.00, salePrice: 650000 },
+  { name: '16x20', costUsd: 4.50, salePrice: 880000 },
+  { name: '16x24', costUsd: 5.00, salePrice: 980000 },
+  { name: '20x24', costUsd: 5.50, salePrice: 1080000 },
+  { name: '24x32', costUsd: 9.50, salePrice: 1500000 },
+  { name: '24x39', costUsd: 11.00, salePrice: 1800000 },
+];
+
 interface FilaProducto {
   id: string;
   name: string;
@@ -44,6 +77,7 @@ interface FilaProducto {
   sku: string | null;
   size_format: string | null;
   sale_unit: string;
+  formats: string | null;
   description: string | null;
   is_active: number;
   base_price: number | null;
@@ -104,8 +138,34 @@ function mapearFilaAProducto(fila: FilaProducto, tariffsCount?: number): Product
   const { grossProfit, grossMarginPercent } = calcularGananciaYMargen(sale, cost);
   const currentStock = fila.current_stock !== null && fila.current_stock !== undefined ? fila.current_stock : 0;
   const minStock = fila.min_stock !== null && fila.min_stock !== undefined ? fila.min_stock : 0;
-  const isOutOfStock = currentStock <= 0;
-  const isLowStock = currentStock > 0 && currentStock <= minStock;
+  const isService = esServicio(fila.sale_unit);
+  const isOutOfStock = !isService && currentStock <= 0;
+  const isLowStock = !isService && currentStock > 0 && currentStock <= minStock;
+
+  let formats: FormatoProducto[] | undefined = undefined;
+  if (fila.formats) {
+    try {
+      const parsed = JSON.parse(fila.formats);
+      if (Array.isArray(parsed)) {
+        formats = parsed.map((fmt: any) => {
+          const sPrice = typeof fmt.salePrice === 'number' ? fmt.salePrice : 0;
+          const cPrice = typeof fmt.costPrice === 'number' ? fmt.costPrice : 0;
+          const { grossProfit: gp, grossMarginPercent: gm } = calcularGananciaYMargen(sPrice, cPrice);
+          return {
+            id: fmt.id || 'fmt_' + Math.random().toString(36).substring(2, 7),
+            name: String(fmt.name || ''),
+            salePrice: sPrice,
+            costPrice: cPrice,
+            costUsd: typeof fmt.costUsd === 'number' ? fmt.costUsd : undefined,
+            grossProfit: gp,
+            grossMarginPercent: gm,
+          };
+        });
+      }
+    } catch {
+      // Ignorar json inválido
+    }
+  }
 
   return {
     id: fila.id,
@@ -114,6 +174,7 @@ function mapearFilaAProducto(fila: FilaProducto, tariffsCount?: number): Product
     sku: fila.sku || undefined,
     sizeFormat: fila.size_format || undefined,
     saleUnit: fila.sale_unit || 'Unidad',
+    formats,
     description: fila.description || undefined,
     isActive: fila.is_active === 1,
     basePrice: sale,
@@ -512,6 +573,7 @@ export interface DatosCrearProducto {
   sku?: string;
   sizeFormat?: string;
   saleUnit: string;
+  formats?: FormatoProducto[];
   description?: string;
   isActive?: boolean;
   basePrice?: number;
@@ -554,8 +616,10 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
   const activo = datos.isActive === false ? 0 : 1;
   const precioBase = datos.basePrice !== undefined ? Math.round(datos.basePrice) : 0;
   const costoBase = datos.costPrice !== undefined ? Math.round(datos.costPrice) : 0;
-  const stockInicial = datos.initialStock !== undefined && datos.initialStock > 0 ? Number(datos.initialStock) : 0;
-  const stockMinimo = datos.minStock !== undefined && datos.minStock >= 0 ? Number(datos.minStock) : 0;
+  const esServ = esServicio(unidadLimpia);
+  const stockInicial = esServ ? 0 : (datos.initialStock !== undefined && datos.initialStock > 0 ? Number(datos.initialStock) : 0);
+  const stockMinimo = esServ ? 0 : (datos.minStock !== undefined && datos.minStock >= 0 ? Number(datos.minStock) : 0);
+  const formatosJson = datos.formats && datos.formats.length > 0 ? JSON.stringify(datos.formats) : null;
   const proveedor = datos.supplier?.trim() || null;
   const costoUsd = datos.costUsd !== undefined ? datos.costUsd : null;
   const tipoCambio = datos.exchangeRate !== undefined ? datos.exchangeRate : null;
@@ -565,10 +629,10 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
   db.withTransactionSync(() => {
     db.runSync(
       `INSERT INTO photo_products (
-        id, name, sku, size_format, sale_unit, icon, description,
+        id, name, sku, size_format, sale_unit, icon, formats, description,
         is_active, base_price, cost_price, current_stock, min_stock, supplier,
         cost_usd, exchange_rate, price_valid_from, currency, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         nombreLimpio,
@@ -576,6 +640,7 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
         formato,
         unidadLimpia,
         icono,
+        formatosJson,
         descripcion,
         activo,
         precioBase,
@@ -648,6 +713,7 @@ export interface DatosActualizarProducto {
   sku?: string;
   sizeFormat?: string;
   saleUnit?: string;
+  formats?: FormatoProducto[];
   description?: string;
   isActive?: boolean;
   basePrice?: number;
@@ -699,7 +765,11 @@ export function actualizarProducto(
   const activoFinal = datos.isActive !== undefined ? (datos.isActive ? 1 : 0) : (actual.isActive ? 1 : 0);
   const precioFinal = datos.basePrice !== undefined ? Math.round(datos.basePrice) : (actual.basePrice ?? 0);
   const costoFinal = datos.costPrice !== undefined ? Math.round(datos.costPrice) : (actual.costPrice ?? 0);
-  const minStockFinal = datos.minStock !== undefined ? Math.max(0, Number(datos.minStock)) : actual.minStock;
+  const esServ = esServicio(unidadFinal);
+  const minStockFinal = esServ ? 0 : (datos.minStock !== undefined ? Math.max(0, Number(datos.minStock)) : actual.minStock);
+  const formatosFinal = datos.formats !== undefined
+    ? (datos.formats && datos.formats.length > 0 ? JSON.stringify(datos.formats) : null)
+    : (actual.formats && actual.formats.length > 0 ? JSON.stringify(actual.formats) : null);
   const supplierFinal = datos.supplier !== undefined ? (datos.supplier.trim() || null) : (actual.supplier || null);
   const costoUsdFinal = datos.costUsd !== undefined ? datos.costUsd : (actual.costUsd ?? null);
   const tipoCambioFinal = datos.exchangeRate !== undefined ? datos.exchangeRate : (actual.exchangeRate ?? null);
@@ -717,6 +787,7 @@ export function actualizarProducto(
         size_format = ?,
         sale_unit = ?,
         icon = ?,
+        formats = ?,
         description = ?,
         is_active = ?,
         base_price = ?,
@@ -735,6 +806,7 @@ export function actualizarProducto(
         formatoFinal,
         unidadFinal,
         iconoFinal,
+        formatosFinal,
         descripcionFinal,
         activoFinal,
         precioFinal,

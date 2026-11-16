@@ -13,6 +13,7 @@ import {
 import { emitirCambioBoveda } from '../sincronizacion';
 import {
   obtenerProductoPorId,
+  esServicio,
 } from './productos';
 
 interface FilaOperacionInventario {
@@ -27,6 +28,7 @@ interface FilaOperacionInventario {
   unit_price: number | null;
   total_price: number | null;
   customer: string | null;
+  format_name: string | null;
   payment_status: string | null;
   payment_method: string | null;
   account_id: string | null;
@@ -92,6 +94,7 @@ function mapearFilaAOperacion(fila: FilaOperacionInventario): OperacionInventari
     totalPrice,
     grossProfit,
     customer: fila.customer || undefined,
+    formatName: fila.format_name || undefined,
     paymentStatus: (fila.payment_status as any) || undefined,
     paymentMethod: fila.payment_method || undefined,
     accountId: fila.account_id || undefined,
@@ -442,8 +445,10 @@ export function registrarAjusteInventario(datos: DatosRegistrarAjuste): Operacio
 
 export interface DatosRegistrarVenta {
   productId: string;
-  quantity: number; // unidades vendidas (> 0, <= currentStock)
+  quantity: number; // unidades vendidas (> 0, <= currentStock salvo en servicios)
   unitPrice: number; // precio unitario de venta en centavos (>= 0)
+  unitCost?: number; // costo unitario histórico específico (ej. por formato de servicio)
+  formatName?: string; // nombre del formato o medida (ej: '1x1')
   paymentMode: 'IMMEDIATE_ACCOUNT' | 'CREDIT_PENDING';
   accountId?: string; // obligatorio si paymentMode === 'IMMEDIATE_ACCOUNT'
   customer?: string; // obligatorio si paymentMode === 'CREDIT_PENDING'
@@ -454,8 +459,8 @@ export interface DatosRegistrarVenta {
 
 /**
  * Registra una venta desde el detalle del producto:
- * - Reduce el stock disponible.
- * - Guarda el costo histórico unitario del producto en el momento de la venta.
+ * - Reduce el stock disponible (a menos que sea un Servicio sin control de stock físico).
+ * - Guarda el costo histórico unitario del producto o del formato específico.
  * - Registra el ingreso en la cuenta bancaria/efectivo si fue cobrado de inmediato.
  * - Si es pendiente de cobro, registra la cuenta por cobrar en el sistema de deudas (RECEIVABLE).
  * - Distingue venta, cobro, costo de lo vendido y ganancia bruta.
@@ -471,8 +476,9 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
     throw new Error('El producto no existe.');
   }
 
+  const isService = esServicio(producto.saleUnit);
   const previousStock = producto.currentStock ?? 0;
-  if (cantidad > previousStock) {
+  if (!isService && cantidad > previousStock) {
     throw new Error(
       `Stock insuficiente para vender ${cantidad} ${producto.saleUnit}s. El stock disponible actual es de ${previousStock} ${producto.saleUnit}s.`
     );
@@ -484,10 +490,13 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
 
   const unitPrice = Math.round(datos.unitPrice);
   const totalPrice = Math.round(unitPrice * cantidad); // Venta: importe total vendido
-  const unitCost = producto.costPrice ?? 0; // Costo histórico inmutable en el momento de la venta
+  const unitCost = datos.unitCost !== undefined && !isNaN(datos.unitCost)
+    ? Math.max(0, Math.round(datos.unitCost))
+    : (producto.costPrice ?? 0); // Costo histórico inmutable en el momento de la venta
   const totalCost = Math.round(unitCost * cantidad); // Costo de lo vendido
   const grossProfit = totalPrice - totalCost; // Ganancia bruta
-  const newStock = previousStock - cantidad;
+  const newStock = isService ? previousStock : previousStock - cantidad;
+  const formatName = datos.formatName?.trim() || null;
 
   const ahora = Date.now();
   const fechaOperacion = datos.date || ahora;
@@ -512,7 +521,8 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
       // 1. Registrar ingreso en la tabla transactions
       transactionId = 'tx_sale_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 7);
       const categoriaId = obtenerOCrearCategoriaVentas();
-      const notaTx = `Venta: ${cantidad} x ${producto.name}${cliente ? ` (${cliente})` : ''}`;
+      const formatLabel = formatName ? ` [${formatName}]` : '';
+      const notaTx = `Venta: ${cantidad} x ${producto.name}${formatLabel}${cliente ? ` (${cliente})` : ''}`;
 
       db.runSync(
         `INSERT INTO transactions (
@@ -542,7 +552,8 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
       }
       paymentStatus = 'PENDING';
       debtId = 'debt_sale_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 7);
-      const conceptoDeuda = `Venta de ${cantidad} x ${producto.name}`;
+      const formatLabel = formatName ? ` [${formatName}]` : '';
+      const conceptoDeuda = `Venta de ${cantidad} x ${producto.name}${formatLabel}`;
       const fechaEmision = hoyISO();
 
       db.runSync(
@@ -566,20 +577,22 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
       );
     }
 
-    // 3. Reducir stock del producto
-    db.runSync(
-      'UPDATE photo_products SET current_stock = ?, updated_at = ? WHERE id = ?',
-      [newStock, ahora, datos.productId]
-    );
+    // 3. Reducir stock del producto sólo si no es un servicio ilimitado
+    if (!isService) {
+      db.runSync(
+        'UPDATE photo_products SET current_stock = ?, updated_at = ? WHERE id = ?',
+        [newStock, ahora, datos.productId]
+      );
+    }
 
     // 4. Registrar operación de inventario con todos los datos históricos inmutables
     db.runSync(
       `INSERT INTO inventory_operations (
         id, product_id, type, quantity, previous_stock, new_stock,
-        unit_cost, total_cost, unit_price, total_price, customer,
+        unit_cost, total_cost, unit_price, total_price, customer, format_name,
         payment_status, payment_method, account_id, transaction_id, debt_id,
         related_operation_id, reason, supplier, notes, date, created_at
-      ) VALUES (?, ?, 'SALE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 'Venta a cliente', NULL, ?, ?, ?)`,
+      ) VALUES (?, ?, 'SALE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 'Venta a cliente', NULL, ?, ?, ?)`,
       [
         idOperacion,
         datos.productId,
@@ -591,6 +604,7 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
         unitPrice,
         totalPrice,
         cliente || null,
+        formatName,
         paymentStatus,
         datos.paymentMode,
         accountId,
@@ -618,6 +632,7 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
     totalPrice,
     grossProfit,
     customer: cliente,
+    formatName: formatName || undefined,
     paymentStatus,
     paymentMethod: datos.paymentMode,
     accountId: accountId || undefined,

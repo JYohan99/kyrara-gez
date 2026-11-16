@@ -210,6 +210,16 @@ export interface TarifaProducto {
   updatedAt: number;
 }
 
+export interface FormatoProducto {
+  id: string;
+  name: string; // ej: '1x1', '4x6', 'Sesión Exterior'
+  salePrice: number; // en centavos
+  costPrice: number; // en centavos
+  costUsd?: number; // referencia USD opcional (ej: 0.10)
+  grossProfit?: number; // salePrice - costPrice (en centavos)
+  grossMarginPercent?: number | null;
+}
+
 export interface Producto {
   id: string;
   name: string;
@@ -217,6 +227,7 @@ export interface Producto {
   sku?: string;
   sizeFormat?: string;
   saleUnit: string;
+  formats?: FormatoProducto[]; // Formatos o medidas específicas con tarifas individuales
   description?: string;
   isActive: boolean;
   basePrice?: number; // precio de venta vigente en centavos
@@ -271,6 +282,7 @@ export interface OperacionInventario {
   totalPrice?: number; // importe de la venta en centavos (quantity * unitPrice)
   grossProfit?: number; // ganancia bruta = totalPrice - totalCost (en centavos)
   customer?: string; // nombre del cliente
+  formatName?: string; // nombre del formato o medida (ej: '1x1', '4x6')
   paymentStatus?: EstadoCobroOperacion; // 'PAID' (cobrado) | 'PENDING' (pendiente) | 'REFUNDED' (reembolsado)
   paymentMethod?: string; // cuenta seleccionada o crédito
   accountId?: string;

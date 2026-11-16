@@ -26,16 +26,18 @@ import {
   gatillarError as triggerError,
   gatillarSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
-import { Producto } from '@/datos/tipos';
+import { Producto, FormatoProducto } from '@/datos/tipos';
 import {
   crearProducto,
   actualizarProducto,
   UNIDADES_VENTA_SUGERIDAS,
+  esServicio,
 } from '@/datos/consultas/productos';
 import { SelectorChips } from './SelectorChips';
 import { BadgeRentabilidad } from './BadgeRentabilidad';
 import { IconoProducto } from '@/compartido/iconosProductos';
 import { ModalSelectorIconoProducto } from './ModalSelectorIconoProducto';
+import { EditorFormatosProducto } from './EditorFormatosProducto';
 
 export interface PropiedadesModalProducto {
   visible: boolean;
@@ -69,6 +71,11 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
   const [mostrarOtraUnidad, setMostrarOtraUnidad] = useState(() => {
     return Boolean(productoParaEditar && !UNIDADES_VENTA_SUGERIDAS.includes(productoParaEditar.saleUnit));
   });
+
+  const [formatos, setFormatos] = useState<FormatoProducto[]>(() => productoParaEditar?.formats || []);
+
+  const unidadFinalCalculada = mostrarOtraUnidad && otraUnidad.trim() ? otraUnidad.trim() : unidadVenta.trim();
+  const esServ = esServicio(unidadFinalCalculada);
 
   const [descripcion, setDescripcion] = useState(() => productoParaEditar?.description || '');
   const [activo, setActivo] = useState(() => (productoParaEditar ? productoParaEditar.isActive : true));
@@ -104,7 +111,7 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
     }
 
     const formatoFinal = productoParaEditar?.sizeFormat || undefined;
-    const unidadFinal = mostrarOtraUnidad && otraUnidad.trim() ? otraUnidad.trim() : unidadVenta.trim();
+    const unidadFinal = unidadFinalCalculada;
 
     if (!unidadFinal) {
       triggerError();
@@ -116,7 +123,7 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
     const costoCentavos = costoTexto ? convertirMontoACentavos(costoTexto) : 0;
     const skuFinal = productoParaEditar?.sku || undefined;
     const proveedorFinal = productoParaEditar?.supplier || undefined;
-    const minStockNum = Math.max(0, parseFloat(stockMinimoTexto.replace(',', '.')) || 0);
+    const minStockNum = esServ ? 0 : Math.max(0, parseFloat(stockMinimoTexto.replace(',', '.')) || 0);
 
     setGuardando(true);
     try {
@@ -127,6 +134,7 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
           sku: skuFinal,
           sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
+          formats: formatos,
           description: descripcion.trim() || undefined,
           isActive: activo,
           basePrice: precioCentavos,
@@ -135,13 +143,14 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
           supplier: proveedorFinal,
         });
       } else {
-        const initialStockNum = Math.max(0, parseFloat(stockInicialTexto.replace(',', '.')) || 0);
+        const initialStockNum = esServ ? 0 : Math.max(0, parseFloat(stockInicialTexto.replace(',', '.')) || 0);
         crearProducto({
           name: nombreFinal,
           icon: icono,
           sku: skuFinal,
           sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
+          formats: formatos,
           description: descripcion.trim() || undefined,
           isActive: activo,
           basePrice: precioCentavos,
@@ -249,23 +258,48 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
             placeholderPersonalizado="ej. Rollo, Pliego, etc..."
           />
 
-          {/* Inventario y Control de Stock */}
-          <View style={styles.stockSectionBox}>
-            <View style={styles.pricingHeader}>
-              <MaterialIcons name="inventory" size={16} color={COLORS.secondary} />
-              <Text style={[styles.pricingSectionTitle, TYPOGRAPHY.etiquetaMayusculas]}>
-                Inventario y Control de Stock
-              </Text>
-            </View>
+          {/* Inventario y Control de Stock (Oculto para Servicios) */}
+          {!esServ ? (
+            <View style={styles.stockSectionBox}>
+              <View style={styles.pricingHeader}>
+                <MaterialIcons name="inventory" size={16} color="#00D2FF" />
+                <Text style={[styles.pricingSectionTitle, { color: '#00D2FF' }, TYPOGRAPHY.etiquetaMayusculas]}>
+                  Inventario y Control de Stock
+                </Text>
+              </View>
 
-            <View style={styles.pricingInputsRow}>
-              {!productoParaEditar ? (
+              <View style={styles.pricingInputsRow}>
+                {!productoParaEditar ? (
+                  <View style={styles.pricingInputCol}>
+                    <Text style={styles.subLabel}>Stock inicial ({unidadFinalCalculada}s)</Text>
+                    <View style={styles.inputContainerCompact}>
+                      <TextInput
+                        value={stockInicialTexto}
+                        onChangeText={setStockInicialTexto}
+                        placeholder="0"
+                        placeholderTextColor={COLORS.onSurfaceVariant + '80'}
+                        keyboardType="numeric"
+                        style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
+                      />
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.pricingInputCol}>
+                    <Text style={styles.subLabel}>Stock actual registrado</Text>
+                    <View style={[styles.inputContainerCompact, styles.stockDisplayBox]}>
+                      <Text style={[styles.stockDisplayText, TYPOGRAPHY.titularPequeno]}>
+                        {productoParaEditar.currentStock} {productoParaEditar.saleUnit}s
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
                 <View style={styles.pricingInputCol}>
-                  <Text style={styles.subLabel}>Stock inicial (Unidades)</Text>
+                  <Text style={styles.subLabel}>Stock mínimo (Alerta)</Text>
                   <View style={styles.inputContainerCompact}>
                     <TextInput
-                      value={stockInicialTexto}
-                      onChangeText={setStockInicialTexto}
+                      value={stockMinimoTexto}
+                      onChangeText={setStockMinimoTexto}
                       placeholder="0"
                       placeholderTextColor={COLORS.onSurfaceVariant + '80'}
                       keyboardType="numeric"
@@ -273,32 +307,39 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
                     />
                   </View>
                 </View>
-              ) : (
-                <View style={styles.pricingInputCol}>
-                  <Text style={styles.subLabel}>Stock actual registrado</Text>
-                  <View style={[styles.inputContainerCompact, styles.stockDisplayBox]}>
-                    <Text style={[styles.stockDisplayText, TYPOGRAPHY.titularPequeno]}>
-                      {productoParaEditar.currentStock} {productoParaEditar.saleUnit}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.pricingInputCol}>
-                <Text style={styles.subLabel}>Stock mínimo (Alerta)</Text>
-                <View style={styles.inputContainerCompact}>
-                  <TextInput
-                    value={stockMinimoTexto}
-                    onChangeText={setStockMinimoTexto}
-                    placeholder="0"
-                    placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                    keyboardType="numeric"
-                    style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
-                  />
-                </View>
               </View>
             </View>
-          </View>
+          ) : (
+            <View style={styles.serviceNoticeBox}>
+              <View style={styles.serviceNoticeIcon}>
+                <MaterialIcons name="design-services" size={22} color="#00D2FF" />
+              </View>
+              <View style={styles.serviceNoticeContent}>
+                <Text style={[styles.serviceNoticeTitle, TYPOGRAPHY.titularPequeno]}>
+                  Servicio / Mano de obra
+                </Text>
+                <Text style={styles.serviceNoticeDesc}>
+                  Los servicios no requieren control de existencias en almacén ni alertas de agotado.
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Formatos y Tarifas Específicas */}
+          <EditorFormatosProducto
+            formatos={formatos}
+            onChangeFormatos={(nuevos) => {
+              setFormatos(nuevos);
+              if (!precioTexto && nuevos.length > 0 && nuevos[0].salePrice > 0) {
+                const centavosStr = (nuevos[0].salePrice / 100).toFixed(2).replace('.', ',');
+                setPrecioTexto(formatearEntradaDinero(centavosStr));
+              }
+              if (!costoTexto && nuevos.length > 0 && nuevos[0].costPrice > 0) {
+                const centavosStr = (nuevos[0].costPrice / 100).toFixed(2).replace('.', ',');
+                setCostoTexto(formatearEntradaDinero(centavosStr));
+              }
+            }}
+          />
 
           {/* Precios opcionales */}
           <View style={styles.pricingOptionalBox}>
@@ -698,5 +739,37 @@ const styles = StyleSheet.create({
   },
   nameInputContainer: {
     flex: 1,
+  },
+  serviceNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(0, 210, 255, 0.08)',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.25)',
+  },
+  serviceNoticeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 210, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  serviceNoticeContent: {
+    flex: 1,
+    gap: 2,
+  },
+  serviceNoticeTitle: {
+    color: '#00D2FF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  serviceNoticeDesc: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 11,
+    lineHeight: 15,
   },
 });

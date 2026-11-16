@@ -198,6 +198,7 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
       size_format TEXT,
       sale_unit TEXT NOT NULL DEFAULT 'Unidad',
       icon TEXT DEFAULT 'inventory-2',
+      formats TEXT,
       description TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
       base_price INTEGER DEFAULT 0,
@@ -225,6 +226,7 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
       unit_price INTEGER,
       total_price INTEGER,
       customer TEXT,
+      format_name TEXT,
       payment_status TEXT,
       payment_method TEXT,
       account_id TEXT,
@@ -268,6 +270,7 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
   asegurarColumna(db, 'photo_products', 'size_format', 'TEXT');
   asegurarColumna(db, 'photo_products', 'sale_unit', "TEXT NOT NULL DEFAULT 'Unidad'");
   asegurarColumna(db, 'photo_products', 'icon', "TEXT DEFAULT 'inventory-2'");
+  asegurarColumna(db, 'photo_products', 'formats', 'TEXT');
   asegurarColumna(db, 'photo_products', 'description', 'TEXT');
   asegurarColumna(db, 'photo_products', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
   asegurarColumna(db, 'photo_products', 'base_price', 'INTEGER DEFAULT 0');
@@ -287,6 +290,7 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
   asegurarColumna(db, 'inventory_operations', 'unit_price', 'INTEGER');
   asegurarColumna(db, 'inventory_operations', 'total_price', 'INTEGER');
   asegurarColumna(db, 'inventory_operations', 'customer', 'TEXT');
+  asegurarColumna(db, 'inventory_operations', 'format_name', 'TEXT');
   asegurarColumna(db, 'inventory_operations', 'payment_status', 'TEXT');
   asegurarColumna(db, 'inventory_operations', 'payment_method', 'TEXT');
   asegurarColumna(db, 'inventory_operations', 'account_id', 'TEXT');

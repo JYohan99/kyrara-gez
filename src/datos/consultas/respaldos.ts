@@ -304,10 +304,10 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
       for (const p of data.photo_products) {
         db.runSync(
           `INSERT INTO photo_products (
-            id, name, sku, size_format, sale_unit, icon, description,
+            id, name, sku, size_format, sale_unit, icon, formats, description,
             is_active, base_price, cost_price, current_stock, min_stock, supplier,
             currency, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             p.id,
             p.name,
@@ -315,6 +315,7 @@ export function restaurarBaseDatosDesdeJson(jsonString: string): {
             p.size_format || p.sizeFormat || null,
             p.sale_unit || p.saleUnit || 'Unidad',
             p.icon || 'inventory-2',
+            p.formats ? (typeof p.formats === 'string' ? p.formats : JSON.stringify(p.formats)) : null,
             p.description || null,
             p.is_active !== undefined ? (p.is_active ? 1 : 0) : (p.isActive ? 1 : 0),
             p.base_price ?? p.basePrice ?? 0,
