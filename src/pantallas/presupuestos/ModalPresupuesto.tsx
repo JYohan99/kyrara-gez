@@ -13,9 +13,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { guardarPresupuesto as setBudget, eliminarPresupuesto as deleteBudget } from '@/datos/consultas/presupuestos';
-import { PresupuestoEnriquecido, PresupuestoEnriquecido as EnrichedBudget, Categoria, Categoria as Category } from '@/datos/tipos';
+import { PresupuestoEnriquecido, Categoria } from '@/datos/tipos';
 import { convertirMontoACentavos as parseAmountToCents } from '@/compartido/utilidades/moneda';
 import { gatillarExito as triggerSuccess, gatillarError as triggerError, gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 
@@ -32,9 +33,9 @@ export type BudgetModalProps = PropiedadesModalPresupuesto;
 
 interface BudgetModalDrawerProps {
   period: string;
-  editingBudget?: EnrichedBudget | null;
-  categories: Category[];
-  existingBudgets: EnrichedBudget[];
+  editingBudget?: PresupuestoEnriquecido | null;
+  categories: Categoria[];
+  existingBudgets: PresupuestoEnriquecido[];
   onClose: () => void;
   onSaved?: () => void;
 }
@@ -139,137 +140,126 @@ const BudgetModalDrawer: React.FC<BudgetModalDrawerProps> = ({
         contentContainerStyle={styles.drawerScrollContent}
       >
 
-      <View style={styles.drawerHeader}>
-        <View>
-          <Text style={[styles.drawerTitle, TYPOGRAPHY.headlineSm]}>
-            {isEditing && editingBudget
-              ? `Editar: ${editingBudget.categoryName}`
-              : 'Nuevo Presupuesto'}
-          </Text>
-          <Text style={[styles.drawerSubtitle, TYPOGRAPHY.bodySm]}>
-            Ajusta el tope máximo mensual
-          </Text>
+        <View style={styles.drawerHeader}>
+          <View>
+            <Text style={[styles.drawerTitle, TYPOGRAPHY.headlineSm]}>
+              {isEditing && editingBudget
+                ? `Editar: ${editingBudget.categoryName}`
+                : 'Nuevo Presupuesto'}
+            </Text>
+            <Text style={[styles.drawerSubtitle, TYPOGRAPHY.bodySm]}>
+              Ajusta el tope máximo mensual
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.drawerCloseBtn}
+          >
+            <MaterialIcons name="close" size={18} color={COLORS.onSurface} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          onPress={onClose}
-          style={styles.drawerCloseBtn}
-        >
-          <MaterialIcons name="close" size={18} color={COLORS.onSurface} />
-        </TouchableOpacity>
-      </View>
 
-      {/* Category selector if creating new */}
-      {!isEditing && (
-        <View style={styles.modalCategoryPicker}>
-          <Text style={[styles.pickerLabel, TYPOGRAPHY.labelCaps]}>Categoría</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pickerScroll}>
-            {categories.map(cat => {
-              const isSelected = selectedCategoryId === cat.id;
-              return (
-                <TouchableOpacity
-                  key={cat.id}
-                  onPress={() => {
-                    triggerSelection();
-                    setSelectedCategoryId(cat.id);
-                  }}
-                  style={[
-                    styles.catChip,
-                    isSelected && styles.catChipSelected,
-                  ]}
-                >
-                  <MaterialIcons
-                    name={cat.icon as any || 'category'}
-                    size={16}
-                    color={isSelected ? '#FFFFFF' : COLORS.onSurfaceVariant}
-                  />
-                  <Text
+        {/* Category selector if creating new */}
+        {!isEditing && (
+          <View style={styles.modalCategoryPicker}>
+            <Text style={[styles.pickerLabel, TYPOGRAPHY.labelCaps]}>Categoría</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pickerScroll}>
+              {categories.map(cat => {
+                const isSelected = selectedCategoryId === cat.id;
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    onPress={() => {
+                      triggerSelection();
+                      setSelectedCategoryId(cat.id);
+                    }}
                     style={[
-                      styles.catChipText,
-                      TYPOGRAPHY.labelCaps,
-                      isSelected && styles.catChipTextSelected,
+                      styles.catChip,
+                      isSelected && styles.catChipSelected,
                     ]}
                   >
-                    {cat.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+                    <MaterialIcons
+                      name={cat.icon as any || 'category'}
+                      size={16}
+                      color={isSelected ? '#FFFFFF' : COLORS.onSurfaceVariant}
+                    />
+                    <Text
+                      style={[
+                        styles.catChipText,
+                        TYPOGRAPHY.labelCaps,
+                        isSelected && styles.catChipTextSelected,
+                      ]}
+                    >
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Numeric input display */}
+        <View style={styles.amountInputBox}>
+          <Text style={[styles.amountCurrencyPrefix, TYPOGRAPHY.titleBalance]}>$</Text>
+          <TextInput
+            value={limitInput}
+            onChangeText={setLimitInput}
+            keyboardType="numeric"
+            style={[styles.amountInput, TYPOGRAPHY.displayHeroMobile]}
+            placeholder="0"
+            placeholderTextColor={COLORS.outline}
+          />
         </View>
-      )}
 
-      {/* Numeric input display */}
-      <View style={styles.amountInputBox}>
-        <Text style={[styles.amountCurrencyPrefix, TYPOGRAPHY.titleBalance]}>$</Text>
-        <TextInput
-          value={limitInput}
-          onChangeText={setLimitInput}
-          keyboardType="numeric"
-          style={[styles.amountInput, TYPOGRAPHY.displayHeroMobile]}
-          placeholder="0"
-          placeholderTextColor={COLORS.outline}
-        />
-      </View>
+        {/* Quick Increment Steppers */}
+        <View style={styles.steppersRow}>
+          <TouchableOpacity
+            onPress={() => adjustLimit(-1000)}
+            style={styles.stepperBtn}
+          >
+            <Text style={[styles.stepperBtnText, TYPOGRAPHY.labelCaps]}>- $1.000</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => adjustLimit(-500)}
+            style={styles.stepperBtn}
+          >
+            <Text style={[styles.stepperBtnText, TYPOGRAPHY.labelCaps]}>- $500</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => adjustLimit(500)}
+            style={styles.stepperBtn}
+          >
+            <Text style={[styles.stepperBtnText, TYPOGRAPHY.labelCaps]}>+ $500</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => adjustLimit(1000)}
+            style={styles.stepperBtn}
+          >
+            <Text style={[styles.stepperBtnText, TYPOGRAPHY.labelCaps]}>+ $1.000</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Quick Increment Steppers */}
-      <View style={styles.steppersRow}>
-        <TouchableOpacity
-          onPress={() => adjustLimit(-1000)}
-          style={styles.stepperBtn}
-        >
-          <Text style={[styles.stepperBtnText, TYPOGRAPHY.labelCaps]}>- $1.000</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => adjustLimit(-500)}
-          style={styles.stepperBtn}
-        >
-          <Text style={[styles.stepperBtnText, TYPOGRAPHY.labelCaps]}>- $500</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => adjustLimit(500)}
-          style={styles.stepperBtn}
-        >
-          <Text style={[styles.stepperBtnText, TYPOGRAPHY.labelCaps]}>+ $500</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => adjustLimit(1000)}
-          style={styles.stepperBtn}
-        >
-          <Text style={[styles.stepperBtnText, TYPOGRAPHY.labelCaps]}>+ $1.000</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Delete button if editing */}
+        {isEditing && editingBudget && (
+          <TouchableOpacity
+            onPress={() => handleDelete(editingBudget.id)}
+            style={styles.deleteBudgetBtn}
+          >
+            <MaterialIcons name="delete-outline" size={18} color={COLORS.cashflowExpense} />
+            <Text style={[styles.deleteBudgetText, TYPOGRAPHY.labelCaps]}>
+              Quitar este presupuesto
+            </Text>
+          </TouchableOpacity>
+        )}
 
-      {/* Delete button if editing */}
-      {isEditing && editingBudget && (
-        <TouchableOpacity
-          onPress={() => handleDelete(editingBudget.id)}
-          style={styles.deleteBudgetBtn}
-        >
-          <MaterialIcons name="delete-outline" size={18} color={COLORS.cashflowExpense} />
-          <Text style={[styles.deleteBudgetText, TYPOGRAPHY.labelCaps]}>
-            Quitar este presupuesto
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Actions */}
-      <View style={styles.modalActionButtons}>
-        <TouchableOpacity
-          onPress={onClose}
-          style={styles.modalCancelBtn}
-        >
-          <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleSave}
-          style={styles.modalSaveBtn}
-        >
-          <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>
-            Guardar Límite
-          </Text>
-        </TouchableOpacity>
-      </View>
+        {/* Actions */}
+        <View style={styles.modalActionButtons}>
+          <BotonBrillante
+            title="Guardar Límite"
+            onPress={handleSave}
+          />
+        </View>
       </ScrollView>
     </View>
   );
@@ -284,6 +274,8 @@ export const ModalPresupuesto: React.FC<PropiedadesModalPresupuesto> = ({
   onClose,
   onSaved,
 }) => {
+  if (!visible) return null;
+
   return (
     <Modal
       visible={visible}
@@ -433,29 +425,7 @@ const styles = StyleSheet.create({
     color: COLORS.cashflowExpense,
   },
   modalActionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingTop: 4,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    color: COLORS.onSurface,
-  },
-  modalSaveBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.primaryContainer,
-    alignItems: 'center',
-  },
-  modalSaveText: {
-    color: '#FFFFFF',
+    marginTop: 10,
   },
 });
 

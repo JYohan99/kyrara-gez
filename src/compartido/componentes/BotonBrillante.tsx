@@ -22,17 +22,66 @@ export interface PropiedadesBotonBrillante {
   variant?: 'primary' | 'secondary' | 'ghost';
 }
 
+// Paletas constantes y coordenadas para evitar asignaciones de memoria en cada render
+const CHROME_BEZEL_COLORS: [string, string, ...string[]] = [
+  '#FFFFFF',
+  '#D2D8DF',
+  '#8C94A0',
+  '#434B56',
+  '#1B1F26',
+  '#4E5764',
+  '#E5EAF1',
+  '#9DA6B3',
+];
+
+const PRIMARY_CORE_COLORS: [string, string, ...string[]] = [
+  '#B88AFF',
+  '#9355FF',
+  '#7320E8',
+  '#46089E',
+  '#1C0249',
+];
+
+const SECONDARY_CORE_COLORS: [string, string, ...string[]] = [
+  '#45E5FF',
+  '#00C6EC',
+  '#0084BD',
+  '#004778',
+  '#002038',
+];
+
+const TOP_GLOSS_COLORS: [string, string, ...string[]] = [
+  'rgba(255, 255, 255, 0.88)',
+  'rgba(255, 255, 255, 0.42)',
+  'rgba(255, 255, 255, 0.0)',
+];
+
+const PRIMARY_BOTTOM_RIM_COLORS: [string, string, ...string[]] = [
+  'rgba(138, 79, 255, 0.0)',
+  'rgba(235, 220, 255, 0.85)',
+];
+
+const SECONDARY_BOTTOM_RIM_COLORS: [string, string, ...string[]] = [
+  'rgba(0, 210, 255, 0.0)',
+  'rgba(180, 245, 255, 0.85)',
+];
+
+const GRAD_BEZEL_START = { x: 0.1, y: 0.0 };
+const GRAD_BEZEL_END = { x: 0.9, y: 1.0 };
+const GRAD_CORE_START = { x: 0.3, y: 0.0 };
+const GRAD_CORE_END = { x: 0.7, y: 1.0 };
+const GRAD_VERTICAL_START = { x: 0.5, y: 0.0 };
+const GRAD_VERTICAL_END = { x: 0.5, y: 1.0 };
+
+// Limpia cualquier signo o símbolo (ej. ✓, +, -, etc.) para mostrar estrictamente texto
+const sanitizarTextoBoton = (texto: string) =>
+  texto.replace(/^[\s✓✔+•\-—*#@!¡?¿]+/, '').trim();
+
 /**
- * Botón brillante estilo cápsula de cristal 3D con bisel metálico cromo/titanio:
- * - Silueta de píldora alargada (stadium / capsule).
- * - Bisel exterior metálico cromado brillante con reflejos de acero.
- * - Ranura oscura interior de profundidad.
- * - Cuerpo de cristal en degradado multicapa violeta neón de la app.
- * - Lente de reflejo especular superior curvada (brillo de vidrio).
- * - Arco inferior de luz de borde neón.
- * - Sin iconos ni símbolos, únicamente tipografía en mayúsculas con relieve 3D.
+ * Botón brillante estilo cápsula de cristal 3D con bisel metálico cromo/titanio.
+ * Muestra exclusivamente texto en mayúsculas con relieve tridimensional.
  */
-export const BotonBrillante: React.FC<PropiedadesBotonBrillante> = ({
+export const BotonBrillante: React.FC<PropiedadesBotonBrillante> = React.memo(({
   title,
   onPress,
   style,
@@ -46,10 +95,7 @@ export const BotonBrillante: React.FC<PropiedadesBotonBrillante> = ({
     onPress();
   };
 
-  // Limpiar cualquier signo o símbolo (como ✓, +, -, etc.) para mostrar estrictamente solo letras
-  const textoLimpio = title
-    .replace(/^[\s✓✔+•\-—*#@!¡?¿]+/, '')
-    .trim();
+  const textoLimpio = sanitizarTextoBoton(title);
 
   if (variant === 'ghost') {
     return (
@@ -70,35 +116,6 @@ export const BotonBrillante: React.FC<PropiedadesBotonBrillante> = ({
 
   const isSecondary = variant === 'secondary';
 
-  // Bisel metálico cromado brillante con reflejos de titanio/acero
-  const chromeBezelColors: [string, string, ...string[]] = [
-    '#FFFFFF',
-    '#D2D8DF',
-    '#8C94A0',
-    '#434B56',
-    '#1B1F26',
-    '#4E5764',
-    '#E5EAF1',
-    '#9DA6B3',
-  ];
-
-  // Cuerpo de cristal en tonos morados neón de la app
-  const coreColors: [string, string, ...string[]] = isSecondary
-    ? ['#45E5FF', '#00C6EC', '#0084BD', '#004778', '#002038']
-    : ['#B88AFF', '#9355FF', '#7320E8', '#46089E', '#1C0249'];
-
-  // Reflejo especular superior (lente de vidrio transparente con transición suave)
-  const topGlossColors: [string, string, ...string[]] = [
-    'rgba(255, 255, 255, 0.88)',
-    'rgba(255, 255, 255, 0.42)',
-    'rgba(255, 255, 255, 0.0)',
-  ];
-
-  // Brillo inferior neón (arco de resplandor en la base de la cápsula)
-  const bottomRimColors: [string, string, ...string[]] = isSecondary
-    ? ['rgba(0, 210, 255, 0.0)', 'rgba(180, 245, 255, 0.85)']
-    : ['rgba(138, 79, 255, 0.0)', 'rgba(235, 220, 255, 0.85)'];
-
   return (
     <TouchableOpacity
       onPress={handlePress}
@@ -113,33 +130,33 @@ export const BotonBrillante: React.FC<PropiedadesBotonBrillante> = ({
     >
       {/* 1. Bisel exterior cromado con relieve metálico */}
       <LinearGradient
-        colors={chromeBezelColors}
-        start={{ x: 0.1, y: 0.0 }}
-        end={{ x: 0.9, y: 1.0 }}
+        colors={CHROME_BEZEL_COLORS}
+        start={GRAD_BEZEL_START}
+        end={GRAD_BEZEL_END}
         style={estilos.bezelOuter}
       >
         {/* 2. Ranura oscura interior de profundidad */}
         <View style={estilos.bezelGroove}>
           {/* 3. Cuerpo de cristal 3D en cápsula */}
           <LinearGradient
-            colors={coreColors}
-            start={{ x: 0.3, y: 0.0 }}
-            end={{ x: 0.7, y: 1.0 }}
+            colors={isSecondary ? SECONDARY_CORE_COLORS : PRIMARY_CORE_COLORS}
+            start={GRAD_CORE_START}
+            end={GRAD_CORE_END}
             style={estilos.cuerpoCristal}
           >
-            {/* 4. Brillo especular superior de vidrio (cúpula alargada) */}
+            {/* 4. Brillo especular superior de vidrio */}
             <LinearGradient
-              colors={topGlossColors}
-              start={{ x: 0.5, y: 0.0 }}
-              end={{ x: 0.5, y: 1.0 }}
+              colors={TOP_GLOSS_COLORS}
+              start={GRAD_VERTICAL_START}
+              end={GRAD_VERTICAL_END}
               style={estilos.reflejoSuperior}
             />
 
             {/* 5. Arco inferior de luz neón */}
             <LinearGradient
-              colors={bottomRimColors}
-              start={{ x: 0.5, y: 0.0 }}
-              end={{ x: 0.5, y: 1.0 }}
+              colors={isSecondary ? SECONDARY_BOTTOM_RIM_COLORS : PRIMARY_BOTTOM_RIM_COLORS}
+              start={GRAD_VERTICAL_START}
+              end={GRAD_VERTICAL_END}
               style={estilos.reflejoInferior}
             />
 
@@ -163,9 +180,10 @@ export const BotonBrillante: React.FC<PropiedadesBotonBrillante> = ({
       </LinearGradient>
     </TouchableOpacity>
   );
-};
+});
 
 // Alias compatible
+BotonBrillante.displayName = 'BotonBrillante';
 export const GlowButton = BotonBrillante;
 
 const estilos = StyleSheet.create({
@@ -267,4 +285,3 @@ const estilos = StyleSheet.create({
     opacity: 0.5,
   },
 });
-

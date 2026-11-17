@@ -434,27 +434,11 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
 
         {/* Footer de Acciones */}
         <View style={styles.footerRow}>
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            onPress={() => {
-              triggerSelection();
-              onClose();
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.cancelBtnText, TYPOGRAPHY.cuerpoMedio]}>
-              Cancelar
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.saveBtnWrapper}>
-            <BotonBrillante
-              title={guardando ? 'Guardando...' : productoParaEditar ? 'Guardar cambios' : 'Crear producto'}
-              onPress={handleGuardar}
-              disabled={guardando}
-              icon={<MaterialIcons name="check" size={18} color="#06120D" />}
-            />
-          </View>
+          <BotonBrillante
+            title={guardando ? 'Guardando...' : productoParaEditar ? 'Guardar cambios' : 'Crear producto'}
+            onPress={handleGuardar}
+            disabled={guardando}
+          />
         </View>
 
         <ModalSelectorIconoProducto
@@ -692,23 +676,7 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
   },
   footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  cancelBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-  },
-  cancelBtnText: {
-    color: COLORS.onSurfaceVariant,
-  },
-  saveBtnWrapper: {
-    flex: 1,
+    marginTop: 10,
   },
   nameAndIconRow: {
     flexDirection: 'row',

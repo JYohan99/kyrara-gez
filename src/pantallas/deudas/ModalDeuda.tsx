@@ -434,7 +434,6 @@ const ContenidoModalDeuda: React.FC<PropiedadesContenidoModalDeuda> = ({
           <View style={styles.submitRow}>
             <BotonBrillante
               title={deudaParaEditar ? 'Guardar Cambios' : 'Registrar Deuda'}
-              icon={<MaterialIcons name="check" size={20} color="#FFFFFF" />}
               onPress={handleGuardar}
             />
           </View>

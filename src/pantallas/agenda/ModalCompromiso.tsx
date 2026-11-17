@@ -13,10 +13,10 @@ import {
   Switch,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { ModalSelectorFecha } from '@/compartido/componentes/ModalSelectorFecha';
+import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 import {
   Compromiso,
   OcurrenciaCompromiso,
@@ -456,32 +456,12 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
 
         {/* Botones de Acción */}
         <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            onPress={onClose}
-            disabled={saving}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.cancelBtnText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.saveBtn}
+          <BotonBrillante
+            title={isEditing ? 'Guardar Cambios' : 'Crear Compromiso'}
             onPress={() => handleSave()}
+            loading={saving}
             disabled={saving}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#9B5CFF', '#6A1FE8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.saveBtnGradient}
-            >
-              <Text style={[styles.saveBtnText, TYPOGRAPHY.labelCaps]}>
-                {saving ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Crear Compromiso'}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          />
         </View>
       </ScrollView>
 
@@ -509,6 +489,8 @@ export const ModalCompromiso: React.FC<PropiedadesModalCompromiso> = ({
   onClose,
   onSaved,
 }) => {
+  if (!visible) return null;
+
   return (
     <Modal
       visible={visible}
@@ -713,11 +695,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(138, 79, 255, 0.35)',
   },
-  addReminderPillText: {
-    color: COLORS.primary,
-    fontSize: 10,
-    fontWeight: '600',
-  },
   noRemindersBox: {
     backgroundColor: COLORS.surfaceContainerLow,
     borderRadius: 12,
@@ -773,38 +750,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   actionsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingTop: 8,
-  },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 20,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelBtnText: {
-    color: COLORS.onSurface,
-  },
-  saveBtn: {
-    flex: 2,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: COLORS.primaryContainer,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  saveBtnGradient: {
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    marginTop: 10,
   },
 });

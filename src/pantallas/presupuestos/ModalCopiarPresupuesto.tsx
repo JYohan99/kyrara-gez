@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 
 export interface PropiedadesModalCopiarPresupuesto {
   visible: boolean;
@@ -23,6 +24,8 @@ export const ModalCopiarPresupuesto: React.FC<PropiedadesModalCopiarPresupuesto>
   onClose,
 }) => {
   const insets = useSafeAreaInsets();
+
+  if (!visible) return null;
 
   return (
     <Modal
@@ -61,21 +64,10 @@ export const ModalCopiarPresupuesto: React.FC<PropiedadesModalCopiarPresupuesto>
           </View>
 
           <View style={styles.modalActionButtons}>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.modalCancelBtn}
-            >
-              <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
+            <BotonBrillante
+              title="Duplicar"
               onPress={onConfirm}
-              style={styles.modalSaveBtn}
-            >
-              <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>
-                Duplicar Ahora
-              </Text>
-            </TouchableOpacity>
+            />
           </View>
         </View>
       </View>
@@ -137,29 +129,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   modalActionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingTop: 4,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    color: COLORS.onSurface,
-  },
-  modalSaveBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.primaryContainer,
-    alignItems: 'center',
-  },
-  modalSaveText: {
-    color: '#FFFFFF',
+    marginTop: 10,
   },
 });
 

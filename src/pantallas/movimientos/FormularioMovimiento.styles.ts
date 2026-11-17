@@ -367,22 +367,6 @@ export const styles = StyleSheet.create({
     marginTop: 22,
     marginBottom: 6,
   },
-  guardarButton: {
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  guardarButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
 
   // Modales Selectores
   pickerModalOverlay: {

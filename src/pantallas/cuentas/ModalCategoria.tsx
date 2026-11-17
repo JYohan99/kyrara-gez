@@ -16,6 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { crearCategoria as createCategory } from '@/datos/consultas/categorias';
 import { gatillarExito as triggerSuccess, gatillarError as triggerError, gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
+import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 
 export interface PropiedadesModalCategoria {
   visible: boolean;
@@ -58,6 +59,8 @@ export const ModalCategoria: React.FC<PropiedadesModalCategoria> = ({
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('shopping-bag');
   const [color, setColor] = useState('#8A4FFF');
+
+  if (!visible) return null;
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -169,18 +172,10 @@ export const ModalCategoria: React.FC<PropiedadesModalCategoria> = ({
             </View>
 
             <View style={styles.modalActionsRow}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={onClose}
-              >
-                <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalSaveBtn}
+              <BotonBrillante
+                title="Guardar"
                 onPress={handleSave}
-              >
-                <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>Guardar</Text>
-              </TouchableOpacity>
+              />
             </View>
           </ScrollView>
         </View>
@@ -268,28 +263,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   modalActionsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingTop: 8,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    color: COLORS.onSurface,
-  },
-  modalSaveBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.primaryContainer,
-    alignItems: 'center',
-  },
-  modalSaveText: {
-    color: '#FFFFFF',
+    marginTop: 10,
   },
 });

@@ -10,13 +10,13 @@ import {
   Platform,
   Alert,
   Modal,
-  ActivityIndicator,
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { ModalSelectorFecha as DatePickerModal } from '@/compartido/componentes/ModalSelectorFecha';
+import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 import {
   TipoFlujo as FlowType,
   TipoCuenta,
@@ -875,28 +875,12 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
 
           {/* Botón Principal Guardar */}
           <View style={styles.bottomBar}>
-            <TouchableOpacity
-              style={[styles.guardarButton, { backgroundColor: actionColor }]}
+            <BotonBrillante
+              title="Guardar"
               onPress={handleSubmit}
+              loading={loading}
               disabled={loading}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <ActivityIndicator
-                  color={type === 'TRANSFER' ? '#FFFFFF' : '#0B0F10'}
-                  size="small"
-                />
-              ) : (
-                <Text
-                  style={[
-                    styles.guardarButtonText,
-                    { color: type === 'TRANSFER' ? '#FFFFFF' : '#0B0F10' },
-                  ]}
-                >
-                  Guardar
-                </Text>
-              )}
-            </TouchableOpacity>
+            />
           </View>
         </ScrollView>
       </View>
