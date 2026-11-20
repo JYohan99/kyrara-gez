@@ -46,30 +46,6 @@ export function esServicio(saleUnit?: string): boolean {
   return (saleUnit || '').trim().toLowerCase() === 'servicio';
 }
 
-/**
- * Formatos estándar comúnmente utilizados en fotografía con sus referencias y precios base.
- */
-export const FORMATOS_FOTO_PREDETERMINADOS: { name: string; costUsd: number; salePrice: number }[] = [
-  { name: '1x1', costUsd: 0.10, salePrice: 30000 },
-  { name: '2,5x3,5', costUsd: 0.10, salePrice: 20000 },
-  { name: '3,5x5', costUsd: 0.19, salePrice: 35000 },
-  { name: '4x6', costUsd: 0.25, salePrice: 40000 },
-  { name: '5x7', costUsd: 0.35, salePrice: 68000 },
-  { name: '6x8', costUsd: 0.50, salePrice: 75000 },
-  { name: '8x10', costUsd: 0.75, salePrice: 170000 },
-  { name: '8x12', costUsd: 1.00, salePrice: 300000 },
-  { name: '8x12C', costUsd: 1.00, salePrice: 350000 },
-  { name: '10x12', costUsd: 1.35, salePrice: 470000 },
-  { name: '10x15', costUsd: 1.60, salePrice: 550000 },
-  { name: '12x16', costUsd: 1.90, salePrice: 600000 },
-  { name: '12x18', costUsd: 2.00, salePrice: 650000 },
-  { name: '16x20', costUsd: 4.50, salePrice: 880000 },
-  { name: '16x24', costUsd: 5.00, salePrice: 980000 },
-  { name: '20x24', costUsd: 5.50, salePrice: 1080000 },
-  { name: '24x32', costUsd: 9.50, salePrice: 1500000 },
-  { name: '24x39', costUsd: 11.00, salePrice: 1800000 },
-];
-
 interface FilaProducto {
   id: string;
   name: string;

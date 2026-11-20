@@ -20,7 +20,6 @@ import {
   gatillarExito as triggerSuccess,
   gatillarError as triggerError,
 } from '@/compartido/utilidades/hapticos';
-import { FORMATOS_FOTO_PREDETERMINADOS } from '@/datos/consultas/productos';
 
 export interface PropiedadesEditorFormatosProducto {
   formatos: FormatoProducto[];
@@ -41,7 +40,7 @@ export const EditorFormatosProducto: React.FC<PropiedadesEditorFormatosProducto>
     const nombre = nombreFormato.trim();
     if (!nombre) {
       triggerError();
-      Alert.alert('Nombre requerido', 'Ingresa la medida o nombre del formato (ej: 1x1, 4x6, Sesión).');
+      Alert.alert('Nombre requerido', 'Ingresa el nombre o variante del formato/tarifa (ej: Básico, Estándar, Premium).');
       return;
     }
 
@@ -78,66 +77,15 @@ export const EditorFormatosProducto: React.FC<PropiedadesEditorFormatosProducto>
     onChangeFormatos(formatos.filter(f => f.id !== id));
   };
 
-  const handleCargarPredeterminados = () => {
-    triggerSelection();
-    Alert.alert(
-      'Cargar medidas de fotos',
-      '¿Deseas cargar la lista estándar de 18 formatos fotográficos con sus precios sugeridos?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Cargar formatos',
-          onPress: () => {
-            const nuevos: FormatoProducto[] = FORMATOS_FOTO_PREDETERMINADOS.map((preset, idx) => {
-              // Si ya existe uno con ese nombre, mantener el existente
-              const existente = formatos.find(f => f.name.toLowerCase() === preset.name.toLowerCase());
-              if (existente) return existente;
-
-              const salePrice = preset.salePrice;
-              // Cálculo aproximado de costo si hay referencia
-              const costPrice = Math.round(preset.costUsd * 680 * 100); // 680 por defecto en centavos
-              const grossProfit = salePrice - costPrice;
-              const grossMarginPercent = salePrice > 0 ? (grossProfit / salePrice) * 100 : null;
-
-              return {
-                id: 'fmt_pre_' + idx + '_' + Date.now().toString(36),
-                name: preset.name,
-                salePrice,
-                costPrice,
-                costUsd: preset.costUsd,
-                grossProfit,
-                grossMarginPercent,
-              };
-            });
-
-            triggerSuccess();
-            onChangeFormatos(nuevos);
-          },
-        },
-      ]
-    );
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
-          <MaterialIcons name="photo-size-select-actual" size={16} color="#00D2FF" />
+          <MaterialIcons name="tune" size={16} color="#00D2FF" />
           <Text style={styles.sectionTitle}>Formatos y Tarifas ({formatos.length})</Text>
         </View>
 
         <View style={styles.headerActions}>
-          {formatos.length === 0 && (
-            <TouchableOpacity
-              style={styles.presetBtn}
-              onPress={handleCargarPredeterminados}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="auto-fix-high" size={14} color="#00D2FF" />
-              <Text style={styles.presetBtnText}>Cargar de foto</Text>
-            </TouchableOpacity>
-          )}
-
           <TouchableOpacity
             style={styles.addToggleBtn}
             onPress={() => {
@@ -155,21 +103,21 @@ export const EditorFormatosProducto: React.FC<PropiedadesEditorFormatosProducto>
       </View>
 
       <Text style={styles.sectionHint}>
-        Agrega tamaños (ej: 1x1, 4x6, 8x10) o tipos de servicio con su precio de venta y costo individual.
+        Agrega variantes o tarifas personalizadas para este servicio con su precio de venta y costo individual.
       </Text>
 
       {/* Formulario para agregar nuevo formato */}
       {mostrarFormulario && (
         <View style={styles.addFormBox}>
-          <Text style={styles.addFormTitle}>Nuevo formato / tamaño</Text>
+          <Text style={styles.addFormTitle}>Nueva variante / tarifa</Text>
 
           <View style={styles.inputRow}>
             <View style={{ flex: 1.2 }}>
-              <Text style={styles.miniLabel}>Medida o nombre</Text>
+              <Text style={styles.miniLabel}>Nombre o detalle</Text>
               <TextInput
                 value={nombreFormato}
                 onChangeText={setNombreFormato}
-                placeholder="ej: 1x1, 4x6"
+                placeholder="ej: Básico, 1 hora, etc."
                 placeholderTextColor={COLORS.onSurfaceVariant + '80'}
                 style={styles.inputMini}
                 autoFocus
@@ -288,22 +236,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  presetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0, 210, 255, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.25)',
-  },
-  presetBtnText: {
-    color: '#00D2FF',
-    fontSize: 11,
-    fontWeight: '600',
   },
   addToggleBtn: {
     flexDirection: 'row',

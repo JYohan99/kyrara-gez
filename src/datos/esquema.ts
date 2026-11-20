@@ -263,8 +263,8 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
 
   // 2. Migraciones incrementales de columnas
   asegurarColumna(db, 'transactions', 'payee', 'TEXT');
-  try { db.execSync('ALTER TABLE transactions DROP COLUMN tags;'); } catch {}
-  try { db.execSync('ALTER TABLE photo_products DROP COLUMN category;'); } catch {}
+  try { db.execSync('ALTER TABLE transactions DROP COLUMN tags;'); } catch { }
+  try { db.execSync('ALTER TABLE photo_products DROP COLUMN category;'); } catch { }
 
   asegurarColumna(db, 'photo_products', 'sku', 'TEXT');
   asegurarColumna(db, 'photo_products', 'size_format', 'TEXT');
@@ -313,9 +313,9 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
       sembrarCuentasPredeterminadas(db);
       db.runSync("INSERT OR REPLACE INTO settings (key, value) VALUES ('vaciado_pruebas_limpio_v1', '1')");
     }
-  } catch {}
+  } catch { }
 
-  // 5. Sembrado si la base de datos está vacía
+  // 6. Sembrado si la base de datos está vacía
   try {
     const countRow = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM categories');
     if (!countRow || countRow.count === 0) {
