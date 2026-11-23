@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -56,9 +56,21 @@ export const ModalCategoria: React.FC<PropiedadesModalCategoria> = ({
   onSaved,
 }) => {
   const insets = useSafeAreaInsets();
+  const nameInputRef = useRef<TextInput>(null);
+
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('shopping-bag');
   const [color, setColor] = useState('#8A4FFF');
+
+  // Auto-enfoque al abrir modal para desplegar el teclado inmediatamente
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        nameInputRef.current?.focus();
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -121,6 +133,7 @@ export const ModalCategoria: React.FC<PropiedadesModalCategoria> = ({
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nombre</Text>
               <TextInput
+                ref={nameInputRef}
                 style={styles.textInput}
                 value={name}
                 onChangeText={setName}

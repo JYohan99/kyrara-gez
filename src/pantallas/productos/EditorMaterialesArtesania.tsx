@@ -302,10 +302,10 @@ export const EditorMaterialesArtesania: React.FC<PropiedadesEditorMaterialesArte
               <Text style={styles.fieldLabel}>Cantidad requerida</Text>
               <TextInput
                 value={cantidadTexto}
-                onChangeText={setCantidadTexto}
+                onChangeText={val => setCantidadTexto(val.replace(/[^0-9.,]/g, ''))}
                 placeholder="1"
                 placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 style={styles.input}
               />
             </View>
@@ -319,7 +319,7 @@ export const EditorMaterialesArtesania: React.FC<PropiedadesEditorMaterialesArte
                   onChangeText={val => setCostoUnitarioTexto(formatearEntradaDinero(val))}
                   placeholder="0,00"
                   placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
                   style={[styles.input, styles.moneyInput]}
                 />
               </View>

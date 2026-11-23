@@ -14,6 +14,7 @@ import { PestanaAjustes } from './PestanaAjustes';
 import { ModalPin } from './ModalPin';
 import { ModalRestaurar } from './ModalRestaurar';
 import { ModalVisorRespaldo } from './ModalVisorRespaldo';
+import { ModalGestionCategorias } from './ModalGestionCategorias';
 
 export function PantallaAjustes() {
   const { security } = useVaultSecurity();
@@ -21,6 +22,7 @@ export function PantallaAjustes() {
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [restoreModalVisible, setRestoreModalVisible] = useState(false);
   const [backupModalVisible, setBackupModalVisible] = useState(false);
+  const [categoriesModalVisible, setCategoriesModalVisible] = useState(false);
   const [backupTitle, setBackupTitle] = useState('');
   const [backupContent, setBackupContent] = useState('');
 
@@ -56,6 +58,7 @@ export function PantallaAjustes() {
           onOpenPinModal={() => setPinModalVisible(true)}
           onOpenRestoreModal={() => setRestoreModalVisible(true)}
           onShowBackupContent={handleShowBackupContent}
+          onOpenCategoriesModal={() => setCategoriesModalVisible(true)}
         />
       </ScrollView>
 
@@ -77,6 +80,11 @@ export function PantallaAjustes() {
         title={backupTitle}
         content={backupContent}
         onClose={() => setBackupModalVisible(false)}
+      />
+
+      <ModalGestionCategorias
+        visible={categoriesModalVisible}
+        onClose={() => setCategoriesModalVisible(false)}
       />
     </View>
   );

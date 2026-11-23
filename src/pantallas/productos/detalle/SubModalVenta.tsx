@@ -272,8 +272,8 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
                     </TouchableOpacity>
                     <TextInput
                       value={cantidad}
-                      onChangeText={setCantidad}
-                      keyboardType="numeric"
+                      onChangeText={val => setCantidad(val.replace(/[^0-9.,]/g, ''))}
+                      keyboardType="decimal-pad"
                       style={styles.stepperInput}
                       placeholder="1"
                       placeholderTextColor="#64748B"
@@ -296,7 +296,7 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
                       onChangeText={val => setPrecioTexto(formatearEntradaDinero(val))}
                       placeholder="0,00"
                       placeholderTextColor="#64748B"
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       style={styles.priceInput}
                       selectTextOnFocus
                     />

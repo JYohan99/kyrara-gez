@@ -187,6 +187,14 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
   const [isInputFocused, setIsInputFocused] = useState(false);
   const amountInputRef = useRef<TextInput>(null);
 
+  // Auto-enfoque al abrir modal para desplegar el teclado inmediatamente
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      amountInputRef.current?.focus();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, []);
+
   const selectedTypeConfig = useMemo(
     () => TIPOS_CUENTA.find(t => t.tipo === accountType) || TIPOS_CUENTA[0],
     [accountType]

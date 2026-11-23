@@ -13,7 +13,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
-import { useSeguridadBoveda as useVaultSecurity } from '@/datos/hooks';
+import { useSeguridadBoveda as useVaultSecurity, useCategoriasBoveda } from '@/datos/hooks';
 import {
   exportarBaseDatosAJson as exportDatabaseToJson,
   exportarTransaccionesACsv as exportTransactionsToCsv,
@@ -29,6 +29,7 @@ export interface PropiedadesPestanaAjustes {
   onOpenPinModal: () => void;
   onOpenRestoreModal: () => void;
   onShowBackupContent: (title: string, content: string) => void;
+  onOpenCategoriesModal?: () => void;
 }
 export type SettingsTabProps = PropiedadesPestanaAjustes;
 
@@ -36,8 +37,11 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
   onOpenPinModal,
   onOpenRestoreModal,
   onShowBackupContent,
+  onOpenCategoriesModal,
 }) => {
   const { security } = useVaultSecurity();
+  const { allCategories } = useCategoriasBoveda();
+  const activasCount = allCategories.filter(c => c.isActive !== false).length;
   const [themeMode, setThemeMode] = useState<'DARK' | 'LIGHT' | 'SYSTEM'>('DARK');
 
   const handleToggleBiometrics = (val: boolean) => {
@@ -161,6 +165,43 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
 
         </View>
       </GlassCard>
+
+      {/* Mis Categorías */}
+      <View style={styles.settingsSection}>
+        <View style={styles.settingsSectionHeader}>
+          <View style={styles.settingsSectionLeft}>
+            <MaterialIcons name="tune" size={18} color={COLORS.secondary} />
+            <Text style={[styles.settingsSectionTitle, TYPOGRAPHY.headlineSm]}>Mis Categorías</Text>
+          </View>
+          <Text style={[styles.settingsSectionRightTag, TYPOGRAPHY.labelCaps]}>ACTIVAS</Text>
+        </View>
+
+        <GlassCard style={styles.settingsGroup}>
+          <TouchableOpacity
+            style={styles.settingItemRow}
+            onPress={() => {
+              triggerSelection();
+              if (onOpenCategoriesModal) onOpenCategoriesModal();
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingItemLeft}>
+              <View style={[styles.settingIconBox, { backgroundColor: 'rgba(87, 245, 171, 0.12)' }]}>
+                <MaterialIcons name="category" size={18} color={COLORS.secondary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.settingItemTitle, TYPOGRAPHY.bodyMd]}>
+                  Activar o Desactivar Categorías
+                </Text>
+                <Text style={[styles.settingItemSubtitle, TYPOGRAPHY.bodySm]}>
+                  {activasCount} de {allCategories.length} categorías activas
+                </Text>
+              </View>
+            </View>
+            <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurfaceVariant} />
+          </TouchableOpacity>
+        </GlassCard>
+      </View>
 
       {/* Apariencia */}
       <View style={styles.settingsSection}>

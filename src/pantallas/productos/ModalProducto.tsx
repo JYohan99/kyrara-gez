@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -63,6 +63,14 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
   const { products: todosLosProductos } = useProductosBoveda();
 
   const [nombre, setNombre] = useState(() => productoParaEditar?.name || '');
+  const nombreInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      nombreInputRef.current?.focus();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, []);
   const [tipoProducto, setTipoProducto] = useState<TipoProducto>(() => {
     if (productoParaEditar?.productType) return productoParaEditar.productType;
     if (esServicio(productoParaEditar?.saleUnit)) return 'SERVICIO';
@@ -252,12 +260,12 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
               {/* Input Nombre */}
               <View style={[styles.inputContainer, styles.nameInputContainer]}>
                 <TextInput
+                  ref={nombreInputRef}
                   value={nombre}
                   onChangeText={setNombre}
                   placeholder="Nombre del producto"
                   placeholderTextColor={COLORS.onSurfaceVariant + '80'}
                   style={[styles.textInput, TYPOGRAPHY.cuerpoGrande]}
-                  autoFocus={!productoParaEditar}
                 />
               </View>
             </View>
@@ -407,10 +415,10 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
                     <View style={styles.inputContainerCompact}>
                       <TextInput
                         value={stockInicialTexto}
-                        onChangeText={setStockInicialTexto}
+                        onChangeText={val => setStockInicialTexto(val.replace(/[^0-9.,]/g, ''))}
                         placeholder="0"
                         placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                        keyboardType="numeric"
+                        keyboardType="decimal-pad"
                         style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
                       />
                     </View>
@@ -431,10 +439,10 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
                   <View style={styles.inputContainerCompact}>
                     <TextInput
                       value={stockMinimoTexto}
-                      onChangeText={setStockMinimoTexto}
+                      onChangeText={val => setStockMinimoTexto(val.replace(/[^0-9.,]/g, ''))}
                       placeholder="0"
                       placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
                     />
                   </View>
@@ -495,7 +503,7 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
                       onChangeText={val => setPrecioTexto(formatearEntradaDinero(val))}
                       placeholder="0,00"
                       placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
                     />
                   </View>
@@ -510,7 +518,7 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
                       onChangeText={val => setCostoTexto(formatearEntradaDinero(val))}
                       placeholder="0,00"
                       placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
                     />
                   </View>

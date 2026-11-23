@@ -23,6 +23,7 @@ export interface Categoria {
   icon: string;
   color: string;
   isSystem: boolean;
+  isActive?: boolean;
 }
 
 export interface Movimiento {

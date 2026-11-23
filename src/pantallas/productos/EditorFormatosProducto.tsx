@@ -131,7 +131,7 @@ export const EditorFormatosProducto: React.FC<PropiedadesEditorFormatosProducto>
                 onChangeText={val => setPrecioTexto(formatearEntradaDinero(val))}
                 placeholder="$ 0,00"
                 placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 style={styles.inputMini}
               />
             </View>
@@ -143,7 +143,7 @@ export const EditorFormatosProducto: React.FC<PropiedadesEditorFormatosProducto>
                 onChangeText={val => setCostoTexto(formatearEntradaDinero(val))}
                 placeholder="$ 0,00"
                 placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 style={styles.inputMini}
               />
             </View>

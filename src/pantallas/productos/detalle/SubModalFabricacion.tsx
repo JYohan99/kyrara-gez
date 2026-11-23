@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -42,6 +42,16 @@ export const SubModalFabricacion: React.FC<PropiedadesSubModalFabricacion> = ({
   const [cantidadTexto, setCantidadTexto] = useState('1');
   const [notas, setNotas] = useState('');
   const [procesando, setProcesando] = useState(false);
+  const cantidadInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        cantidadInputRef.current?.focus();
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
 
   const { products: todosProductos } = useProductosBoveda();
 
@@ -178,11 +188,12 @@ export const SubModalFabricacion: React.FC<PropiedadesSubModalFabricacion> = ({
               <Text style={styles.inputLabel}>¿Cuántas unidades deseas fabricar?</Text>
               <View style={styles.quantityRow}>
                 <TextInput
+                  ref={cantidadInputRef}
                   value={cantidadTexto}
-                  onChangeText={setCantidadTexto}
+                  onChangeText={val => setCantidadTexto(val.replace(/[^0-9.,]/g, ''))}
                   placeholder="1"
                   placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
                   style={styles.quantityInput}
                 />
                 <Text style={styles.unitText}>{artesania.saleUnit || 'un.'}s</Text>

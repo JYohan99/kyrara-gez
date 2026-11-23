@@ -207,10 +207,10 @@ export const SubModalAjuste: React.FC<PropiedadesSubModalAjuste> = ({
                   <View style={styles.inputContainer}>
                     <TextInput
                       value={deltaTexto}
-                      onChangeText={setDeltaTexto}
+                      onChangeText={val => setDeltaTexto(val.replace(/[^0-9.,+-]/g, ''))}
                       placeholder="-1"
                       placeholderTextColor={COLORS.bordeContorno}
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       style={styles.textInput}
                     />
                   </View>
@@ -224,10 +224,10 @@ export const SubModalAjuste: React.FC<PropiedadesSubModalAjuste> = ({
                   <View style={styles.inputContainer}>
                     <TextInput
                       value={conteoTexto}
-                      onChangeText={setConteoTexto}
+                      onChangeText={val => setConteoTexto(val.replace(/[^0-9.,]/g, ''))}
                       placeholder="0"
                       placeholderTextColor={COLORS.bordeContorno}
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       style={styles.textInput}
                     />
                   </View>

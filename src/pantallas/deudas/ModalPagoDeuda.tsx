@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -64,6 +64,14 @@ const ContenidoModalPagoDeuda: React.FC<PropiedadesContenidoModalPagoDeuda> = ({
     const restanteStr = (deuda.remainingAmount / 100).toFixed(2).replace('.', ',');
     return formatearEntradaDinero(restanteStr);
   });
+  const amountInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      amountInputRef.current?.focus();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, []);
   const [fechaPago, setFechaPago] = useState<Date>(() => new Date());
   const [cuentaSeleccionadaId, setCuentaSeleccionadaId] = useState<string | undefined>(() => {
     return cuentasActivas.length > 0 ? cuentasActivas[0].id : undefined;
@@ -231,10 +239,11 @@ const ContenidoModalPagoDeuda: React.FC<PropiedadesContenidoModalPagoDeuda> = ({
             <View style={[styles.inputBox, styles.inputBoxAmount]}>
               <Text style={[styles.currencyPrefix, TYPOGRAPHY.headlineSm]}>$</Text>
               <TextInput
+                ref={amountInputRef}
                 style={[styles.amountInput, TYPOGRAPHY.headlineSm]}
                 placeholder="0,00"
                 placeholderTextColor={COLORS.onSurfaceVariant}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 value={montoTexto}
                 onChangeText={handleMontoChange}
               />

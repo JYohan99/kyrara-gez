@@ -6,6 +6,10 @@ import {
   obtenerResumenPeriodo,
   obtenerPresupuestos,
   obtenerCategorias,
+  activarCategoria,
+  activarTodasCategorias,
+  activarGrupoCategorias,
+  obtenerFrecuenciaUsoCategorias,
   obtenerDesgloseGastosPorCategoria,
   obtenerMayoresGastos,
   obtenerHistoricoAhorroMensual,
@@ -218,19 +222,49 @@ export function useAnaliticasBoveda(startDate?: number, endDate?: number) {
 }
 
 /**
- * Hook reactivo para catálogo de categorías.
+ * Hook reactivo para catálogo de categorías y frecuencia de uso.
  */
-export function useCategoriasBoveda(flowType?: 'EXPENSE' | 'INCOME') {
+export function useCategoriasBoveda(flowType?: 'EXPENSE' | 'INCOME', soloActivas = false) {
   const version = useSyncExternalStore(suscribirCambiosBoveda, obtenerVersionBoveda);
 
   const categories = useMemo(() => {
     void version;
     try {
-      return obtenerCategorias(flowType);
+      return obtenerCategorias(flowType, soloActivas);
+    } catch {
+      return [];
+    }
+  }, [version, flowType, soloActivas]);
+
+  const allCategories = useMemo(() => {
+    void version;
+    try {
+      return obtenerCategorias(flowType, false);
     } catch {
       return [];
     }
   }, [version, flowType]);
+
+  const frequencyMap = useMemo(() => {
+    void version;
+    try {
+      return obtenerFrecuenciaUsoCategorias();
+    } catch {
+      return {};
+    }
+  }, [version]);
+
+  const toggleCategoryActive = useCallback((id: string, active: boolean) => {
+    activarCategoria(id, active);
+  }, []);
+
+  const setAllCategoriesActive = useCallback((flowTypeTarget?: 'EXPENSE' | 'INCOME', active: boolean = true) => {
+    activarTodasCategorias(flowTypeTarget, active);
+  }, []);
+
+  const toggleGroupActive = useCallback((nombres: string[], active: boolean) => {
+    activarGrupoCategorias(nombres, active);
+  }, []);
 
   const reloadCategories = useCallback(() => {
     emitirCambioBoveda();
@@ -238,6 +272,11 @@ export function useCategoriasBoveda(flowType?: 'EXPENSE' | 'INCOME') {
 
   return {
     categories,
+    allCategories,
+    frequencyMap,
+    toggleCategoryActive,
+    setAllCategoriesActive,
+    toggleGroupActive,
     reloadCategories,
   };
 }

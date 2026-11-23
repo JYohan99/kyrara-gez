@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,10 @@ import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { guardarPresupuesto as setBudget, eliminarPresupuesto as deleteBudget } from '@/datos/consultas/presupuestos';
 import { PresupuestoEnriquecido, Categoria } from '@/datos/tipos';
-import { convertirMontoACentavos as parseAmountToCents } from '@/compartido/utilidades/moneda';
+import {
+  convertirMontoACentavos as parseAmountToCents,
+  formatearEntradaDinero as formatMoneyInput,
+} from '@/compartido/utilidades/moneda';
 import { gatillarExito as triggerSuccess, gatillarError as triggerError, gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 
 export interface PropiedadesModalPresupuesto {
@@ -49,6 +52,15 @@ const BudgetModalDrawer: React.FC<BudgetModalDrawerProps> = ({
   onSaved,
 }) => {
   const isEditing = Boolean(editingBudget);
+  const limitInputRef = useRef<TextInput>(null);
+
+  // Auto-enfoque al abrir modal para desplegar el teclado inmediatamente
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      limitInputRef.current?.focus();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, []);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState(() => {
     if (editingBudget) return editingBudget.categoryId;
@@ -57,14 +69,22 @@ const BudgetModalDrawer: React.FC<BudgetModalDrawerProps> = ({
   });
 
   const [limitInput, setLimitInput] = useState(() => {
-    return editingBudget ? (editingBudget.monthlyLimit / 100).toString() : '5000';
+    const initialCents = editingBudget ? editingBudget.monthlyLimit : 500000;
+    const centavosStr = (initialCents / 100).toFixed(2).replace('.', ',');
+    return formatMoneyInput(centavosStr);
   });
+
+  const handleLimitChange = (text: string) => {
+    const formatted = formatMoneyInput(text);
+    setLimitInput(formatted);
+  };
 
   const adjustLimit = (delta: number) => {
     triggerSelection();
-    const val = parseInt(limitInput, 10) || 0;
-    const next = Math.max(0, val + delta);
-    setLimitInput(next.toString());
+    const currentCents = parseAmountToCents(limitInput);
+    const nextCents = Math.max(0, currentCents + delta * 100);
+    const centavosStr = (nextCents / 100).toFixed(2).replace('.', ',');
+    setLimitInput(formatMoneyInput(centavosStr));
   };
 
   const handleSave = () => {
@@ -203,12 +223,14 @@ const BudgetModalDrawer: React.FC<BudgetModalDrawerProps> = ({
         <View style={styles.amountInputBox}>
           <Text style={[styles.amountCurrencyPrefix, TYPOGRAPHY.titleBalance]}>$</Text>
           <TextInput
+            ref={limitInputRef}
             value={limitInput}
-            onChangeText={setLimitInput}
-            keyboardType="numeric"
+            onChangeText={handleLimitChange}
+            keyboardType="decimal-pad"
             style={[styles.amountInput, TYPOGRAPHY.displayHeroMobile]}
-            placeholder="0"
+            placeholder="0,00"
             placeholderTextColor={COLORS.outline}
+            selectTextOnFocus
           />
         </View>
 

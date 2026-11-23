@@ -264,6 +264,7 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
   `);
 
   // 2. Migraciones incrementales de columnas
+  asegurarColumna(db, 'categories', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
   asegurarColumna(db, 'transactions', 'payee', 'TEXT');
   try { db.execSync('ALTER TABLE transactions DROP COLUMN tags;'); } catch { }
   try { db.execSync('ALTER TABLE photo_products DROP COLUMN category;'); } catch { }
@@ -316,6 +317,56 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
       sembrarCategoriasPredeterminadas(db);
       sembrarCuentasPredeterminadas(db);
       db.runSync("INSERT OR REPLACE INTO settings (key, value) VALUES ('vaciado_pruebas_limpio_v1', '1')");
+    }
+  } catch { }
+
+  // 5. Migración de categorías desglosadas completas y no unificadas (ejecución única)
+  try {
+    const migradoCategoriasV2 = db.getFirstSync<{ value: string }>(
+      "SELECT value FROM settings WHERE key = 'categorias_desglosadas_completas_v2'"
+    );
+    if (!migradoCategoriasV2) {
+      // Limpiar viejas categorías unificadas que no tengan transacciones ni presupuestos
+      const viejasUnificadas = [
+        'Vivienda y Servicios',
+        'Salud y Cuidado',
+        'Ocio y Suscripciones',
+        'Sueldo / Salario',
+        'Honorarios / Freelance',
+        'Rentas e Inversiones',
+        'Otros Gastos',
+        'Otros Ingresos',
+      ];
+      for (const vieja of viejasUnificadas) {
+        const cat = db.getFirstSync<{ id: string }>('SELECT id FROM categories WHERE name = ?', [vieja]);
+        if (cat) {
+          const transCount = db.getFirstSync<{ count: number }>(
+            'SELECT COUNT(*) as count FROM transactions WHERE category_id = ?',
+            [cat.id]
+          )?.count || 0;
+          const budgetCount = db.getFirstSync<{ count: number }>(
+            'SELECT COUNT(*) as count FROM budgets WHERE category_id = ?',
+            [cat.id]
+          )?.count || 0;
+          if (transCount === 0 && budgetCount === 0) {
+            db.runSync('DELETE FROM categories WHERE id = ?', [cat.id]);
+          }
+        }
+      }
+
+      sembrarCategoriasPredeterminadas(db);
+      db.runSync("INSERT OR REPLACE INTO settings (key, value) VALUES ('categorias_desglosadas_completas_v2', '1')");
+    }
+  } catch { }
+
+  // 6. Migración a iconos detallados de objetos reales (ejecución única)
+  try {
+    const migradoIconosV3 = db.getFirstSync<{ value: string }>(
+      "SELECT value FROM settings WHERE key = 'categorias_iconos_detallados_v3'"
+    );
+    if (!migradoIconosV3) {
+      sembrarCategoriasPredeterminadas(db);
+      db.runSync("INSERT OR REPLACE INTO settings (key, value) VALUES ('categorias_iconos_detallados_v3', '1')");
     }
   } catch { }
 

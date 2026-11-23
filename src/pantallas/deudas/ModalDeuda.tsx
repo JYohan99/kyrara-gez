@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -67,6 +67,15 @@ const ContenidoModalDeuda: React.FC<PropiedadesContenidoModalDeuda> = ({
   onClose,
 }) => {
   const insets = useSafeAreaInsets();
+  const personaInputRef = useRef<TextInput>(null);
+
+  // Auto-enfoque al abrir modal para desplegar el teclado inmediatamente
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      personaInputRef.current?.focus();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, []);
 
   const [tipo, setTipo] = useState<TipoDeuda>(() => deudaParaEditar?.type || tipoInicial);
   const [persona, setPersona] = useState(() => deudaParaEditar?.person || '');
@@ -265,6 +274,7 @@ const ContenidoModalDeuda: React.FC<PropiedadesContenidoModalDeuda> = ({
             <View style={styles.inputBox}>
               <MaterialIcons name="person-outline" size={20} color={COLORS.primary} style={styles.inputIcon} />
               <TextInput
+                ref={personaInputRef}
                 style={[styles.textInput, TYPOGRAPHY.bodyMd]}
                 placeholder={tipo === 'RECEIVABLE' ? 'Ej: Juan Pérez' : 'Ej: Banco, Alquiler, Juan'}
                 placeholderTextColor={COLORS.onSurfaceVariant}
@@ -298,7 +308,7 @@ const ContenidoModalDeuda: React.FC<PropiedadesContenidoModalDeuda> = ({
                 style={[styles.amountInput, TYPOGRAPHY.headlineSm]}
                 placeholder="0,00"
                 placeholderTextColor={COLORS.onSurfaceVariant}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 value={montoTexto}
                 onChangeText={handleMontoChange}
               />

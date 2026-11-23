@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -71,6 +71,15 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
 }) => {
   const insets = useSafeAreaInsets();
   const isEditing = Boolean(editingCommitment);
+  const titleInputRef = useRef<TextInput>(null);
+
+  // Auto-enfoque al abrir modal para desplegar el teclado inmediatamente
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      titleInputRef.current?.focus();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, []);
 
   const [title, setTitle] = useState(() => editingCommitment?.title || '');
   const [date, setDate] = useState(() => {
@@ -238,6 +247,7 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
         {/* Campo: Título (Obligatorio) */}
         <View style={styles.inputGroup}>
           <TextInput
+            ref={titleInputRef}
             style={[styles.textInput, TYPOGRAPHY.bodySm]}
             placeholder="Título"
             placeholderTextColor={COLORS.outline}
@@ -283,7 +293,7 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
                 placeholder="09:00"
                 placeholderTextColor={COLORS.outline}
                 value={time}
-                onChangeText={setTime}
+                onChangeText={val => setTime(val.replace(/[^0-9:]/g, '').slice(0, 5))}
                 keyboardType="numbers-and-punctuation"
                 maxLength={5}
               />
