@@ -19,10 +19,10 @@ export interface PropiedadesTarjetaProducto {
   onOpenDetail?: (product: Producto) => void;
   onQuickSale?: (product: Producto) => void;
   onQuickPurchase?: (product: Producto) => void;
+  onFabricate?: (product: Producto) => void;
   onEdit: (product: Producto) => void;
   onOpenPrices: (product: Producto) => void;
   onViewHistory: (productId: string) => void;
-  onCalculate: (product: Producto) => void;
   onToggleActive: (product: Producto) => void;
   onDelete: (product: Producto) => void;
 }
@@ -38,10 +38,10 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
   onOpenDetail,
   onQuickSale,
   onQuickPurchase,
+  onFabricate,
   onEdit,
   onOpenPrices,
   onViewHistory,
-  onCalculate,
   onToggleActive,
   onDelete,
 }) => {
@@ -108,6 +108,16 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
               {product.sku ? (
                 <View style={styles.skuBadge}>
                   <Text style={styles.skuBadgeText}>{product.sku}</Text>
+                </View>
+              ) : null}
+
+              {product.productType === 'ARTESANIA' ? (
+                <View style={[styles.skuBadge, { backgroundColor: 'rgba(0, 210, 255, 0.15)', borderColor: 'rgba(0, 210, 255, 0.3)' }]}>
+                  <Text style={[styles.skuBadgeText, { color: '#00D2FF', fontWeight: '800' }]}>Artesanía</Text>
+                </View>
+              ) : isService ? (
+                <View style={[styles.skuBadge, { backgroundColor: 'rgba(0, 210, 255, 0.08)', borderColor: 'rgba(0, 210, 255, 0.2)' }]}>
+                  <Text style={[styles.skuBadgeText, { color: '#80E8FF' }]}>Servicio</Text>
                 </View>
               ) : null}
             </View>
@@ -315,6 +325,22 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                   <Text style={styles.menuItemText}>Ver detalles y kardex</Text>
                 </TouchableOpacity>
 
+                {product.productType === 'ARTESANIA' && onFabricate && (
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      handleCloseMenu();
+                      onFabricate(product);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <MaterialIcons name="precision-manufacturing" size={18} color="#00D2FF" />
+                    <Text style={[styles.menuItemText, { color: '#00D2FF', fontWeight: '700' }]}>
+                      Fabricar piezas
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
                 <TouchableOpacity
                   style={styles.menuItem}
                   onPress={() => {
@@ -338,20 +364,6 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                   <MaterialIcons name="trending-up" size={18} color="#57F5AB" />
                   <Text style={styles.menuItemText}>Gestionar tarifas y precios</Text>
                 </TouchableOpacity>
-
-                {product.isActive && (
-                  <TouchableOpacity
-                    style={styles.menuItem}
-                    onPress={() => {
-                      handleCloseMenu();
-                      onCalculate(product);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <MaterialIcons name="calculate" size={18} color="#00D2FF" />
-                    <Text style={styles.menuItemText}>Calcular en calculadora</Text>
-                  </TouchableOpacity>
-                )}
 
                 <TouchableOpacity
                   style={styles.menuItem}

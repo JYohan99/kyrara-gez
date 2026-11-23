@@ -31,6 +31,7 @@ import {
   gatillarError as triggerError,
   gatillarSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
+import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 
 export interface PropiedadesModalCuenta {
   visible: boolean;
@@ -419,20 +420,10 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
 
         {/* Botón Principal (Guardar / Crear) */}
         <View style={styles.bottomBar}>
-          <TouchableOpacity
-            style={styles.guardarButton}
+          <BotonBrillante
+            title={isEditing ? 'Guardar Cambios' : 'Crear Cuenta'}
             onPress={handleSave}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons
-              name={isEditing ? 'check-circle-outline' : 'add-circle-outline'}
-              size={20}
-              color="#FFFFFF"
-            />
-            <Text style={[styles.guardarButtonText, TYPOGRAPHY.labelCaps]}>
-              {isEditing ? 'Guardar Cambios' : 'Crear Cuenta'}
-            </Text>
-          </TouchableOpacity>
+          />
         </View>
       </ScrollView>
     </View>

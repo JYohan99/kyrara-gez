@@ -26,18 +26,21 @@ import {
   gatillarError as triggerError,
   gatillarSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
-import { Producto, FormatoProducto } from '@/datos/tipos';
+import { Producto, FormatoProducto, TipoProducto, MaterialArtesania } from '@/datos/tipos';
 import {
   crearProducto,
   actualizarProducto,
   UNIDADES_VENTA_SUGERIDAS,
   esServicio,
+  calcularInversionMateriales,
 } from '@/datos/consultas/productos';
+import { useProductosBoveda } from '@/datos/hooks';
 import { SelectorChips } from './SelectorChips';
 import { BadgeRentabilidad } from './BadgeRentabilidad';
 import { IconoProducto } from '@/compartido/iconosProductos';
 import { ModalSelectorIconoProducto } from './ModalSelectorIconoProducto';
 import { EditorFormatosProducto } from './EditorFormatosProducto';
+import { EditorMaterialesArtesania } from './EditorMaterialesArtesania';
 
 export interface PropiedadesModalProducto {
   visible: boolean;
@@ -57,7 +60,14 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
 }) => {
   const insets = useSafeAreaInsets();
 
+  const { products: todosLosProductos } = useProductosBoveda();
+
   const [nombre, setNombre] = useState(() => productoParaEditar?.name || '');
+  const [tipoProducto, setTipoProducto] = useState<TipoProducto>(() => {
+    if (productoParaEditar?.productType) return productoParaEditar.productType;
+    if (esServicio(productoParaEditar?.saleUnit)) return 'SERVICIO';
+    return 'PRODUCTO';
+  });
   const [icono, setIcono] = useState(() => productoParaEditar?.icon || 'inventory-2');
   const [selectorIconoVisible, setSelectorIconoVisible] = useState(false);
 
@@ -73,9 +83,10 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
   });
 
   const [formatos, setFormatos] = useState<FormatoProducto[]>(() => productoParaEditar?.formats || []);
+  const [materiales, setMateriales] = useState<MaterialArtesania[]>(() => productoParaEditar?.materials || []);
 
   const unidadFinalCalculada = mostrarOtraUnidad && otraUnidad.trim() ? otraUnidad.trim() : unidadVenta.trim();
-  const esServ = esServicio(unidadFinalCalculada);
+  const esServ = tipoProducto === 'SERVICIO' || esServicio(unidadFinalCalculada);
 
   const [descripcion, setDescripcion] = useState(() => productoParaEditar?.description || '');
   const [activo, setActivo] = useState(() => (productoParaEditar ? productoParaEditar.isActive : true));
@@ -119,8 +130,12 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
       return;
     }
 
-    const precioCentavos = precioTexto ? convertirMontoACentavos(precioTexto) : 0;
-    const costoCentavos = costoTexto ? convertirMontoACentavos(costoTexto) : 0;
+    const precioCentavos = precioTexto
+      ? convertirMontoACentavos(precioTexto)
+      : (formatos.length > 0 ? formatos[0].salePrice : 0);
+    const costoCentavos = costoTexto
+      ? convertirMontoACentavos(costoTexto)
+      : (formatos.length > 0 ? formatos[0].costPrice : 0);
     const skuFinal = productoParaEditar?.sku || undefined;
     const proveedorFinal = productoParaEditar?.supplier || undefined;
     const minStockNum = esServ ? 0 : Math.max(0, parseFloat(stockMinimoTexto.replace(',', '.')) || 0);
@@ -130,11 +145,13 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
       if (productoParaEditar) {
         actualizarProducto(productoParaEditar.id, {
           name: nombreFinal,
+          productType: tipoProducto,
           icon: icono,
           sku: skuFinal,
           sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
           formats: formatos,
+          materials: tipoProducto === 'ARTESANIA' ? materiales : undefined,
           description: descripcion.trim() || undefined,
           isActive: activo,
           basePrice: precioCentavos,
@@ -146,11 +163,13 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
         const initialStockNum = esServ ? 0 : Math.max(0, parseFloat(stockInicialTexto.replace(',', '.')) || 0);
         crearProducto({
           name: nombreFinal,
+          productType: tipoProducto,
           icon: icono,
           sku: skuFinal,
           sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
           formats: formatos,
+          materials: tipoProducto === 'ARTESANIA' ? materiales : undefined,
           description: descripcion.trim() || undefined,
           isActive: activo,
           basePrice: precioCentavos,
@@ -244,6 +263,119 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
             </View>
           </View>
 
+          {/* Fila con 3 opciones: Producto | Servicio | Artesanía */}
+          <View style={styles.tipoProductoContainer}>
+            <Text style={[styles.tipoProductoLabel, TYPOGRAPHY.etiquetaMayusculas]}>
+              Tipo de Registro
+            </Text>
+            <View style={styles.tipoProductoRow}>
+              <TouchableOpacity
+                style={[
+                  styles.tipoProductoBtn,
+                  tipoProducto === 'PRODUCTO' && styles.tipoProductoBtnActive,
+                ]}
+                onPress={() => {
+                  triggerSelection();
+                  setTipoProducto('PRODUCTO');
+                  if (unidadVenta === 'Servicio') {
+                    setUnidadVenta('Unidad');
+                  }
+                }}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons
+                  name="inventory-2"
+                  size={15}
+                  color={tipoProducto === 'PRODUCTO' ? '#06120D' : COLORS.onSurfaceVariant}
+                />
+                <Text
+                  style={[
+                    styles.tipoProductoBtnText,
+                    tipoProducto === 'PRODUCTO' && styles.tipoProductoBtnTextActive,
+                  ]}
+                >
+                  Producto
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.tipoProductoBtn,
+                  tipoProducto === 'SERVICIO' && styles.tipoProductoBtnActive,
+                ]}
+                onPress={() => {
+                  triggerSelection();
+                  setTipoProducto('SERVICIO');
+                  setUnidadVenta('Servicio');
+                }}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons
+                  name="design-services"
+                  size={15}
+                  color={tipoProducto === 'SERVICIO' ? '#06120D' : COLORS.onSurfaceVariant}
+                />
+                <Text
+                  style={[
+                    styles.tipoProductoBtnText,
+                    tipoProducto === 'SERVICIO' && styles.tipoProductoBtnTextActive,
+                  ]}
+                >
+                  Servicio
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.tipoProductoBtn,
+                  tipoProducto === 'ARTESANIA' && styles.tipoProductoBtnActive,
+                ]}
+                onPress={() => {
+                  triggerSelection();
+                  setTipoProducto('ARTESANIA');
+                  if (unidadVenta === 'Servicio') {
+                    setUnidadVenta('Unidad');
+                  }
+                  if (icono === 'inventory-2') {
+                    setIcono('palette');
+                  }
+                }}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons
+                  name="palette"
+                  size={15}
+                  color={tipoProducto === 'ARTESANIA' ? '#06120D' : COLORS.onSurfaceVariant}
+                />
+                <Text
+                  style={[
+                    styles.tipoProductoBtnText,
+                    tipoProducto === 'ARTESANIA' && styles.tipoProductoBtnTextActive,
+                  ]}
+                >
+                  Artesanía
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Ficha de Materiales (Exclusiva para Artesanía) */}
+          {tipoProducto === 'ARTESANIA' && (
+            <EditorMaterialesArtesania
+              materiales={materiales}
+              onChangeMateriales={nuevos => {
+                setMateriales(nuevos);
+                const inv = calcularInversionMateriales(nuevos);
+                if (inv > 0) {
+                  const centavosStr = (inv / 100).toFixed(2).replace('.', ',');
+                  setCostoTexto(formatearEntradaDinero(centavosStr));
+                }
+              }}
+              productosCatalogo={todosLosProductos}
+              productoIdExcluir={productoParaEditar?.id}
+            />
+          )}
+
           {/* Selector: Unidad de venta */}
           <SelectorChips
             titulo="Unidad de Venta"
@@ -330,70 +462,74 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
             formatos={formatos}
             onChangeFormatos={(nuevos) => {
               setFormatos(nuevos);
-              if (!precioTexto && nuevos.length > 0 && nuevos[0].salePrice > 0) {
-                const centavosStr = (nuevos[0].salePrice / 100).toFixed(2).replace('.', ',');
-                setPrecioTexto(formatearEntradaDinero(centavosStr));
-              }
-              if (!costoTexto && nuevos.length > 0 && nuevos[0].costPrice > 0) {
-                const centavosStr = (nuevos[0].costPrice / 100).toFixed(2).replace('.', ',');
-                setCostoTexto(formatearEntradaDinero(centavosStr));
+              if (nuevos.length > 0) {
+                if (nuevos[0].salePrice > 0) {
+                  const centavosStr = (nuevos[0].salePrice / 100).toFixed(2).replace('.', ',');
+                  setPrecioTexto(formatearEntradaDinero(centavosStr));
+                }
+                if (nuevos[0].costPrice >= 0) {
+                  const centavosStr = (nuevos[0].costPrice / 100).toFixed(2).replace('.', ',');
+                  setCostoTexto(formatearEntradaDinero(centavosStr));
+                }
               }
             }}
           />
 
-          {/* Precios opcionales */}
-          <View style={styles.pricingOptionalBox}>
-            <View style={styles.pricingHeader}>
-              <MaterialIcons name="sell" size={16} color={COLORS.secondary} />
-              <Text style={[styles.pricingSectionTitle, TYPOGRAPHY.etiquetaMayusculas]}>
-                Precios referenciales
-              </Text>
-            </View>
-
-            <View style={styles.pricingInputsRow}>
-              <View style={styles.pricingInputCol}>
-                <Text style={styles.subLabel}>Precio venta</Text>
-                <View style={styles.inputContainerCompact}>
-                  <Text style={styles.currencyPrefix}>$</Text>
-                  <TextInput
-                    value={precioTexto}
-                    onChangeText={val => setPrecioTexto(formatearEntradaDinero(val))}
-                    placeholder="0,00"
-                    placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                    keyboardType="numeric"
-                    style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.pricingInputCol}>
-                <Text style={styles.subLabel}>Costo base</Text>
-                <View style={styles.inputContainerCompact}>
-                  <Text style={styles.currencyPrefix}>$</Text>
-                  <TextInput
-                    value={costoTexto}
-                    onChangeText={val => setCostoTexto(formatearEntradaDinero(val))}
-                    placeholder="0,00"
-                    placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                    keyboardType="numeric"
-                    style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
-                  />
-                </View>
-              </View>
-            </View>
-
-            {(livePrecioCentavos > 0 || liveCostoCentavos > 0) && (
-              <View style={styles.liveCalcPill}>
-                <MaterialIcons name="trending-up" size={14} color={COLORS.secondary} />
-                <Text style={styles.liveCalcText}>
-                  Ganancia estimada: {formatCurrency(liveProfit)}
+          {/* Precios opcionales (Solo para productos físicos y artesanías; en servicios se definen en Formatos y Tarifas) */}
+          {!esServ && (
+            <View style={styles.pricingOptionalBox}>
+              <View style={styles.pricingHeader}>
+                <MaterialIcons name="sell" size={16} color={COLORS.secondary} />
+                <Text style={[styles.pricingSectionTitle, TYPOGRAPHY.etiquetaMayusculas]}>
+                  Precios referenciales
                 </Text>
-                {liveMargin !== null && (
-                  <BadgeRentabilidad margen={liveMargin} />
-                )}
               </View>
-            )}
-          </View>
+
+              <View style={styles.pricingInputsRow}>
+                <View style={styles.pricingInputCol}>
+                  <Text style={styles.subLabel}>Precio venta</Text>
+                  <View style={styles.inputContainerCompact}>
+                    <Text style={styles.currencyPrefix}>$</Text>
+                    <TextInput
+                      value={precioTexto}
+                      onChangeText={val => setPrecioTexto(formatearEntradaDinero(val))}
+                      placeholder="0,00"
+                      placeholderTextColor={COLORS.onSurfaceVariant + '80'}
+                      keyboardType="numeric"
+                      style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.pricingInputCol}>
+                  <Text style={styles.subLabel}>Costo base</Text>
+                  <View style={styles.inputContainerCompact}>
+                    <Text style={styles.currencyPrefix}>$</Text>
+                    <TextInput
+                      value={costoTexto}
+                      onChangeText={val => setCostoTexto(formatearEntradaDinero(val))}
+                      placeholder="0,00"
+                      placeholderTextColor={COLORS.onSurfaceVariant + '80'}
+                      keyboardType="numeric"
+                      style={[styles.textInput, TYPOGRAPHY.cuerpoMedio]}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {(livePrecioCentavos > 0 || liveCostoCentavos > 0) && (
+                <View style={styles.liveCalcPill}>
+                  <MaterialIcons name="trending-up" size={14} color={COLORS.secondary} />
+                  <Text style={styles.liveCalcText}>
+                    Ganancia estimada: {formatCurrency(liveProfit)}
+                  </Text>
+                  {liveMargin !== null && (
+                    <BadgeRentabilidad margen={liveMargin} />
+                  )}
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Campo: Descripción o notas */}
           <View style={styles.formGroup}>
@@ -417,7 +553,7 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
                 Producto activo
               </Text>
               <Text style={[styles.switchSubtitle, TYPOGRAPHY.cuerpoPequeno]}>
-                Los productos activos aparecen disponibles para ventas y calculadora
+                Los productos activos aparecen disponibles en el catálogo y para ventas directas
               </Text>
             </View>
             <Switch
@@ -739,5 +875,45 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     fontSize: 11,
     lineHeight: 15,
+  },
+  tipoProductoContainer: {
+    marginTop: 2,
+    marginBottom: 6,
+    gap: 6,
+  },
+  tipoProductoLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    color: COLORS.onSurfaceVariant,
+  },
+  tipoProductoRow: {
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: '#0D1512',
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  tipoProductoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  tipoProductoBtnActive: {
+    backgroundColor: '#00D2FF',
+  },
+  tipoProductoBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+  },
+  tipoProductoBtnTextActive: {
+    color: '#06120D',
+    fontWeight: '900',
   },
 });

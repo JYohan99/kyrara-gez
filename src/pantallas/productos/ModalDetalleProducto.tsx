@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import {
   gatillarSeleccion as triggerSelection,
@@ -28,6 +28,7 @@ import { SubModalCompra } from './detalle/SubModalCompra';
 import { SubModalAjuste } from './detalle/SubModalAjuste';
 import { SubModalDevolucionProveedor } from './detalle/SubModalDevolucionProveedor';
 import { SubModalDevolucionCliente } from './detalle/SubModalDevolucionCliente';
+import { SubModalFabricacion } from './detalle/SubModalFabricacion';
 import { IconoProducto } from '@/compartido/iconosProductos';
 
 export interface PropiedadesModalDetalleProducto {
@@ -46,7 +47,8 @@ type SubModalAccion =
   | 'COMPRA'
   | 'DEVOLUCION_PROVEEDOR'
   | 'DEVOLUCION_CLIENTE'
-  | 'AJUSTE';
+  | 'AJUSTE'
+  | 'FABRICAR';
 
 export const ModalDetalleProducto: React.FC<PropiedadesModalDetalleProducto> = ({
   visible,
@@ -251,6 +253,13 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
           <View style={[styles.opBadge, styles.opBadgeAdjustment]}>
             <MaterialIcons name="tune" size={12} color="#D1BCFF" />
             <Text style={[styles.opBadgeText, { color: '#D1BCFF' }]}>AJUSTE</Text>
+          </View>
+        );
+      case 'PRODUCTION':
+        return (
+          <View style={[styles.opBadge, { backgroundColor: 'rgba(0, 210, 255, 0.15)' }]}>
+            <MaterialIcons name="precision-manufacturing" size={12} color="#00D2FF" />
+            <Text style={[styles.opBadgeText, { color: '#00D2FF' }]}>FABRICACIÓN</Text>
           </View>
         );
       default:
@@ -491,8 +500,22 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
               </View>
             </TouchableOpacity>
 
-            {/* Botón: Registrar Compra (solo para productos físicos con stock) */}
-            {!isService && (
+            {/* Botón: Registrar Compra (para productos físicos) o Fabricar (para artesanías) */}
+            {productoActual.productType === 'ARTESANIA' ? (
+              <TouchableOpacity
+                style={[styles.primaryActionBtn, { borderColor: 'rgba(0, 210, 255, 0.4)', backgroundColor: 'rgba(0, 210, 255, 0.08)' }]}
+                onPress={() => setSubModal('FABRICAR')}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.primaryActionIconBadge, { backgroundColor: 'rgba(0, 210, 255, 0.2)' }]}>
+                  <MaterialIcons name="precision-manufacturing" size={20} color="#00D2FF" />
+                </View>
+                <View style={styles.primaryActionTextCol}>
+                  <Text style={[styles.primaryActionTitle, { color: '#00D2FF' }]}>Fabricar Piezas</Text>
+                  <Text style={styles.primaryActionSubtitle}>Producir y descontar insumos</Text>
+                </View>
+              </TouchableOpacity>
+            ) : !isService ? (
               <TouchableOpacity
                 style={[styles.primaryActionBtn, styles.btnPurchasePrimary]}
                 onPress={handleAbrirCompra}
@@ -506,7 +529,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
                   <Text style={styles.primaryActionSubtitle}>Ingreso de mercadería</Text>
                 </View>
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
 
           {/* BOTONES SECUNDARIOS: DEVOLUCIÓN DE CLIENTE, DEV. A PROVEEDOR Y AJUSTE */}
@@ -636,6 +659,56 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
               </View>
             )}
           </View>
+
+          {/* Ficha de Composición (Exclusiva para Artesanías) */}
+          {productoActual.productType === 'ARTESANIA' && (
+            <View style={styles.artesaniaCard}>
+              <View style={styles.artesaniaHeaderRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <MaterialIcons name="palette" size={18} color="#00D2FF" />
+                  <Text style={[styles.artesaniaTitle, TYPOGRAPHY.titularPequeno]}>
+                    Ficha Técnica de Materiales ({productoActual.materials?.length || 0})
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.artesaniaFabricarMiniBtn}
+                  onPress={() => setSubModal('FABRICAR')}
+                  activeOpacity={0.8}
+                >
+                  <MaterialIcons name="precision-manufacturing" size={14} color="#06120D" />
+                  <Text style={styles.artesaniaFabricarMiniBtnText}>Fabricar</Text>
+                </TouchableOpacity>
+              </View>
+
+              {productoActual.materials && productoActual.materials.length > 0 ? (
+                <View style={{ gap: 6, marginTop: 10 }}>
+                  {productoActual.materials.map((m, idx) => (
+                    <View key={m.id || idx} style={styles.artesaniaMaterialRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.artesaniaMaterialName}>{m.name}</Text>
+                        <Text style={styles.artesaniaMaterialDetail}>
+                          {m.quantity} {m.unit || 'un.'} × {formatCurrency(m.unitCost)}
+                        </Text>
+                      </View>
+                      <Text style={styles.artesaniaMaterialSubtotal}>
+                        {formatCurrency(Math.round((m.quantity || 1) * (m.unitCost || 0)))}
+                      </Text>
+                    </View>
+                  ))}
+                  <View style={styles.artesaniaTotalRow}>
+                    <Text style={styles.artesaniaTotalLabel}>INVERSIÓN TOTAL EN MATERIALES</Text>
+                    <Text style={styles.artesaniaTotalValue}>
+                      {formatCurrency(productoActual.costPrice || 0)}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <Text style={{ fontSize: 12, color: COLORS.onSurfaceVariant, fontStyle: 'italic', marginTop: 6 }}>
+                  No se han registrado materiales para esta artesanía.
+                </Text>
+              )}
+            </View>
+          )}
 
           {/* SECCIÓN HISTORIAL DE OPERACIONES DEL PRODUCTO */}
           <View style={styles.historySection}>
@@ -875,6 +948,15 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
           cuentas={accounts}
           operacionesVenta={operacionesVenta}
           operacionVentaInicial={operacionVentaSeleccionada}
+        />
+      )}
+
+      {subModal === 'FABRICAR' && (
+        <SubModalFabricacion
+          visible={true}
+          onClose={handleCerrarSubModal}
+          onSuccess={handleCerrarSubModal}
+          artesania={productoActual}
         />
       )}
     </View>
@@ -1633,5 +1715,79 @@ const styles = StyleSheet.create({
     color: '#00D2FF',
     fontSize: 11,
     fontWeight: '600',
+  },
+  artesaniaCard: {
+    backgroundColor: '#111A16',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 255, 0.25)',
+    marginBottom: 16,
+  },
+  artesaniaHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  artesaniaTitle: {
+    color: '#00D2FF',
+    fontWeight: '700',
+  },
+  artesaniaFabricarMiniBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#00D2FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  artesaniaFabricarMiniBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#06120D',
+  },
+  artesaniaMaterialRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  artesaniaMaterialName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  artesaniaMaterialDetail: {
+    fontSize: 11,
+    color: COLORS.onSurfaceVariant,
+  },
+  artesaniaMaterialSubtotal: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  artesaniaTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  artesaniaTotalLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    color: '#00D2FF',
+  },
+  artesaniaTotalValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });

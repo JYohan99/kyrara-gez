@@ -26,14 +26,13 @@ import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moned
 import { ModalProducto } from './ModalProducto';
 import { ModalGestionPrecios } from './ModalGestionPrecios';
 import { ModalDetalleProducto, TipoAccionDetalleProducto } from './ModalDetalleProducto';
-import { CalculadoraPrecios } from './CalculadoraPrecios';
 import { HistorialPrecios } from './HistorialPrecios';
 import { EstadisticasPrecios } from './EstadisticasPrecios';
 import { TarjetaProducto } from './TarjetaProducto';
 import { PantallaResumenInventario } from './PantallaResumenInventario';
 import { PantallaAnalisisInventario } from './PantallaAnalisisInventario';
 
-export type SeccionModuloProductos = 'RESUMEN' | 'CATALOGO' | 'ANALISIS' | 'CALCULADORA' | 'HISTORIAL' | 'ESTADISTICAS';
+export type SeccionModuloProductos = 'RESUMEN' | 'CATALOGO' | 'ANALISIS' | 'HISTORIAL' | 'ESTADISTICAS';
 
 export interface PropiedadesPestanaProductos {
   onNewProduct?: () => void;
@@ -60,9 +59,8 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
   const [priceModalVisible, setPriceModalVisible] = useState(false);
   const [productForPrices, setProductForPrices] = useState<Producto | null>(null);
 
-  // Sub-módulo activo: Resumen | Catálogo | Análisis | Calculadora
+  // Sub-módulo activo: Resumen | Catálogo | Análisis | Historial | Estadísticas
   const [seccionModulo, setSeccionModulo] = useState<SeccionModuloProductos>('CATALOGO');
-  const [itemsCalculadora, setItemsCalculadora] = useState<Record<string, number>>({});
   const [productoParaHistorial, setProductoParaHistorial] = useState<string | undefined>(undefined);
 
   // Hooks reactivos a la bóveda SQLite
@@ -117,6 +115,13 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
     setDetailModalVisible(true);
   };
 
+  const handleFabricarProducto = (product: Producto) => {
+    triggerSelection();
+    setDetailProduct(product);
+    setDetailAccionInicial('FABRICAR');
+    setDetailModalVisible(true);
+  };
+
   const handleOpenNew = () => {
     triggerSelection();
     if (onNewProduct) {
@@ -143,15 +148,6 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
     triggerSelection();
     setProductForPrices(product);
     setPriceModalVisible(true);
-  };
-
-  const handleCalcularProducto = (product: Producto) => {
-    triggerSuccess();
-    setItemsCalculadora(prev => ({
-      ...prev,
-      [product.id]: prev[product.id] ? prev[product.id] + 1 : 1,
-    }));
-    setSeccionModulo('CALCULADORA');
   };
 
   const handleVerHistorial = (productId?: string) => {
@@ -288,36 +284,6 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
             Análisis
           </Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.moduleSwitcherBtn,
-            seccionModulo === 'CALCULADORA' && styles.moduleSwitcherBtnActive,
-          ]}
-          onPress={() => {
-            triggerSelection();
-            setSeccionModulo('CALCULADORA');
-          }}
-          activeOpacity={0.8}
-          accessibilityRole="tab"
-          accessibilityLabel="Ver Calculadora de precios"
-        >
-          <MaterialIcons
-            name="calculate"
-            size={15}
-            color={seccionModulo === 'CALCULADORA' ? COLORS.primario : COLORS.enSuperficieVariante}
-          />
-          <Text
-            style={[
-              styles.moduleSwitcherText,
-              TYPOGRAPHY.etiquetaMayusculas,
-              seccionModulo === 'CALCULADORA' && styles.moduleSwitcherTextActive,
-            ]}
-            numberOfLines={1}
-          >
-            Calc.{Object.keys(itemsCalculadora).length > 0 ? ` (${Object.keys(itemsCalculadora).length})` : ''}
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Contenido según el sub-módulo activo */}
@@ -345,13 +311,6 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
       ) : seccionModulo === 'ANALISIS' ? (
         <PantallaAnalisisInventario
           onAbrirDetalleProducto={handleOpenDetail}
-        />
-      ) : seccionModulo === 'CALCULADORA' ? (
-        <CalculadoraPrecios
-          productosCatalogo={allProducts}
-          itemsSeleccionados={itemsCalculadora}
-          onActualizarItems={setItemsCalculadora}
-          onIrAlCatalogo={() => setSeccionModulo('CATALOGO')}
         />
       ) : seccionModulo === 'HISTORIAL' ? (
         <HistorialPrecios
@@ -604,10 +563,10 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
                   onOpenDetail={handleOpenDetail}
                   onQuickSale={handleQuickSale}
                   onQuickPurchase={handleQuickPurchase}
+                  onFabricate={handleFabricarProducto}
                   onEdit={handleOpenEdit}
                   onOpenPrices={handleOpenPrices}
                   onViewHistory={handleVerHistorial}
-                  onCalculate={handleCalcularProducto}
                   onToggleActive={handleToggleActive}
                   onDelete={handleDelete}
                 />

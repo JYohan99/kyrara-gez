@@ -197,8 +197,10 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
       sku TEXT,
       size_format TEXT,
       sale_unit TEXT NOT NULL DEFAULT 'Unidad',
+      product_type TEXT DEFAULT 'PRODUCTO',
       icon TEXT DEFAULT 'inventory-2',
       formats TEXT,
+      materials TEXT,
       description TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
       base_price INTEGER DEFAULT 0,
@@ -282,6 +284,8 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
   asegurarColumna(db, 'photo_products', 'exchange_rate', 'REAL');
   asegurarColumna(db, 'photo_products', 'price_valid_from', 'TEXT');
   asegurarColumna(db, 'photo_products', 'currency', 'TEXT DEFAULT "UYU"');
+  asegurarColumna(db, 'photo_products', 'product_type', 'TEXT DEFAULT "PRODUCTO"');
+  asegurarColumna(db, 'photo_products', 'materials', 'TEXT');
 
   asegurarColumna(db, 'photo_product_prices', 'currency', 'TEXT DEFAULT "UYU"');
   asegurarColumna(db, 'photo_product_prices', 'cost_usd', 'REAL');

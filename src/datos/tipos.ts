@@ -220,14 +220,27 @@ export interface FormatoProducto {
   grossMarginPercent?: number | null;
 }
 
+export type TipoProducto = 'PRODUCTO' | 'SERVICIO' | 'ARTESANIA';
+
+export interface MaterialArtesania {
+  id: string;
+  productId?: string; // id del producto en inventario si está vinculado a un insumo
+  name: string; // nombre del material / insumo
+  quantity: number; // cantidad necesaria por cada unidad de artesanía
+  unitCost: number; // costo unitario en centavos
+  unit?: string; // unidad de medida (ej: 'un.', 'm', 'cm', 'gr', 'ml')
+}
+
 export interface Producto {
   id: string;
   name: string;
+  productType?: TipoProducto; // 'PRODUCTO' | 'SERVICIO' | 'ARTESANIA'
   icon?: string; // Nombre de MaterialIcons o Emoji
   sku?: string;
   sizeFormat?: string;
   saleUnit: string;
   formats?: FormatoProducto[]; // Formatos o medidas específicas con tarifas individuales
+  materials?: MaterialArtesania[]; // Lista de materiales e insumos para productos tipo ARTESANIA
   description?: string;
   isActive: boolean;
   basePrice?: number; // precio de venta vigente en centavos
@@ -256,7 +269,8 @@ export type TipoOperacionInventario =
   | 'SUPPLIER_RETURN'
   | 'ADJUSTMENT'
   | 'SALE'
-  | 'CUSTOMER_RETURN';
+  | 'CUSTOMER_RETURN'
+  | 'PRODUCTION';
 
 export type EstadoCobroOperacion = 'PAID' | 'PENDING' | 'REFUNDED';
 export type FormaCobroVenta = 'ACCOUNT' | 'CREDIT_PENDING';

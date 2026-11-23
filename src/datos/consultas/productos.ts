@@ -2,6 +2,8 @@ import { obtenerBaseDatos } from '../conexion';
 import { asegurarEsquemaBaseDatos } from '../esquema';
 import {
   Producto,
+  TipoProducto,
+  MaterialArtesania,
   FormatoProducto,
   FiltroProductos,
   TarifaProducto,
@@ -15,20 +17,6 @@ import {
   EvolucionTarifaItem,
 } from '../tipos';
 import { emitirCambioBoveda } from '../sincronizacion';
-
-export const FORMATOS_PRODUCTOS_SUGERIDOS = [
-  'Estándar',
-  'Chico',
-  'Mediano',
-  'Grande',
-  '10x15 cm',
-  '15x21 cm',
-  '30x40 cm',
-  'A4',
-  'A3',
-  'Digital',
-  'Personalizado',
-];
 
 export const UNIDADES_VENTA_SUGERIDAS = [
   'Unidad',
@@ -53,7 +41,9 @@ interface FilaProducto {
   sku: string | null;
   size_format: string | null;
   sale_unit: string;
+  product_type?: string | null;
   formats: string | null;
+  materials?: string | null;
   description: string | null;
   is_active: number;
   base_price: number | null;
@@ -143,14 +133,40 @@ function mapearFilaAProducto(fila: FilaProducto, tariffsCount?: number): Product
     }
   }
 
+  let materials: MaterialArtesania[] | undefined = undefined;
+  if (fila.materials) {
+    try {
+      const parsedMats = JSON.parse(fila.materials);
+      if (Array.isArray(parsedMats)) {
+        materials = parsedMats.map((m: any) => ({
+          id: m.id || 'mat_' + Math.random().toString(36).substring(2, 7),
+          productId: m.productId || undefined,
+          name: String(m.name || ''),
+          quantity: typeof m.quantity === 'number' ? m.quantity : 1,
+          unitCost: typeof m.unitCost === 'number' ? m.unitCost : 0,
+          unit: m.unit || undefined,
+        }));
+      }
+    } catch {
+      // Ignorar json inválido
+    }
+  }
+
+  const productType: TipoProducto =
+    fila.product_type === 'ARTESANIA'
+      ? 'ARTESANIA'
+      : (fila.product_type === 'SERVICIO' || isService ? 'SERVICIO' : 'PRODUCTO');
+
   return {
     id: fila.id,
     name: fila.name,
+    productType,
     icon: fila.icon || undefined,
     sku: fila.sku || undefined,
     sizeFormat: fila.size_format || undefined,
     saleUnit: fila.sale_unit || 'Unidad',
     formats,
+    materials,
     description: fila.description || undefined,
     isActive: fila.is_active === 1,
     basePrice: sale,
@@ -545,11 +561,13 @@ export function eliminarTarifaProducto(tariffId: string): void {
 
 export interface DatosCrearProducto {
   name: string;
+  productType?: TipoProducto;
   icon?: string;
   sku?: string;
   sizeFormat?: string;
   saleUnit: string;
   formats?: FormatoProducto[];
+  materials?: MaterialArtesania[];
   description?: string;
   isActive?: boolean;
   basePrice?: number;
@@ -593,9 +611,11 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
   const precioBase = datos.basePrice !== undefined ? Math.round(datos.basePrice) : 0;
   const costoBase = datos.costPrice !== undefined ? Math.round(datos.costPrice) : 0;
   const esServ = esServicio(unidadLimpia);
+  const tipoProductoFinal: TipoProducto = datos.productType || (esServ ? 'SERVICIO' : 'PRODUCTO');
   const stockInicial = esServ ? 0 : (datos.initialStock !== undefined && datos.initialStock > 0 ? Number(datos.initialStock) : 0);
   const stockMinimo = esServ ? 0 : (datos.minStock !== undefined && datos.minStock >= 0 ? Number(datos.minStock) : 0);
   const formatosJson = datos.formats && datos.formats.length > 0 ? JSON.stringify(datos.formats) : null;
+  const materialesJson = datos.materials && datos.materials.length > 0 ? JSON.stringify(datos.materials) : null;
   const proveedor = datos.supplier?.trim() || null;
   const costoUsd = datos.costUsd !== undefined ? datos.costUsd : null;
   const tipoCambio = datos.exchangeRate !== undefined ? datos.exchangeRate : null;
@@ -605,18 +625,20 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
   db.withTransactionSync(() => {
     db.runSync(
       `INSERT INTO photo_products (
-        id, name, sku, size_format, sale_unit, icon, formats, description,
+        id, name, sku, size_format, sale_unit, product_type, icon, formats, materials, description,
         is_active, base_price, cost_price, current_stock, min_stock, supplier,
         cost_usd, exchange_rate, price_valid_from, currency, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         nombreLimpio,
         sku,
         formato,
         unidadLimpia,
+        tipoProductoFinal,
         icono,
         formatosJson,
+        materialesJson,
         descripcion,
         activo,
         precioBase,
@@ -685,11 +707,13 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
 
 export interface DatosActualizarProducto {
   name?: string;
+  productType?: TipoProducto;
   icon?: string;
   sku?: string;
   sizeFormat?: string;
   saleUnit?: string;
   formats?: FormatoProducto[];
+  materials?: MaterialArtesania[];
   description?: string;
   isActive?: boolean;
   basePrice?: number;
@@ -742,10 +766,16 @@ export function actualizarProducto(
   const precioFinal = datos.basePrice !== undefined ? Math.round(datos.basePrice) : (actual.basePrice ?? 0);
   const costoFinal = datos.costPrice !== undefined ? Math.round(datos.costPrice) : (actual.costPrice ?? 0);
   const esServ = esServicio(unidadFinal);
+  const productTypeFinal: TipoProducto = datos.productType !== undefined
+    ? datos.productType
+    : (actual.productType || (esServ ? 'SERVICIO' : 'PRODUCTO'));
   const minStockFinal = esServ ? 0 : (datos.minStock !== undefined ? Math.max(0, Number(datos.minStock)) : actual.minStock);
   const formatosFinal = datos.formats !== undefined
     ? (datos.formats && datos.formats.length > 0 ? JSON.stringify(datos.formats) : null)
     : (actual.formats && actual.formats.length > 0 ? JSON.stringify(actual.formats) : null);
+  const materialsFinal = datos.materials !== undefined
+    ? (datos.materials && datos.materials.length > 0 ? JSON.stringify(datos.materials) : null)
+    : (actual.materials && actual.materials.length > 0 ? JSON.stringify(actual.materials) : null);
   const supplierFinal = datos.supplier !== undefined ? (datos.supplier.trim() || null) : (actual.supplier || null);
   const costoUsdFinal = datos.costUsd !== undefined ? datos.costUsd : (actual.costUsd ?? null);
   const tipoCambioFinal = datos.exchangeRate !== undefined ? datos.exchangeRate : (actual.exchangeRate ?? null);
@@ -762,8 +792,10 @@ export function actualizarProducto(
         sku = ?,
         size_format = ?,
         sale_unit = ?,
+        product_type = ?,
         icon = ?,
         formats = ?,
+        materials = ?,
         description = ?,
         is_active = ?,
         base_price = ?,
@@ -781,8 +813,10 @@ export function actualizarProducto(
         skuFinal,
         formatoFinal,
         unidadFinal,
+        productTypeFinal,
         iconoFinal,
         formatosFinal,
+        materialsFinal,
         descripcionFinal,
         activoFinal,
         precioFinal,
@@ -1369,3 +1403,138 @@ export function obtenerEstadisticasCatalogo(): EstadisticasCatalogoProductos {
 }
 
 export const obtenerEstadisticasCatalogoProductos = obtenerEstadisticasCatalogo;
+
+/**
+ * Calcula la inversión total en centavos sumando todos los materiales de una artesanía.
+ */
+export function calcularInversionMateriales(materiales?: MaterialArtesania[]): number {
+  if (!materiales || materiales.length === 0) return 0;
+  return materiales.reduce((acc, m) => {
+    const qty = typeof m.quantity === 'number' && m.quantity > 0 ? m.quantity : 0;
+    const unitCost = typeof m.unitCost === 'number' && m.unitCost > 0 ? m.unitCost : 0;
+    return acc + Math.round(qty * unitCost);
+  }, 0);
+}
+
+export interface ParametrosFabricarArtesania {
+  artesaniaId: string;
+  cantidad: number;
+  notas?: string;
+}
+
+export interface InsumoAfectadoFabricacion {
+  producto: Producto;
+  cantidadDescontada: number;
+}
+
+/**
+ * Registra la producción de piezas de una artesanía:
+ * - Descuenta las cantidades consumidas del inventario de cada insumo vinculado al catálogo.
+ * - Registra una operación 'ADJUSTMENT' con motivo 'USO_INTERNO' por cada insumo consumido.
+ * - Incrementa el stock de la artesanía producida y registra una operación 'PRODUCTION'.
+ * - Ejecuta todo en una transacción atómica.
+ */
+export function fabricarArtesania({
+  artesaniaId,
+  cantidad,
+  notas,
+}: ParametrosFabricarArtesania): {
+  artesania: Producto;
+  insumosAfectados: InsumoAfectadoFabricacion[];
+} {
+  asegurarEsquemaBaseDatos();
+  if (cantidad <= 0) {
+    throw new Error('La cantidad a fabricar debe ser mayor a 0.');
+  }
+
+  const db = obtenerBaseDatos();
+  const artesania = obtenerProductoPorId(artesaniaId);
+  if (!artesania) {
+    throw new Error('La artesanía no existe.');
+  }
+
+  const materiales = artesania.materials || [];
+  const ahora = Date.now();
+  const insumosAfectados: InsumoAfectadoFabricacion[] = [];
+
+  db.withTransactionSync(() => {
+    // 1. Descontar stock de cada insumo que esté en el inventario
+    for (const mat of materiales) {
+      if (mat.productId) {
+        const insumo = obtenerProductoPorId(mat.productId);
+        if (insumo) {
+          const cantidadDescontar = (mat.quantity || 1) * cantidad;
+          const nuevoStockInsumo = insumo.currentStock - cantidadDescontar;
+
+          db.runSync(
+            'UPDATE photo_products SET current_stock = ?, updated_at = ? WHERE id = ?',
+            [nuevoStockInsumo, ahora, insumo.id]
+          );
+
+          const opInsumoId = 'op_inv_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 6);
+          const costoUnitarioInsumo = mat.unitCost || insumo.costPrice || 0;
+          db.runSync(
+            `INSERT INTO inventory_operations (
+              id, product_id, type, quantity, previous_stock, new_stock, unit_cost, total_cost,
+              reason, notes, date, created_at
+            ) VALUES (?, ?, 'ADJUSTMENT', ?, ?, ?, ?, ?, 'USO_INTERNO', ?, ?, ?)`,
+            [
+              opInsumoId,
+              insumo.id,
+              -cantidadDescontar,
+              insumo.currentStock,
+              nuevoStockInsumo,
+              costoUnitarioInsumo,
+              costoUnitarioInsumo * cantidadDescontar,
+              `Insumo utilizado en fabricación de ${cantidad} ${artesania.saleUnit || 'un.'} de "${artesania.name}"`,
+              ahora,
+              ahora,
+            ]
+          );
+
+          insumosAfectados.push({
+            producto: obtenerProductoPorId(insumo.id)!,
+            cantidadDescontada: cantidadDescontar,
+          });
+        }
+      }
+    }
+
+    // 2. Incrementar stock de la artesanía producida
+    const nuevoStockArtesania = artesania.currentStock + cantidad;
+    db.runSync(
+      'UPDATE photo_products SET current_stock = ?, updated_at = ? WHERE id = ?',
+      [nuevoStockArtesania, ahora, artesania.id]
+    );
+
+    // 3. Registrar operación 'PRODUCTION' para la artesanía
+    const opArtesaniaId = 'op_inv_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 6);
+    const costoUnitarioArtesania = artesania.costPrice || 0;
+    db.runSync(
+      `INSERT INTO inventory_operations (
+        id, product_id, type, quantity, previous_stock, new_stock, unit_cost, total_cost,
+        reason, notes, date, created_at
+      ) VALUES (?, ?, 'PRODUCTION', ?, ?, ?, ?, ?, 'Producción artesanal', ?, ?, ?)`,
+      [
+        opArtesaniaId,
+        artesania.id,
+        cantidad,
+        artesania.currentStock,
+        nuevoStockArtesania,
+        costoUnitarioArtesania,
+        costoUnitarioArtesania * cantidad,
+        notas?.trim() || `Producción artesanal de ${cantidad} piezas terminadas`,
+        ahora,
+        ahora,
+      ]
+    );
+  });
+
+  emitirCambioBoveda();
+
+  return {
+    artesania: obtenerProductoPorId(artesaniaId)!,
+    insumosAfectados,
+  };
+}
+
