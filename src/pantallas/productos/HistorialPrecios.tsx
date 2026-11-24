@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ScrollView,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { BarraBusqueda } from '@/compartido/componentes/BarraBusqueda';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 import {
@@ -97,33 +97,12 @@ export const HistorialPrecios: React.FC<PropiedadesHistorialPrecios> = ({
       </View>
 
       {/* Buscador */}
-      <View style={styles.searchBar}>
-        <MaterialIcons
-          name="search"
-          size={20}
-          color={COLORS.onSurfaceVariant}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar cambios por producto o formato..."
-          placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-          style={[styles.searchInput, TYPOGRAPHY.cuerpoMedio]}
-          clearButtonMode="while-editing"
-        />
-        {search.length > 0 && (
-          <TouchableOpacity
-            onPress={() => {
-              triggerSelection();
-              setSearch('');
-            }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <MaterialIcons name="close" size={18} color={COLORS.onSurfaceVariant} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <BarraBusqueda
+        value={search}
+        onChangeText={setSearch}
+        placeholder="Buscar cambios por producto o formato..."
+        style={{ marginBottom: 12 }}
+      />
 
       {/* Filtro de Período */}
       <View style={styles.periodFilterTrack}>

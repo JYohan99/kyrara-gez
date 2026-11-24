@@ -9,3 +9,5 @@ export * from './BotonFlotanteAccion';
 export * from './EstadoVacio';
 export * from './ModalGuiaPantalla';
 export * from './ModalSelectorCategorias';
+export * from './BarraNavegacionCurva';
+export * from './BarraBusqueda';

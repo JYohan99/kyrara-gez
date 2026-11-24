@@ -5,10 +5,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES, TIPOGRAFIA } from '@/compartido/tema';
+import { BarraBusqueda } from '@/compartido/componentes';
 import { vibracionSeleccion } from '@/compartido/utilidades/hapticos';
 
 export type TipoFiltroMovimiento = 'all' | 'EXPENSE' | 'INCOME' | 'TRANSFER';
@@ -29,21 +29,11 @@ export const BarraFiltrosMovimientos: React.FC<PropiedadesBarraFiltrosMovimiento
   return (
     <View style={estilos.contenedor}>
       {/* Barra de Búsqueda */}
-      <View style={estilos.barraBusqueda}>
-        <MaterialIcons name="search" size={20} color={COLORES.bordeContorno} />
-        <TextInput
-          style={estilos.entradaBusqueda}
-          value={searchQuery}
-          onChangeText={onSearchChange}
-          placeholder="Buscar por comercio, concepto o nota..."
-          placeholderTextColor={COLORES.bordeContorno}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => onSearchChange('')}>
-            <MaterialIcons name="close" size={18} color={COLORES.bordeContorno} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <BarraBusqueda
+        value={searchQuery}
+        onChangeText={onSearchChange}
+        placeholder="Buscar por comercio, concepto o nota..."
+      />
 
       {/* Píldoras de Filtro */}
       <ScrollView

@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ScrollView,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { BarraBusqueda } from '@/compartido/componentes/BarraBusqueda';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 import {
@@ -422,22 +422,12 @@ export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
       </View>
 
       {/* Buscador de la tabla */}
-      <View style={styles.searchBar}>
-        <MaterialIcons
-          name="search"
-          size={20}
-          color={COLORS.onSurfaceVariant}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          value={busquedaRentabilidad}
-          onChangeText={setBusquedaRentabilidad}
-          placeholder="Filtrar productos..."
-          placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-          style={[styles.searchInput, TYPOGRAPHY.cuerpoMedio]}
-          clearButtonMode="while-editing"
-        />
-      </View>
+      <BarraBusqueda
+        value={busquedaRentabilidad}
+        onChangeText={setBusquedaRentabilidad}
+        placeholder="Filtrar productos..."
+        style={{ marginBottom: 12 }}
+      />
 
       {/* Lista de Rentabilidad de Productos */}
       <View style={styles.profitabilityList}>

@@ -1,39 +1,22 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORES as COLORS } from '@/compartido/tema';
+import { BarraNavegacionCurva } from '@/compartido/componentes/BarraNavegacionCurva';
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-
-  const tabHeight = 60 + insets.bottom;
-  const paddingBottom = insets.bottom > 0 ? insets.bottom : 8;
-
   return (
     <Tabs
+      tabBar={props => <BarraNavegacionCurva {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: [
-          styles.tabBar,
-          {
-            height: tabHeight,
-            paddingBottom,
-            paddingTop: 8,
-          },
-        ],
-        tabBarActiveTintColor: COLORS.secondary,
-        tabBarInactiveTintColor: COLORS.onSurfaceVariant,
-        tabBarLabelStyle: styles.tabLabel,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Inicio',
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="dashboard" size={24} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="dashboard" size={size ?? 23} color={color} />
           ),
         }}
       />
@@ -47,8 +30,8 @@ export default function TabLayout() {
         name="deudas"
         options={{
           title: 'Deudas',
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="handshake" size={23} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="handshake" size={size ?? 23} color={color} />
           ),
         }}
       />
@@ -56,8 +39,8 @@ export default function TabLayout() {
         name="agenda"
         options={{
           title: 'Agenda',
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="event" size={23} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="event" size={size ?? 23} color={color} />
           ),
         }}
       />
@@ -65,8 +48,8 @@ export default function TabLayout() {
         name="presupuestos"
         options={{
           title: 'Presupuestos',
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="donut-large" size={22} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="donut-large" size={size ?? 22} color={color} />
           ),
         }}
       />
@@ -86,8 +69,8 @@ export default function TabLayout() {
         name="productos"
         options={{
           title: 'Productos',
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="inventory-2" size={22} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="inventory-2" size={size ?? 22} color={color} />
           ),
         }}
       />
@@ -106,17 +89,3 @@ export default function TabLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: '#101415',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.borderGlass,
-  },
-  tabLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  },
-});

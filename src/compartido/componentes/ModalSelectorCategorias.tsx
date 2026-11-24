@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
-  TextInput,
   Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -16,6 +15,7 @@ import { obtenerGrupoCategoria, ORDEN_GRUPOS } from '@/datos/consultas/categoria
 import { Categoria, TipoFlujo } from '@/datos/tipos';
 import { triggerSelection } from '@/compartido/utilidades/hapticos';
 import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
+import { BarraBusqueda } from '@/compartido/componentes/BarraBusqueda';
 
 export interface PropiedadesModalSelectorCategorias {
   visible: boolean;
@@ -220,21 +220,11 @@ export const ModalSelectorCategorias: React.FC<PropiedadesModalSelectorCategoria
 
           {/* Barra de Búsqueda y Acciones Rápidas */}
           <View style={styles.toolbar}>
-            <View style={styles.searchBox}>
-              <MaterialIcons name="search" size={18} color={COLORS.onSurfaceVariant} />
-              <TextInput
-                value={busqueda}
-                onChangeText={setBusqueda}
-                placeholder="Buscar por nombre o grupo..."
-                placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                style={styles.searchInput}
-              />
-              {busqueda.length > 0 && (
-                <TouchableOpacity onPress={() => setBusqueda('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <MaterialIcons name="cancel" size={16} color={COLORS.onSurfaceVariant} />
-                </TouchableOpacity>
-              )}
-            </View>
+            <BarraBusqueda
+              value={busqueda}
+              onChangeText={setBusqueda}
+              placeholder="Buscar por nombre o grupo..."
+            />
 
             {modo === 'GESTION' && (
               <View style={styles.quickActions}>

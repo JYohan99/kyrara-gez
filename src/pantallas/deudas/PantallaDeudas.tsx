@@ -5,14 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   RefreshControl,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY, COMMON_STYLES } from '@/compartido/tema';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
-import { EncabezadoSuperior, TarjetaVidrio as GlassCard, BotonFlotanteAccion, EstadoVacio } from '@/compartido/componentes';
+import { EncabezadoSuperior, TarjetaVidrio as GlassCard, BotonFlotanteAccion, EstadoVacio, BarraBusqueda } from '@/compartido/componentes';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 import { useDeudasBoveda } from '@/datos/hooks';
 import { Deuda, TipoDeuda, FiltroEstadoDeuda } from '@/datos/tipos';
@@ -258,21 +257,12 @@ export const PantallaDeudas: React.FC = () => {
         </View>
 
         {/* Buscador */}
-        <View style={styles.searchBarBox}>
-          <MaterialIcons name="search" size={20} color={COLORS.onSurfaceVariant} style={styles.searchIcon} />
-          <TextInput
-            style={[styles.searchInput, TYPOGRAPHY.bodyMd]}
-            placeholder={esCobro ? 'Buscar persona o concepto por cobrar...' : 'Buscar acreedor o concepto por pagar...'}
-            placeholderTextColor={COLORS.onSurfaceVariant}
-            value={terminoBusqueda}
-            onChangeText={setTerminoBusqueda}
-          />
-          {terminoBusqueda ? (
-            <TouchableOpacity onPress={() => setTerminoBusqueda('')} style={styles.clearSearchBtn}>
-              <MaterialIcons name="close" size={18} color={COLORS.onSurfaceVariant} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        <BarraBusqueda
+          value={terminoBusqueda}
+          onChangeText={setTerminoBusqueda}
+          placeholder={esCobro ? 'Buscar persona o concepto por cobrar...' : 'Buscar acreedor o concepto por pagar...'}
+          style={{ marginBottom: 14 }}
+        />
 
         {/* Filtros por Estado */}
         <ScrollView

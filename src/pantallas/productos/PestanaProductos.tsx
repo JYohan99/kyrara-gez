@@ -4,13 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   Alert,
   ScrollView,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { EstadoVacio, BotonBrillante } from '@/compartido/componentes';
+import { EstadoVacio, BotonBrillante, BarraBusqueda } from '@/compartido/componentes';
 import { useProductosBoveda, useResumenInventarioBoveda } from '@/datos/hooks';
 import {
   eliminarProducto,
@@ -380,39 +379,12 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
           </View>
 
           {/* BARRA DE BÚSQUEDA */}
-          <View style={styles.searchBarWrapper}>
-            <MaterialIcons
-              name="search"
-              size={20}
-              color={COLORS.bordeContorno}
-              style={styles.searchIconLeft}
-            />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Buscar por nombre o SKU..."
-              placeholderTextColor={COLORS.bordeContorno}
-              style={styles.searchTextInput}
-              autoCorrect={false}
-              clearButtonMode="while-editing"
-            />
-            {search.length > 0 ? (
-              <TouchableOpacity
-                onPress={() => {
-                  triggerSelection();
-                  setSearch('');
-                }}
-                style={styles.searchActionBtn}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <MaterialIcons name="close" size={16} color={COLORS.enSuperficieVariante} />
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.searchActionBtn}>
-                <MaterialIcons name="tune" size={16} color={COLORS.enSuperficieVariante} />
-              </View>
-            )}
-          </View>
+          <BarraBusqueda
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar por nombre o SKU..."
+            style={{ marginBottom: 12 }}
+          />
 
           {/* CHIPS SEGMENTADOS DE FILTROS HORIZONTALES*/}
           <ScrollView

@@ -13,6 +13,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { BarraBusqueda } from '@/compartido/componentes/BarraBusqueda';
 import {
   obtenerGruposIconos,
   IconoProducto,
@@ -126,23 +127,12 @@ export const ModalSelectorIconoProducto: React.FC<PropiedadesModalSelectorIconoP
           </View>
 
           {/* Campo de búsqueda */}
-          <View style={styles.searchBox}>
-            <MaterialIcons name="search" size={20} color="#64748B" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar icono por nombre (ej: cafe, camera, box)..."
-              placeholderTextColor="#64748B"
-              value={busqueda}
-              onChangeText={setBusqueda}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {busqueda.length > 0 && (
-              <TouchableOpacity onPress={() => setBusqueda('')}>
-                <MaterialIcons name="cancel" size={18} color="#64748B" />
-              </TouchableOpacity>
-            )}
-          </View>
+          <BarraBusqueda
+            value={busqueda}
+            onChangeText={setBusqueda}
+            placeholder="Buscar icono por nombre (ej: cafe, camera, box)..."
+            style={{ marginBottom: 12 }}
+          />
 
           {/* Chips de Categorías (solo visibles si no hay búsqueda activa) */}
           {!busqueda && (
