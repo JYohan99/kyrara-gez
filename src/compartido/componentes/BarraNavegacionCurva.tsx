@@ -9,20 +9,30 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, {
+  ClipPath,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Path,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 import { COLORES as COLORS } from '@/compartido/tema';
 import { gatillarSeleccion } from '@/compartido/utilidades/hapticos';
 
 const RUTAS_VISIBLES = ['index', 'deudas', 'agenda', 'presupuestos', 'productos'];
 
 const BAR_HEIGHT = 64;
-const CORNER_RADIUS = 20;
+const TOP_CORNER_RADIUS = 14;
+const BOTTOM_CORNER_RADIUS = 22;
+const INNER_PADDING_H = 14;
 const CIRCLE_SIZE = 44;
 const CIRCLE_RADIUS = CIRCLE_SIZE / 2;
 const NOTCH_DEPTH = 28;
-const NOTCH_HALF_WIDTH = 38;
-const HORIZONTAL_MARGIN = 10;
+const NOTCH_HALF_WIDTH = 34;
+const HORIZONTAL_MARGIN = 8;
 
 interface RutaTab {
   key: string;
@@ -59,46 +69,47 @@ function construirRutaCurva(
   cx: number,
   mostrarMuesca: boolean
 ): string {
-  const r = CORNER_RADIUS;
-  const w = Math.max(width, r * 2 + 2);
+  const tr = TOP_CORNER_RADIUS;
+  const br = BOTTOM_CORNER_RADIUS;
+  const w = Math.max(width, br * 2 + 2);
   const h = height;
 
   if (!mostrarMuesca) {
     return [
-      `M 0,${r}`,
-      `Q 0,0 ${r},0`,
-      `L ${w - r},0`,
-      `Q ${w},0 ${w},${r}`,
-      `L ${w},${h - r}`,
-      `Q ${w},${h} ${w - r},${h}`,
-      `L ${r},${h}`,
-      `Q 0,${h} 0,${h - r}`,
+      `M 0,${tr}`,
+      `Q 0,0 ${tr},0`,
+      `L ${w - tr},0`,
+      `Q ${w},0 ${w},${tr}`,
+      `L ${w},${h - br}`,
+      `Q ${w},${h} ${w - br},${h}`,
+      `L ${br},${h}`,
+      `Q 0,${h} 0,${h - br}`,
       'Z',
     ].join(' ');
   }
 
-  const leftX = Math.max(r, cx - NOTCH_HALF_WIDTH);
-  const rightX = Math.min(w - r, cx + NOTCH_HALF_WIDTH);
+  const leftX = Math.max(tr, cx - NOTCH_HALF_WIDTH);
+  const rightX = Math.min(w - tr, cx + NOTCH_HALF_WIDTH);
   const leftSpan = Math.max(1, cx - leftX);
   const rightSpan = Math.max(1, rightX - cx);
 
-  const lcp1x = leftX + leftSpan * 0.37;
-  const lcp2x = cx - leftSpan * 0.68;
-  const rcp1x = cx + rightSpan * 0.68;
-  const rcp2x = rightX - rightSpan * 0.37;
+  const lcp1x = leftX + leftSpan * 0.32;
+  const lcp2x = cx - leftSpan * 0.74;
+  const rcp1x = cx + rightSpan * 0.74;
+  const rcp2x = rightX - rightSpan * 0.32;
 
   return [
-    `M 0,${r}`,
-    `Q 0,0 ${r},0`,
+    `M 0,${tr}`,
+    `Q 0,0 ${tr},0`,
     `L ${leftX.toFixed(2)},0`,
     `C ${lcp1x.toFixed(2)},0 ${lcp2x.toFixed(2)},${NOTCH_DEPTH} ${cx.toFixed(2)},${NOTCH_DEPTH}`,
     `C ${rcp1x.toFixed(2)},${NOTCH_DEPTH} ${rcp2x.toFixed(2)},0 ${rightX.toFixed(2)},0`,
-    `L ${w - r},0`,
-    `Q ${w},0 ${w},${r}`,
-    `L ${w},${h - r}`,
-    `Q ${w},${h} ${w - r},${h}`,
-    `L ${r},${h}`,
-    `Q 0,${h} 0,${h - r}`,
+    `L ${w - tr},0`,
+    `Q ${w},0 ${w},${tr}`,
+    `L ${w},${h - br}`,
+    `Q ${w},${h} ${w - br},${h}`,
+    `L ${br},${h}`,
+    `Q 0,${h} 0,${h - br}`,
     'Z',
   ].join(' ');
 }
@@ -119,20 +130,23 @@ export const BarraNavegacionCurva: React.FC<PropiedadesBarraNavegacionCurva> = (
   const mostrarMuesca = activeVisibleIndex >= 0;
 
   const tabCount = Math.max(visibleRoutes.length, 1);
-  const tabWidth = barWidth / tabCount;
+  const innerWidth = Math.max(barWidth - INNER_PADDING_H * 2, 1);
+  const tabWidth = innerWidth / tabCount;
 
   const [animatedIndex] = useState(
     () => new Animated.Value(activeVisibleIndex >= 0 ? activeVisibleIndex : 0)
   );
   const pathRef = useRef<any>(null);
+  const glossPathRef = useRef<any>(null);
 
-  // Actualizar la curva SVG en tiempo real durante la animación sin re-renders de React
+  // Actualizar la curva SVG y su reflejo glossy en tiempo real durante la animación
   useEffect(() => {
     const listenerId = animatedIndex.addListener(({ value }) => {
-      if (!mostrarMuesca || !pathRef.current) return;
-      const cx = value * tabWidth + tabWidth / 2;
+      if (!mostrarMuesca) return;
+      const cx = INNER_PADDING_H + value * tabWidth + tabWidth / 2;
       const d = construirRutaCurva(barWidth, BAR_HEIGHT, cx, true);
-      pathRef.current.setNativeProps({ d });
+      pathRef.current?.setNativeProps({ d });
+      glossPathRef.current?.setNativeProps({ d });
     });
 
     return () => {
@@ -159,12 +173,14 @@ export const BarraNavegacionCurva: React.FC<PropiedadesBarraNavegacionCurva> = (
     }
   };
 
-  const initialCx = Math.max(activeVisibleIndex, 0) * tabWidth + tabWidth / 2;
+  const initialCx = INNER_PADDING_H + Math.max(activeVisibleIndex, 0) * tabWidth + tabWidth / 2;
   const initialPath = construirRutaCurva(barWidth, BAR_HEIGHT, initialCx, mostrarMuesca);
 
   const circleTranslateX = animatedIndex.interpolate({
     inputRange: visibleRoutes.map((_, idx) => idx),
-    outputRange: visibleRoutes.map((_, idx) => idx * tabWidth + tabWidth / 2 - CIRCLE_RADIUS),
+    outputRange: visibleRoutes.map(
+      (_, idx) => INNER_PADDING_H + idx * tabWidth + tabWidth / 2 - CIRCLE_RADIUS
+    ),
     extrapolate: 'clamp',
   });
 
@@ -176,37 +192,86 @@ export const BarraNavegacionCurva: React.FC<PropiedadesBarraNavegacionCurva> = (
   return (
     <View style={[styles.outerContainer, { paddingBottom }]}>
       <View style={styles.barWrapper} onLayout={handleLayout}>
-        {/* Fondo SVG con muesca curva cóncava */}
+        {/* Fondo SVG cápsula glossy 3D con muesca curva cóncava */}
         <Svg
           width={barWidth}
           height={BAR_HEIGHT}
           style={styles.svgBackground}
         >
+          <Defs>
+            {/* Degradado obsidiana 3D del cuerpo */}
+            <SvgLinearGradient id="navBarBodyGrad" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor="#202B30" />
+              <Stop offset="46%" stopColor="#11181B" />
+              <Stop offset="55%" stopColor="#090D0F" />
+              <Stop offset="100%" stopColor="#141D20" />
+            </SvgLinearGradient>
+
+            {/* Borde exterior metálico/cristal */}
+            <SvgLinearGradient id="navBarRimGrad" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor="#A5E7FF" stopOpacity="0.5" />
+              <Stop offset="50%" stopColor="#4A545C" stopOpacity="0.45" />
+              <Stop offset="100%" stopColor="#D1BCFF" stopOpacity="0.26" />
+            </SvgLinearGradient>
+
+            {/* Reflejo especular superior tipo cristal 3D */}
+            <SvgLinearGradient id="navBarGlossGrad" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.24" />
+              <Stop offset="65%" stopColor="#A5E7FF" stopOpacity="0.06" />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+            </SvgLinearGradient>
+
+            <ClipPath id="navTopGlossClip">
+              <Rect x="1" y="1" width={Math.max(barWidth - 2, 1)} height={BAR_HEIGHT * 0.48} />
+            </ClipPath>
+          </Defs>
+
           <Path
             ref={pathRef}
             d={initialPath}
-            fill="#161D20"
-            stroke="rgba(165, 231, 255, 0.16)"
-            strokeWidth={1}
+            fill="url(#navBarBodyGrad)"
+            stroke="url(#navBarRimGrad)"
+            strokeWidth={1.5}
+          />
+          <Path
+            ref={glossPathRef}
+            d={initialPath}
+            fill="url(#navBarGlossGrad)"
+            clipPath="url(#navTopGlossClip)"
           />
         </Svg>
 
-        {/* Burbuja circular flotante para la pestaña activa */}
+        {/* Orbe circular flotante 3D glossy para la pestaña activa */}
         {mostrarMuesca && activeDescriptor && (
           <Animated.View
             pointerEvents="none"
             style={[
-              styles.floatingCircle,
+              styles.floatingOrbBezel,
               {
                 transform: [{ translateX: circleTranslateX }],
               },
             ]}
           >
-            {activeDescriptor.options.tabBarIcon?.({
-              focused: true,
-              color: COLORS.secundarioContenedor,
-              size: 24,
-            })}
+            <LinearGradient
+              colors={['#6CE5FF', COLORS.secundarioContenedor, COLORS.enSecundarioContenedor]}
+              locations={[0, 0.52, 1]}
+              start={{ x: 0.2, y: 0 }}
+              end={{ x: 0.8, y: 1 }}
+              style={styles.floatingOrbSphere}
+            >
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.65)', 'rgba(255, 255, 255, 0.06)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                pointerEvents="none"
+                style={styles.floatingOrbGloss}
+              />
+              {activeDescriptor.options.tabBarIcon?.({
+                focused: true,
+                color: '#FFFFFF',
+                size: 23,
+              })}
+            </LinearGradient>
           </Animated.View>
         )}
 
@@ -262,7 +327,7 @@ export const BarraNavegacionCurva: React.FC<PropiedadesBarraNavegacionCurva> = (
                     <View style={styles.inactiveIconWrap}>
                       {options.tabBarIcon?.({
                         focused: false,
-                        color: '#8E9BA4',
+                        color: '#95A3AD',
                         size: 21,
                       })}
                     </View>
@@ -284,7 +349,7 @@ const styles = StyleSheet.create({
   outerContainer: {
     backgroundColor: COLORS.superficieBase,
     paddingHorizontal: HORIZONTAL_MARGIN,
-    paddingTop: 18,
+    paddingTop: 20,
   },
   barWrapper: {
     height: BAR_HEIGHT,
@@ -299,7 +364,7 @@ const styles = StyleSheet.create({
       ios: {
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.4,
+        shadowOpacity: 0.5,
         shadowRadius: 12,
       },
       android: {
@@ -307,16 +372,17 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  floatingCircle: {
+  floatingOrbBezel: {
     position: 'absolute',
     top: -CIRCLE_RADIUS,
     left: 0,
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
     borderRadius: CIRCLE_RADIUS,
-    backgroundColor: '#1B2529',
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 210, 255, 0.55)',
+    padding: 2.5,
+    backgroundColor: 'rgba(5, 8, 10, 0.9)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(165, 231, 255, 0.42)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -324,17 +390,34 @@ const styles = StyleSheet.create({
       ios: {
         shadowColor: COLORS.secundarioContenedor,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
+        shadowOpacity: 0.45,
+        shadowRadius: 10,
       },
       android: {
         elevation: 10,
       },
     }),
   },
+  floatingOrbSphere: {
+    width: '100%',
+    height: '100%',
+    borderRadius: CIRCLE_RADIUS - 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  floatingOrbGloss: {
+    position: 'absolute',
+    top: 1.5,
+    left: 5,
+    right: 5,
+    height: '48%',
+    borderRadius: 999,
+  },
   tabsRow: {
     flexDirection: 'row',
     height: BAR_HEIGHT,
+    paddingHorizontal: INNER_PADDING_H,
     alignItems: 'center',
     zIndex: 5,
   },
@@ -348,7 +431,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingBottom: 11,
+    paddingBottom: 10,
     paddingHorizontal: 2,
   },
   activeLabel: {
@@ -371,7 +454,7 @@ const styles = StyleSheet.create({
   inactiveLabel: {
     fontSize: 9.5,
     fontWeight: '600',
-    color: '#8E9BA4',
+    color: '#95A3AD',
     letterSpacing: 0.15,
   },
 });
