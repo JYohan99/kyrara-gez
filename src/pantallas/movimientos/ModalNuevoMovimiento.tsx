@@ -21,7 +21,7 @@ export const ModalNuevoMovimiento: React.FC<PropiedadesModalNuevoMovimiento> = (
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <FormularioMovimiento
-        key={`${initialType}-${visible}`}
+        key={`${initialType}_${visible ? 'open' : 'closed'}`}
         initialType={initialType}
         onCancel={onClose}
         onSuccess={() => {

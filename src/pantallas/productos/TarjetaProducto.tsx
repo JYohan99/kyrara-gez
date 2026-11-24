@@ -23,7 +23,6 @@ export interface PropiedadesTarjetaProducto {
   onEdit: (product: Producto) => void;
   onOpenPrices: (product: Producto) => void;
   onViewHistory: (productId: string) => void;
-  onToggleActive: (product: Producto) => void;
   onDelete: (product: Producto) => void;
 }
 
@@ -42,12 +41,11 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
   onEdit,
   onOpenPrices,
   onViewHistory,
-  onToggleActive,
   onDelete,
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
 
-  const isService = (product.saleUnit || '').trim().toLowerCase() === 'servicio';
+  const isService = (product.saleUnit || '').trim().toLowerCase() === 'servicio' || product.productType === 'SERVICIO';
   const hasPrice = product.basePrice !== undefined && product.basePrice > 0;
   const hasCost = product.costPrice !== undefined && product.costPrice > 0;
   const currentStock = product.currentStock ?? 0;
@@ -78,7 +76,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
   };
 
   return (
-    <View style={[styles.cardContainer, !product.isActive && styles.cardContainerInactive]}>
+    <View style={styles.cardContainer}>
       <TouchableOpacity
         style={styles.cardTouchable}
         onPress={handleCardPress}
@@ -98,7 +96,6 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                 style={[
                   styles.productTitle,
                   TYPOGRAPHY.titularPequeno,
-                  !product.isActive && styles.productTitleInactive,
                 ]}
                 numberOfLines={2}
               >
@@ -140,11 +137,11 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
         <View style={styles.financialRow}>
           <View style={styles.priceCol}>
             <Text style={[styles.salePriceText, TYPOGRAPHY.numericTable]}>
-              {product.formats && product.formats.length > 0
+              {isService && product.formats && product.formats.length > 0
                 ? formatCurrency(product.formats[0].salePrice)
                 : hasPrice ? formatCurrency(product.basePrice || 0) : 'Sin precio'}
             </Text>
-            {product.formats && product.formats.length > 0 ? (
+            {isService && product.formats && product.formats.length > 0 ? (
               <Text style={styles.costPriceText}>
                 {product.formats.length} formato{product.formats.length > 1 ? 's' : ''} con tarifa
               </Text>
@@ -236,7 +233,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
           {/* Acciones Rápidas Directas en la Ficha */}
           <View style={styles.quickActionsRow}>
             {/* Botón Vender (rápido con icono point-of-sale asociado a Venta) */}
-            {product.isActive && (currentStock > 0 || isService) && (
+            {(currentStock > 0 || isService) && (
               <TouchableOpacity
                 style={styles.btnQuickSale}
                 onPress={() => {
@@ -299,9 +296,15 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                     <Text style={styles.menuHeaderTitle} numberOfLines={1}>
                       {product.name}
                     </Text>
-                    <Text style={styles.menuHeaderSubtitle}>
-                      {product.isActive ? 'Producto Activo' : 'Producto Inactivo'}
-                    </Text>
+                    {product.sizeFormat ? (
+                      <Text style={styles.menuHeaderSubtitle}>
+                        {product.sizeFormat} • {product.saleUnit}
+                      </Text>
+                    ) : (
+                      <Text style={styles.menuHeaderSubtitle}>
+                        {product.saleUnit}
+                      </Text>
+                    )}
                   </View>
                   <TouchableOpacity
                     onPress={handleCloseMenu}
@@ -380,24 +383,6 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                 <View style={styles.menuDivider} />
 
                 <TouchableOpacity
-                  style={styles.menuItem}
-                  onPress={() => {
-                    handleCloseMenu();
-                    onToggleActive(product);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <MaterialIcons
-                    name={product.isActive ? 'toggle-on' : 'toggle-off'}
-                    size={20}
-                    color={product.isActive ? '#57F5AB' : '#64748B'}
-                  />
-                  <Text style={styles.menuItemText}>
-                    {product.isActive ? 'Desactivar producto' : 'Activar producto'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
                   style={[styles.menuItem, styles.menuItemDelete]}
                   onPress={() => {
                     handleCloseMenu();
@@ -433,9 +418,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 10,
   },
-  cardContainerInactive: {
-    opacity: 0.6,
-  },
   cardTouchable: {
     padding: 14,
     gap: 10,
@@ -470,10 +452,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     lineHeight: 21,
-  },
-  productTitleInactive: {
-    color: '#94A3B8',
-    textDecorationLine: 'line-through',
   },
   skuBadge: {
     backgroundColor: '#0F1619',

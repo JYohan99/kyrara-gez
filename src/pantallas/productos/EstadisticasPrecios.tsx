@@ -39,9 +39,6 @@ export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
   });
 
   const [busquedaRentabilidad, setBusquedaRentabilidad] = useState('');
-  const [filtroEstadoRentabilidad, setFiltroEstadoRentabilidad] = useState<
-    'TODOS' | 'ACTIVOS' | 'INACTIVOS'
-  >('ACTIVOS');
 
   // Producto actualmente seleccionado para evolución
   const selectedProduct = useMemo(() => {
@@ -55,15 +52,12 @@ export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
   const productosRentabilidad = useMemo(() => {
     const q = busquedaRentabilidad.trim().toLowerCase();
     return allProducts.filter(p => {
-      if (filtroEstadoRentabilidad === 'ACTIVOS' && !p.isActive) return false;
-      if (filtroEstadoRentabilidad === 'INACTIVOS' && p.isActive) return false;
-
       if (!q) return true;
       const nom = (p.name || '').toLowerCase();
       const fmt = (p.sizeFormat || '').toLowerCase();
       return nom.includes(q) || fmt.includes(q);
     });
-  }, [allProducts, busquedaRentabilidad, filtroEstadoRentabilidad]);
+  }, [allProducts, busquedaRentabilidad]);
 
   const handleSelectProduct = (id: string) => {
     triggerSelection();
@@ -97,12 +91,27 @@ export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
       <View style={styles.kpiGrid}>
         <GlassCard variant="surface" style={styles.kpiCard}>
           <View style={styles.kpiIconCircle}>
+            <MaterialIcons name="photo-library" size={18} color="#00D2FF" />
+          </View>
+          <Text style={[styles.kpiValue, TYPOGRAPHY.titularPequeno]}>
+            {stats.totalProductosGlobal}
+          </Text>
+          <Text style={styles.kpiLabel}>Total Catálogo</Text>
+        </GlassCard>
+
+        <GlassCard variant="surface" style={styles.kpiCard}>
+          <View
+            style={[
+              styles.kpiIconCircle,
+              { backgroundColor: 'rgba(87, 245, 171, 0.12)' },
+            ]}
+          >
             <MaterialIcons name="check-circle" size={18} color="#57F5AB" />
           </View>
           <Text style={[styles.kpiValue, TYPOGRAPHY.titularPequeno]}>
-            {stats.totalActivosGlobal}
+            {Math.max(0, stats.totalProductosGlobal - stats.totalSinPrecioGlobal)}
           </Text>
-          <Text style={styles.kpiLabel}>Productos Activos</Text>
+          <Text style={styles.kpiLabel}>Con Precio</Text>
         </GlassCard>
 
         <GlassCard variant="surface" style={styles.kpiCard}>
@@ -145,21 +154,6 @@ export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
             {stats.totalSinCostoGlobal}
           </Text>
           <Text style={styles.kpiLabel}>Sin Costo</Text>
-        </GlassCard>
-
-        <GlassCard variant="surface" style={styles.kpiCard}>
-          <View
-            style={[
-              styles.kpiIconCircle,
-              { backgroundColor: 'rgba(0, 210, 255, 0.12)' },
-            ]}
-          >
-            <MaterialIcons name="photo-library" size={18} color="#00D2FF" />
-          </View>
-          <Text style={[styles.kpiValue, TYPOGRAPHY.titularPequeno]}>
-            {stats.totalProductosGlobal}
-          </Text>
-          <Text style={styles.kpiLabel}>Total Catálogo</Text>
         </GlassCard>
       </View>
 
@@ -445,60 +439,6 @@ export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
         />
       </View>
 
-      {/* Filtro estado tabla */}
-      <View style={styles.statusRow}>
-        <TouchableOpacity
-          style={[
-            styles.statusBtn,
-            filtroEstadoRentabilidad === 'ACTIVOS' && styles.statusBtnActive,
-          ]}
-          onPress={() => setFiltroEstadoRentabilidad('ACTIVOS')}
-        >
-          <Text
-            style={[
-              styles.statusBtnText,
-              filtroEstadoRentabilidad === 'ACTIVOS' && styles.statusBtnTextActive,
-            ]}
-          >
-            Activos
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.statusBtn,
-            filtroEstadoRentabilidad === 'TODOS' && styles.statusBtnActive,
-          ]}
-          onPress={() => setFiltroEstadoRentabilidad('TODOS')}
-        >
-          <Text
-            style={[
-              styles.statusBtnText,
-              filtroEstadoRentabilidad === 'TODOS' && styles.statusBtnTextActive,
-            ]}
-          >
-            Todos
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.statusBtn,
-            filtroEstadoRentabilidad === 'INACTIVOS' && styles.statusBtnActive,
-          ]}
-          onPress={() => setFiltroEstadoRentabilidad('INACTIVOS')}
-        >
-          <Text
-            style={[
-              styles.statusBtnText,
-              filtroEstadoRentabilidad === 'INACTIVOS' && styles.statusBtnTextActive,
-            ]}
-          >
-            Inactivos
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Lista de Rentabilidad de Productos */}
       <View style={styles.profitabilityList}>
         {productosRentabilidad.map((p: Producto) => {
@@ -530,22 +470,6 @@ export const EstadisticasPrecios: React.FC<PropiedadesEstadisticasPrecios> = ({
                     </Text>
                     <Text style={styles.rentProductFormat}>
                       {p.sizeFormat ? `${p.sizeFormat} • ` : ''}{p.saleUnit} ({mon})
-                    </Text>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.activeTag,
-                      !p.isActive && styles.inactiveTag,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.activeTagText,
-                        !p.isActive && styles.inactiveTagText,
-                      ]}
-                    >
-                      {p.isActive ? 'Activo' : 'Inactivo'}
                     </Text>
                   </View>
                 </View>
@@ -974,28 +898,6 @@ const styles = StyleSheet.create({
     color: COLORS.onSurface,
     paddingVertical: 0,
   },
-  statusRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  statusBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  statusBtnActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  statusBtnText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-  },
-  statusBtnTextActive: {
-    color: COLORS.onSurface,
-    fontWeight: '700',
-  },
   profitabilityList: {
     gap: 10,
     marginBottom: 20,
@@ -1026,23 +928,6 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     fontSize: 10,
     marginTop: 1,
-  },
-  activeTag: {
-    backgroundColor: 'rgba(87, 245, 171, 0.1)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  activeTagText: {
-    color: '#57F5AB',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  inactiveTag: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  inactiveTagText: {
-    color: COLORS.onSurfaceVariant,
   },
   rentMetricsRow: {
     flexDirection: 'row',

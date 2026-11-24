@@ -13,7 +13,6 @@ import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { EstadoVacio, BotonBrillante } from '@/compartido/componentes';
 import { useProductosBoveda, useResumenInventarioBoveda } from '@/datos/hooks';
 import {
-  alternarEstadoProducto,
   eliminarProducto,
 } from '@/datos/consultas/productos';
 import { Producto, FiltroEstadoProducto } from '@/datos/tipos';
@@ -73,7 +72,7 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
   // Margen promedio calculado dinámicamente del catálogo
   const promedioMargen = useMemo(() => {
     const prodsConMargen = allProducts.filter(
-      p => p.isActive && p.grossMarginPercent !== null && p.grossMarginPercent !== undefined
+      p => p.grossMarginPercent !== null && p.grossMarginPercent !== undefined
     );
     if (prodsConMargen.length === 0) return 42;
     const suma = prodsConMargen.reduce((acc, p) => acc + (p.grossMarginPercent || 0), 0);
@@ -154,17 +153,6 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
     triggerSelection();
     setProductoParaHistorial(productId);
     setSeccionModulo('HISTORIAL');
-  };
-
-  const handleToggleActive = (product: Producto) => {
-    triggerSelection();
-    try {
-      alternarEstadoProducto(product.id);
-      triggerSuccess();
-    } catch (err: any) {
-      triggerError();
-      Alert.alert('Error', err?.message || 'No se pudo cambiar el estado del producto.');
-    }
   };
 
   const handleDelete = (product: Producto) => {
@@ -567,7 +555,6 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
                   onEdit={handleOpenEdit}
                   onOpenPrices={handleOpenPrices}
                   onViewHistory={handleVerHistorial}
-                  onToggleActive={handleToggleActive}
                   onDelete={handleDelete}
                 />
               ))}

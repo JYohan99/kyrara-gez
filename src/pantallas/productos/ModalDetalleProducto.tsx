@@ -117,7 +117,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
   const [subModal, setSubModal] = useState<SubModalAccion>(accionInicial || 'NINGUNA');
   const [operacionVentaSeleccionada, setOperacionVentaSeleccionada] = useState<OperacionInventario | null>(null);
 
-  const isService = (productoActual.saleUnit || '').trim().toLowerCase() === 'servicio';
+  const isService = (productoActual.saleUnit || '').trim().toLowerCase() === 'servicio' || productoActual.productType === 'SERVICIO';
   const currentStock = productoActual.currentStock ?? 0;
   const minStock = productoActual.minStock ?? 0;
   const isOutOfStock = !isService && currentStock <= 0;
@@ -295,27 +295,6 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
                   <Text style={styles.skuBadgeText}>{productoActual.sku}</Text>
                 </View>
               ) : null}
-              <View
-                style={[
-                  styles.statusPill,
-                  productoActual.isActive ? styles.statusPillActive : styles.statusPillInactive,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.statusDot,
-                    productoActual.isActive ? styles.statusDotActive : styles.statusDotInactive,
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.statusPillText,
-                    { color: productoActual.isActive ? '#34D399' : '#94A3B8' },
-                  ]}
-                >
-                  {productoActual.isActive ? 'Activo' : 'Archivado'}
-                </Text>
-              </View>
             </View>
 
             <Text style={[styles.productNameTitle, TYPOGRAPHY.titularGrande]} numberOfLines={2}>
@@ -442,8 +421,8 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
             </View>
           )}
 
-          {/* TABLA DE FORMATOS Y TARIFAS (Si el producto/servicio tiene múltiples variantes) */}
-          {productoActual.formats && productoActual.formats.length > 0 && (
+          {/* TABLA DE FORMATOS Y TARIFAS (Solo para servicios) */}
+          {isService && productoActual.formats && productoActual.formats.length > 0 && (
             <View style={styles.formatsCard}>
               <View style={styles.formatsHeader}>
                 <MaterialIcons name="photo-size-select-actual" size={18} color="#00D2FF" />
@@ -1035,39 +1014,6 @@ const styles = StyleSheet.create({
   skuBadgeText: {
     color: '#00D2FF',
     fontSize: 11,
-    fontWeight: '700',
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
-    borderRadius: 9999,
-  },
-  statusPillActive: {
-    backgroundColor: 'rgba(6, 78, 59, 0.45)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.35)',
-  },
-  statusPillInactive: {
-    backgroundColor: '#0F1619',
-    borderWidth: 1,
-    borderColor: '#223037',
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusDotActive: {
-    backgroundColor: '#10B981',
-  },
-  statusDotInactive: {
-    backgroundColor: '#64748B',
-  },
-  statusPillText: {
-    fontSize: 10,
     fontWeight: '700',
   },
   productNameTitle: {

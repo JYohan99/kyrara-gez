@@ -44,23 +44,15 @@ export const ModalSelectorProductosCalculadora: React.FC<
   // Mapa local de cantidades a agregar antes de pulsar confirmar
   const [cantidadesLocales, setCantidadesLocales] = useState<Record<string, number>>({});
 
-  // Filtrado de productos activos e inactivos
-  const { productosActivosFiltrados, productosInactivosFiltrados } = useMemo(() => {
+  // Filtrado de productos por búsqueda
+  const productosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    const filtrados = productos.filter(p => {
+    return productos.filter(p => {
       if (!q) return true;
       const nombre = (p.name || '').toLowerCase();
       const formato = (p.sizeFormat || '').toLowerCase();
       return nombre.includes(q) || formato.includes(q);
     });
-
-    const activos = filtrados.filter(p => p.isActive);
-    const inactivos = filtrados.filter(p => !p.isActive);
-
-    return {
-      productosActivosFiltrados: activos,
-      productosInactivosFiltrados: inactivos,
-    };
   }, [productos, busqueda]);
 
   const obtenerCantidadLocal = (productoId: string): number => {
@@ -129,7 +121,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
                   Seleccionar Productos
                 </Text>
                 <Text style={[styles.headerSubtitle, TYPOGRAPHY.cuerpoPequeno]}>
-                  Elige productos activos e indica la cantidad deseada
+                  Elige productos e indica la cantidad deseada
                 </Text>
               </View>
 
@@ -186,8 +178,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
               keyboardDismissMode="interactive"
               showsVerticalScrollIndicator={false}
             >
-              {productosActivosFiltrados.length === 0 &&
-              productosInactivosFiltrados.length === 0 ? (
+              {productosFiltrados.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <MaterialIcons
                     name="search-off"
@@ -199,232 +190,190 @@ export const ModalSelectorProductosCalculadora: React.FC<
                   </Text>
                 </View>
               ) : (
-                <>
-                  {productosActivosFiltrados.map(producto => {
-                    const cant = obtenerCantidadLocal(producto.id);
-                    const yaAgregado =
-                      cantidadesSeleccionadas[producto.id] !== undefined;
-                    const { tienePrecio, tieneCosto } =
-                      verificarRegistroPrecioYCosto(producto);
-                    const moneda = producto.currency || 'UYU';
+                productosFiltrados.map(producto => {
+                  const cant = obtenerCantidadLocal(producto.id);
+                  const yaAgregado =
+                    cantidadesSeleccionadas[producto.id] !== undefined;
+                  const { tienePrecio, tieneCosto } =
+                    verificarRegistroPrecioYCosto(producto);
+                  const moneda = producto.currency || 'UYU';
 
-                    return (
-                      <GlassCard
-                        key={producto.id}
-                        variant="surface"
-                        style={[
-                          styles.productCard,
-                          yaAgregado && styles.productCardSelected,
-                        ]}
-                      >
-                        {/* Cabecera del ítem */}
-                        <View style={styles.cardHeader}>
-                          <View style={styles.cardTitleBox}>
-                            <Text
-                              style={[styles.productName, TYPOGRAPHY.titularPequeno]}
-                              numberOfLines={1}
-                            >
-                              {producto.name}
-                            </Text>
-                            <View style={styles.metaRow}>
-                              {producto.sizeFormat && (
-                                <View style={styles.formatChip}>
-                                  <Text style={styles.formatChipText}>
-                                    {producto.sizeFormat}
-                                  </Text>
-                                </View>
-                              )}
-                              <View style={styles.unitChip}>
-                                <Text style={styles.unitChipText}>
-                                  {producto.saleUnit}
+                  return (
+                    <GlassCard
+                      key={producto.id}
+                      variant="surface"
+                      style={[
+                        styles.productCard,
+                        yaAgregado && styles.productCardSelected,
+                      ]}
+                    >
+                      {/* Cabecera del ítem */}
+                      <View style={styles.cardHeader}>
+                        <View style={styles.cardTitleBox}>
+                          <Text
+                            style={[styles.productName, TYPOGRAPHY.titularPequeno]}
+                            numberOfLines={1}
+                          >
+                            {producto.name}
+                          </Text>
+                          <View style={styles.metaRow}>
+                            {producto.sizeFormat && (
+                              <View style={styles.formatChip}>
+                                <Text style={styles.formatChipText}>
+                                  {producto.sizeFormat}
                                 </Text>
                               </View>
+                            )}
+                            <View style={styles.unitChip}>
+                              <Text style={styles.unitChipText}>
+                                {producto.saleUnit}
+                              </Text>
                             </View>
                           </View>
+                        </View>
 
-                          {yaAgregado && (
-                            <View style={styles.badgeAdded}>
-                              <MaterialIcons
-                                name="check-circle"
-                                size={14}
-                                color={COLORS.secondary}
-                              />
-                              <Text style={styles.badgeAddedText}>
-                                En cálculo (x{cantidadesSeleccionadas[producto.id]})
+                        {yaAgregado && (
+                          <View style={styles.badgeAdded}>
+                            <MaterialIcons
+                              name="check-circle"
+                              size={14}
+                              color={COLORS.secondary}
+                            />
+                            <Text style={styles.badgeAddedText}>
+                              En cálculo (x{cantidadesSeleccionadas[producto.id]})
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Precios y Costos Vigentes */}
+                      <View style={styles.pricesRow}>
+                        <View style={styles.priceColumn}>
+                          <Text style={styles.priceLabel}>Precio de venta:</Text>
+                          {tienePrecio ? (
+                            <Text
+                              style={[styles.priceValue, TYPOGRAPHY.cuerpoMedio]}
+                            >
+                              {formatCurrency(producto.basePrice!, {
+                                moneda,
+                              })}
+                            </Text>
+                          ) : (
+                            <View style={styles.warningTag}>
+                              <Text style={styles.warningTagText}>
+                                ⚠️ Sin precio
                               </Text>
                             </View>
                           )}
                         </View>
 
-                        {/* Precios y Costos Vigentes */}
-                        <View style={styles.pricesRow}>
-                          <View style={styles.priceColumn}>
-                            <Text style={styles.priceLabel}>Precio de venta:</Text>
-                            {tienePrecio ? (
-                              <Text
-                                style={[styles.priceValue, TYPOGRAPHY.cuerpoMedio]}
-                              >
-                                {formatCurrency(producto.basePrice!, {
-                                  moneda,
-                                })}
-                              </Text>
-                            ) : (
-                              <View style={styles.warningTag}>
-                                <Text style={styles.warningTagText}>
-                                  ⚠️ Sin precio
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-
-                          <View style={styles.costColumn}>
-                            <Text style={styles.priceLabel}>Costo unitario:</Text>
-                            {tieneCosto ? (
-                              <Text
-                                style={[styles.costValue, TYPOGRAPHY.cuerpoMedio]}
-                              >
-                                {formatCurrency(producto.costPrice!, {
-                                  moneda,
-                                })}
-                              </Text>
-                            ) : (
-                              <View style={styles.warningTag}>
-                                <Text style={styles.warningTagText}>
-                                  ⚠️ Sin costo
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                        </View>
-
-                        {/* Advertencia si faltan datos */}
-                        {(!tienePrecio || !tieneCosto) && (
-                          <View style={styles.noticeBox}>
-                            <MaterialIcons
-                              name="info-outline"
-                              size={14}
-                              color="#E5C07B"
-                              style={{ marginRight: 6 }}
-                            />
-                            <Text style={styles.noticeText}>
-                              {!tienePrecio && !tieneCosto
-                                ? 'Producto sin precio ni costo registrado en catálogo.'
-                                : !tienePrecio
-                                ? 'Producto sin precio registrado en catálogo.'
-                                : 'Producto sin costo registrado en catálogo.'}
+                        <View style={styles.costColumn}>
+                          <Text style={styles.priceLabel}>Costo unitario:</Text>
+                          {tieneCosto ? (
+                            <Text
+                              style={[styles.costValue, TYPOGRAPHY.cuerpoMedio]}
+                            >
+                              {formatCurrency(producto.costPrice!, {
+                                moneda,
+                              })}
                             </Text>
-                          </View>
-                        )}
+                          ) : (
+                            <View style={styles.warningTag}>
+                              <Text style={styles.warningTagText}>
+                                ⚠️ Sin costo
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
 
-                        {/* Controles de cantidad y botón agregar */}
-                        <View style={styles.actionRow}>
-                          <View style={styles.stepperContainer}>
-                            <TouchableOpacity
-                              style={[
-                                styles.stepperBtn,
-                                cant <= 1 && styles.stepperBtnDisabled,
-                              ]}
-                              onPress={() => modificarCantidadLocal(producto.id, -1)}
-                              disabled={cant <= 1}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              <MaterialIcons
-                                name="remove"
-                                size={18}
-                                color={cant <= 1 ? COLORS.onSurfaceVariant : COLORS.onSurface}
-                              />
-                            </TouchableOpacity>
+                      {/* Advertencia si faltan datos */}
+                      {(!tienePrecio || !tieneCosto) && (
+                        <View style={styles.noticeBox}>
+                          <MaterialIcons
+                            name="info-outline"
+                            size={14}
+                            color="#E5C07B"
+                            style={{ marginRight: 6 }}
+                          />
+                          <Text style={styles.noticeText}>
+                            {!tienePrecio && !tieneCosto
+                              ? 'Producto sin precio ni costo registrado en catálogo.'
+                              : !tienePrecio
+                              ? 'Producto sin precio registrado en catálogo.'
+                              : 'Producto sin costo registrado en catálogo.'}
+                          </Text>
+                        </View>
+                      )}
 
-                            <TextInput
-                              value={String(cant)}
-                              onChangeText={val =>
-                                establecerCantidadDirecta(producto.id, val)
-                              }
-                              keyboardType="number-pad"
-                              style={[styles.stepperInput, TYPOGRAPHY.cuerpoMedio]}
-                              selectTextOnFocus
-                            />
-
-                            <TouchableOpacity
-                              style={styles.stepperBtn}
-                              onPress={() => modificarCantidadLocal(producto.id, 1)}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              <MaterialIcons
-                                name="add"
-                                size={18}
-                                color={COLORS.onSurface}
-                              />
-                            </TouchableOpacity>
-                          </View>
-
+                      {/* Controles de cantidad y botón agregar */}
+                      <View style={styles.actionRow}>
+                        <View style={styles.stepperContainer}>
                           <TouchableOpacity
                             style={[
-                              styles.addBtn,
-                              yaAgregado && styles.addBtnUpdate,
+                              styles.stepperBtn,
+                              cant <= 1 && styles.stepperBtnDisabled,
                             ]}
-                            onPress={() => handleAgregar(producto)}
-                            activeOpacity={0.8}
+                            onPress={() => modificarCantidadLocal(producto.id, -1)}
+                            disabled={cant <= 1}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           >
                             <MaterialIcons
-                              name={yaAgregado ? 'check' : 'add-shopping-cart'}
+                              name="remove"
                               size={18}
-                              color={yaAgregado ? '#FFFFFF' : '#06120D'}
+                              color={cant <= 1 ? COLORS.onSurfaceVariant : COLORS.onSurface}
                             />
-                            <Text
-                              style={[
-                                styles.addBtnText,
-                                yaAgregado && styles.addBtnUpdateText,
-                              ]}
-                            >
-                              {yaAgregado ? 'Actualizar' : 'Añadir'}
-                            </Text>
+                          </TouchableOpacity>
+
+                          <TextInput
+                            value={String(cant)}
+                            onChangeText={val =>
+                              establecerCantidadDirecta(producto.id, val)
+                            }
+                            keyboardType="number-pad"
+                            style={[styles.stepperInput, TYPOGRAPHY.cuerpoMedio]}
+                            selectTextOnFocus
+                          />
+
+                          <TouchableOpacity
+                            style={styles.stepperBtn}
+                            onPress={() => modificarCantidadLocal(producto.id, 1)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <MaterialIcons
+                              name="add"
+                              size={18}
+                              color={COLORS.onSurface}
+                            />
                           </TouchableOpacity>
                         </View>
-                      </GlassCard>
-                    );
-                  })}
 
-                  {/* Sección de productos inactivos (deshabilitados para cálculo) */}
-                  {productosInactivosFiltrados.length > 0 && (
-                    <View style={styles.inactiveSection}>
-                      <View style={styles.inactiveSectionHeader}>
-                        <MaterialIcons
-                          name="visibility-off"
-                          size={16}
-                          color={COLORS.onSurfaceVariant}
-                        />
-                        <Text style={styles.inactiveSectionTitle}>
-                          Productos inactivos ({productosInactivosFiltrados.length})
-                        </Text>
-                      </View>
-                      <Text style={styles.inactiveSectionSubtitle}>
-                        Los productos inactivos no están disponibles para añadir a cálculos.
-                      </Text>
-
-                      {productosInactivosFiltrados.map(prod => (
-                        <View
-                          key={prod.id}
-                          style={styles.inactiveProductCard}
+                        <TouchableOpacity
+                          style={[
+                            styles.addBtn,
+                            yaAgregado && styles.addBtnUpdate,
+                          ]}
+                          onPress={() => handleAgregar(producto)}
+                          activeOpacity={0.8}
                         >
-                          <View style={styles.inactiveProductInfo}>
-                            <Text style={styles.inactiveProductName}>
-                              {prod.name}
-                            </Text>
-                            <Text style={styles.inactiveProductFormat}>
-                              {prod.sizeFormat ? `${prod.sizeFormat} • ` : ''}{prod.saleUnit}
-                            </Text>
-                          </View>
-                          <View style={styles.inactiveBadge}>
-                            <Text style={styles.inactiveBadgeText}>
-                              Inactivo
-                            </Text>
-                          </View>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </>
+                          <MaterialIcons
+                            name={yaAgregado ? 'check' : 'add-shopping-cart'}
+                            size={18}
+                            color={yaAgregado ? '#FFFFFF' : '#06120D'}
+                          />
+                          <Text
+                            style={[
+                              styles.addBtnText,
+                              yaAgregado && styles.addBtnUpdateText,
+                            ]}
+                          >
+                            {yaAgregado ? 'Actualizar' : 'Añadir'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </GlassCard>
+                  );
+                })
               )}
             </ScrollView>
 
@@ -710,64 +659,6 @@ const styles = StyleSheet.create({
   },
   addBtnUpdateText: {
     color: '#FFFFFF',
-  },
-  inactiveSection: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  inactiveSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  inactiveSectionTitle: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  inactiveSectionSubtitle: {
-    color: COLORS.onSurfaceVariant + '80',
-    fontSize: 11,
-    marginTop: 2,
-    marginBottom: 10,
-  },
-  inactiveProductCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 6,
-    opacity: 0.6,
-  },
-  inactiveProductInfo: {
-    flex: 1,
-  },
-  inactiveProductName: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  inactiveProductFormat: {
-    color: COLORS.onSurfaceVariant + '80',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  inactiveBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  inactiveBadgeText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 10,
-    fontWeight: '600',
   },
   footerRow: {
     paddingTop: 12,

@@ -21,9 +21,14 @@ import { emitirCambioBoveda } from '../sincronizacion';
 export const UNIDADES_VENTA_SUGERIDAS = [
   'Unidad',
   'Paquete',
-  'Servicio',
   'Docena',
   'Kit',
+  'Kilogramo',
+  'Gramo',
+  'Litro',
+  'Mililitro',
+  'Metro',
+  'Centímetro',
 ];
 
 /**
@@ -253,8 +258,8 @@ export function obtenerProductos(filtros?: FiltroProductos): Producto[] {
     params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
   }
 
-  // Ordenar: primero los activos, luego alfabéticamente por nombre
-  query += ' ORDER BY p.is_active DESC, p.name COLLATE NOCASE ASC';
+  // Ordenar alfabéticamente por nombre
+  query += ' ORDER BY p.name COLLATE NOCASE ASC';
 
   const rows = db.getAllSync<FilaProducto>(query, params);
   return rows.map(r => mapearFilaAProducto(r, r.tariffs_count));
@@ -607,7 +612,7 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
   const formato = datos.sizeFormat?.trim() || null;
   const icono = datos.icon?.trim() || 'inventory-2';
   const descripcion = datos.description?.trim() || null;
-  const activo = datos.isActive === false ? 0 : 1;
+  const activo = 1;
   const precioBase = datos.basePrice !== undefined ? Math.round(datos.basePrice) : 0;
   const costoBase = datos.costPrice !== undefined ? Math.round(datos.costPrice) : 0;
   const esServ = esServicio(unidadLimpia);
@@ -762,7 +767,7 @@ export function actualizarProducto(
   const formatoFinal = datos.sizeFormat !== undefined ? (datos.sizeFormat.trim() || null) : (actual.sizeFormat || null);
   const iconoFinal = datos.icon !== undefined ? (datos.icon.trim() || 'inventory-2') : (actual.icon || 'inventory-2');
   const descripcionFinal = datos.description !== undefined ? (datos.description.trim() || null) : (actual.description || null);
-  const activoFinal = datos.isActive !== undefined ? (datos.isActive ? 1 : 0) : (actual.isActive ? 1 : 0);
+  const activoFinal = 1;
   const precioFinal = datos.basePrice !== undefined ? Math.round(datos.basePrice) : (actual.basePrice ?? 0);
   const costoFinal = datos.costPrice !== undefined ? Math.round(datos.costPrice) : (actual.costPrice ?? 0);
   const esServ = esServicio(unidadFinal);

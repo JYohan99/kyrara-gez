@@ -324,10 +324,20 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
 
   // Auto-enfoque al abrir modal para desplegar el teclado inmediatamente
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const t1 = setTimeout(() => {
       amountInputRef.current?.focus();
-    }, 250);
-    return () => clearTimeout(timer);
+    }, 150);
+    const t2 = setTimeout(() => {
+      amountInputRef.current?.focus();
+    }, 350);
+    const t3 = setTimeout(() => {
+      amountInputRef.current?.focus();
+    }, 550);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, []);
 
   // Estados del formulario
@@ -588,7 +598,7 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
               value={amountStr}
               onChangeText={handleAmountChange}
               keyboardType="decimal-pad"
-              autoFocus={!isScreen}
+              autoFocus={true}
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setIsInputFocused(false)}
               caretHidden

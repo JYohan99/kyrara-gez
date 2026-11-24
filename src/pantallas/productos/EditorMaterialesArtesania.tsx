@@ -48,7 +48,7 @@ export const EditorMaterialesArtesania: React.FC<PropiedadesEditorMaterialesArte
 
   // Productos disponibles para usar como insumos (excluyendo el que se está editando)
   const insumosDisponibles = useMemo(() => {
-    return productosCatalogo.filter(p => p.id !== productoIdExcluir && p.isActive);
+    return productosCatalogo.filter(p => p.id !== productoIdExcluir);
   }, [productosCatalogo, productoIdExcluir]);
 
   const inversionTotalCentavos = useMemo(() => {
@@ -150,9 +150,7 @@ export const EditorMaterialesArtesania: React.FC<PropiedadesEditorMaterialesArte
             <Text style={[styles.sectionTitle, TYPOGRAPHY.titularPequeno]}>
               Ficha de Materiales ({materiales.length})
             </Text>
-            <Text style={styles.sectionSubtitle}>
-              Insumos necesarios para fabricar 1 unidad
-            </Text>
+
           </View>
         </View>
 
@@ -166,23 +164,9 @@ export const EditorMaterialesArtesania: React.FC<PropiedadesEditorMaterialesArte
         >
           <MaterialIcons name={mostrarFormulario ? 'close' : 'add'} size={16} color="#00D2FF" />
           <Text style={styles.addToggleBtnText}>
-            {mostrarFormulario ? 'Cerrar' : '+ Insumo'}
+            {mostrarFormulario ? 'Cerrar' : ''}
           </Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Banner de Inversión Total Calculada */}
-      <View style={styles.investmentBanner}>
-        <View style={styles.investmentInfo}>
-          <Text style={styles.investmentLabel}>INVERSIÓN FINAL EN MATERIALES</Text>
-          <Text style={styles.investmentValue}>
-            {formatCurrency(inversionTotalCentavos)}
-          </Text>
-        </View>
-        <View style={styles.investmentBadge}>
-          <MaterialIcons name="calculate" size={14} color="#00D2FF" />
-          <Text style={styles.investmentBadgeText}>Costo Base Auto</Text>
-        </View>
       </View>
 
       {/* Formulario desplegable para agregar nuevo material */}
@@ -354,14 +338,7 @@ export const EditorMaterialesArtesania: React.FC<PropiedadesEditorMaterialesArte
       )}
 
       {/* Lista de Materiales Configurados */}
-      {materiales.length === 0 ? (
-        <View style={styles.emptyListNotice}>
-          <MaterialIcons name="layers-clear" size={28} color={COLORS.onSurfaceVariant + '60'} />
-          <Text style={styles.emptyListText}>
-            Aún no has agregado materiales. Agrega los insumos necesarios para calcular la inversión total automáticamente.
-          </Text>
-        </View>
-      ) : (
+      {materiales.length > 0 && (
         <View style={styles.materialsList}>
           {materiales.map((m, index) => {
             const subtotal = Math.round((m.quantity || 1) * (m.unitCost || 0));
@@ -403,6 +380,13 @@ export const EditorMaterialesArtesania: React.FC<PropiedadesEditorMaterialesArte
           })}
         </View>
       )}
+
+      <View style={styles.totalRow}>
+        <Text style={styles.sectionSubtitle}>Total: </Text>
+        <Text style={styles.investmentValue}>
+          {formatCurrency(inversionTotalCentavos)}
+        </Text>
+      </View>
     </View>
   );
 };
@@ -440,15 +424,11 @@ const styles = StyleSheet.create({
     color: '#00D2FF',
     fontWeight: '700',
   },
-  sectionSubtitle: {
-    fontSize: 11,
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
+
   addToggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
@@ -482,10 +462,20 @@ const styles = StyleSheet.create({
     color: '#00D2FF',
     marginBottom: 4,
   },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  sectionSubtitle: {
+    fontSize: 15,
+    color: COLORS.onSurfaceVariant,
+  },
   investmentValue: {
-    fontSize: 22,
+    fontSize: 15,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: '#00D2FF',
   },
   investmentBadge: {
     flexDirection: 'row',

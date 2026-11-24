@@ -75,10 +75,20 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
 
   // Auto-enfoque al abrir modal para desplegar el teclado inmediatamente
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const t1 = setTimeout(() => {
       titleInputRef.current?.focus();
-    }, 250);
-    return () => clearTimeout(timer);
+    }, 150);
+    const t2 = setTimeout(() => {
+      titleInputRef.current?.focus();
+    }, 350);
+    const t3 = setTimeout(() => {
+      titleInputRef.current?.focus();
+    }, 550);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, []);
 
   const [title, setTitle] = useState(() => editingCommitment?.title || '');
@@ -253,7 +263,7 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
             placeholderTextColor={COLORS.outline}
             value={title}
             onChangeText={setTitle}
-            autoFocus={!isEditing}
+            autoFocus={true}
           />
         </View>
 
@@ -520,6 +530,7 @@ export const ModalCompromiso: React.FC<PropiedadesModalCompromiso> = ({
 
         {visible && (
           <ContenidoModalCompromiso
+            key={editingCommitment ? ('id' in editingCommitment ? editingCommitment.id : 'edit') : `nuevo_${initialDate || 'hoy'}`}
             initialDate={initialDate}
             editingCommitment={editingCommitment}
             onClose={onClose}

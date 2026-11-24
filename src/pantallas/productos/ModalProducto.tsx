@@ -9,7 +9,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Switch,
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -81,13 +80,21 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
 
   const [unidadVenta, setUnidadVenta] = useState(() => productoParaEditar?.saleUnit || 'Unidad');
   const [otraUnidad, setOtraUnidad] = useState(() => {
-    if (productoParaEditar && !UNIDADES_VENTA_SUGERIDAS.includes(productoParaEditar.saleUnit)) {
+    if (
+      productoParaEditar &&
+      !esServicio(productoParaEditar.saleUnit) &&
+      !UNIDADES_VENTA_SUGERIDAS.includes(productoParaEditar.saleUnit)
+    ) {
       return productoParaEditar.saleUnit;
     }
     return '';
   });
   const [mostrarOtraUnidad, setMostrarOtraUnidad] = useState(() => {
-    return Boolean(productoParaEditar && !UNIDADES_VENTA_SUGERIDAS.includes(productoParaEditar.saleUnit));
+    return Boolean(
+      productoParaEditar &&
+      !esServicio(productoParaEditar.saleUnit) &&
+      !UNIDADES_VENTA_SUGERIDAS.includes(productoParaEditar.saleUnit)
+    );
   });
 
   const [formatos, setFormatos] = useState<FormatoProducto[]>(() => productoParaEditar?.formats || []);
@@ -97,7 +104,6 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
   const esServ = tipoProducto === 'SERVICIO' || esServicio(unidadFinalCalculada);
 
   const [descripcion, setDescripcion] = useState(() => productoParaEditar?.description || '');
-  const [activo, setActivo] = useState(() => (productoParaEditar ? productoParaEditar.isActive : true));
   const [stockInicialTexto, setStockInicialTexto] = useState('0');
   const [stockMinimoTexto, setStockMinimoTexto] = useState(() => String(productoParaEditar?.minStock ?? 0));
 
@@ -140,10 +146,10 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
 
     const precioCentavos = precioTexto
       ? convertirMontoACentavos(precioTexto)
-      : (formatos.length > 0 ? formatos[0].salePrice : 0);
+      : (esServ && formatos.length > 0 ? formatos[0].salePrice : 0);
     const costoCentavos = costoTexto
       ? convertirMontoACentavos(costoTexto)
-      : (formatos.length > 0 ? formatos[0].costPrice : 0);
+      : (esServ && formatos.length > 0 ? formatos[0].costPrice : 0);
     const skuFinal = productoParaEditar?.sku || undefined;
     const proveedorFinal = productoParaEditar?.supplier || undefined;
     const minStockNum = esServ ? 0 : Math.max(0, parseFloat(stockMinimoTexto.replace(',', '.')) || 0);
@@ -158,10 +164,10 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
           sku: skuFinal,
           sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
-          formats: formatos,
+          formats: esServ ? formatos : undefined,
           materials: tipoProducto === 'ARTESANIA' ? materiales : undefined,
           description: descripcion.trim() || undefined,
-          isActive: activo,
+          isActive: true,
           basePrice: precioCentavos,
           costPrice: costoCentavos,
           minStock: minStockNum,
@@ -176,10 +182,10 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
           sku: skuFinal,
           sizeFormat: formatoFinal,
           saleUnit: unidadFinal,
-          formats: formatos,
+          formats: esServ ? formatos : undefined,
           materials: tipoProducto === 'ARTESANIA' ? materiales : undefined,
           description: descripcion.trim() || undefined,
-          isActive: activo,
+          isActive: true,
           basePrice: precioCentavos,
           costPrice: costoCentavos,
           initialStock: initialStockNum,
@@ -384,19 +390,21 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
             />
           )}
 
-          {/* Selector: Unidad de venta */}
-          <SelectorChips
-            titulo="Unidad de Venta"
-            opciones={UNIDADES_VENTA_SUGERIDAS}
-            seleccionada={unidadVenta}
-            onSeleccionar={setUnidadVenta}
-            etiquetaPersonalizado="+ Otra"
-            valorPersonalizado={otraUnidad}
-            onChangeValorPersonalizado={setOtraUnidad}
-            mostrarPersonalizado={mostrarOtraUnidad}
-            onToggleMostrarPersonalizado={setMostrarOtraUnidad}
-            placeholderPersonalizado="ej. Rollo, Pliego, etc..."
-          />
+          {/* Selector: Unidad de venta (Oculto para Servicios) */}
+          {!esServ && (
+            <SelectorChips
+              titulo="Unidad de Venta"
+              opciones={UNIDADES_VENTA_SUGERIDAS}
+              seleccionada={unidadVenta}
+              onSeleccionar={setUnidadVenta}
+              etiquetaPersonalizado="+ Otra"
+              valorPersonalizado={otraUnidad}
+              onChangeValorPersonalizado={setOtraUnidad}
+              mostrarPersonalizado={mostrarOtraUnidad}
+              onToggleMostrarPersonalizado={setMostrarOtraUnidad}
+              placeholderPersonalizado="ej. Rollo, Pliego, etc..."
+            />
+          )}
 
           {/* Inventario y Control de Stock (Oculto para Servicios) */}
           {!esServ ? (
@@ -465,23 +473,25 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
             </View>
           )}
 
-          {/* Formatos y Tarifas Específicas */}
-          <EditorFormatosProducto
-            formatos={formatos}
-            onChangeFormatos={(nuevos) => {
-              setFormatos(nuevos);
-              if (nuevos.length > 0) {
-                if (nuevos[0].salePrice > 0) {
-                  const centavosStr = (nuevos[0].salePrice / 100).toFixed(2).replace('.', ',');
-                  setPrecioTexto(formatearEntradaDinero(centavosStr));
+          {/* Formatos y Tarifas Específicas (Solo para servicios) */}
+          {esServ && (
+            <EditorFormatosProducto
+              formatos={formatos}
+              onChangeFormatos={(nuevos) => {
+                setFormatos(nuevos);
+                if (nuevos.length > 0) {
+                  if (nuevos[0].salePrice > 0) {
+                    const centavosStr = (nuevos[0].salePrice / 100).toFixed(2).replace('.', ',');
+                    setPrecioTexto(formatearEntradaDinero(centavosStr));
+                  }
+                  if (nuevos[0].costPrice >= 0) {
+                    const centavosStr = (nuevos[0].costPrice / 100).toFixed(2).replace('.', ',');
+                    setCostoTexto(formatearEntradaDinero(centavosStr));
+                  }
                 }
-                if (nuevos[0].costPrice >= 0) {
-                  const centavosStr = (nuevos[0].costPrice / 100).toFixed(2).replace('.', ',');
-                  setCostoTexto(formatearEntradaDinero(centavosStr));
-                }
-              }
-            }}
-          />
+              }}
+            />
+          )}
 
           {/* Precios opcionales (Solo para productos físicos y artesanías; en servicios se definen en Formatos y Tarifas) */}
           {!esServ && (
@@ -552,27 +562,6 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
                 numberOfLines={3}
               />
             </View>
-          </View>
-
-          {/* Interruptor: Producto activo */}
-          <View style={styles.switchRow}>
-            <View style={styles.switchLabelCol}>
-              <Text style={[styles.switchTitle, TYPOGRAPHY.cuerpoGrande]}>
-                Producto activo
-              </Text>
-              <Text style={[styles.switchSubtitle, TYPOGRAPHY.cuerpoPequeno]}>
-                Los productos activos aparecen disponibles en el catálogo y para ventas directas
-              </Text>
-            </View>
-            <Switch
-              value={activo}
-              onValueChange={val => {
-                triggerSelection();
-                setActivo(val);
-              }}
-              trackColor={{ false: COLORS.surfaceContainerLowest, true: 'rgba(87, 245, 171, 0.4)' }}
-              thumbColor={activo ? COLORS.secondary : COLORS.onSurfaceVariant}
-            />
           </View>
         </ScrollView>
 
@@ -799,25 +788,6 @@ const styles = StyleSheet.create({
   textAreaInput: {
     minHeight: 70,
     textAlignVertical: 'top',
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.surfaceContainerLowest,
-    padding: 14,
-    borderRadius: 16,
-  },
-  switchLabelCol: {
-    flex: 1,
-    paddingRight: 12,
-    gap: 2,
-  },
-  switchTitle: {
-    color: COLORS.onSurface,
-  },
-  switchSubtitle: {
-    color: COLORS.onSurfaceVariant,
   },
   footerRow: {
     marginTop: 10,

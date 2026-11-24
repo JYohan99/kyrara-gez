@@ -43,10 +43,10 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
   onSuccess,
 }) => {
   const insets = useSafeAreaInsets();
-  const isService = (producto.saleUnit || '').trim().toLowerCase() === 'servicio';
+  const isService = (producto.saleUnit || '').trim().toLowerCase() === 'servicio' || producto.productType === 'SERVICIO';
 
   const [formatoSeleccionado, setFormatoSeleccionado] = useState<FormatoProducto | null>(() => {
-    if (producto.formats && producto.formats.length > 0) {
+    if (isService && producto.formats && producto.formats.length > 0) {
       return producto.formats[0];
     }
     return null;
@@ -54,7 +54,7 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
 
   const [cantidad, setCantidad] = useState('1');
   const [precioTexto, setPrecioTexto] = useState(() => {
-    const pBase = producto.formats && producto.formats.length > 0 ? producto.formats[0].salePrice : producto.basePrice;
+    const pBase = isService && producto.formats && producto.formats.length > 0 ? producto.formats[0].salePrice : producto.basePrice;
     if (!pBase) return '';
     return formatearEntradaDinero((pBase / 100).toFixed(2).replace('.', ','));
   });
@@ -225,8 +225,8 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
                 )}
               </View>
 
-              {/* Selector de Formato / Medida si existen múltiples tarifas */}
-              {producto.formats && producto.formats.length > 0 && (
+              {/* Selector de Formato / Medida si es un servicio con tarifas */}
+              {isService && producto.formats && producto.formats.length > 0 && (
                 <View style={styles.formatSelectorBox}>
                   <Text style={styles.formatSelectorTitle}>FORMATO O MEDIDA DEL TRABAJO</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.formatChipsScroll}>
