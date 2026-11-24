@@ -16,6 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
 import { BotonBrillante as GlowButton } from '@/compartido/componentes/BotonBrillante';
+import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
 import {
   MovimientoEnriquecido as EnrichedTransaction,
   actualizarMovimiento as updateTransaction,
@@ -273,8 +274,8 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
                 <View style={styles.dataRow}>
                   <Text style={[styles.dataLabel, TYPOGRAPHY.labelCaps]}>Categoría</Text>
                   <View style={styles.categoryBadge}>
-                    <MaterialIcons
-                      name={transaction.categoryIcon as any}
+                    <IconoCategoria
+                      icon={transaction.categoryIcon}
                       size={16}
                       color={transaction.categoryColor || COLORS.secondary}
                     />

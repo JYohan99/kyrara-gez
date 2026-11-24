@@ -14,7 +14,7 @@ import { PestanaAjustes } from './PestanaAjustes';
 import { ModalPin } from './ModalPin';
 import { ModalRestaurar } from './ModalRestaurar';
 import { ModalVisorRespaldo } from './ModalVisorRespaldo';
-import { ModalGestionCategorias } from './ModalGestionCategorias';
+import { ModalSelectorCategorias } from '@/compartido/componentes/ModalSelectorCategorias';
 
 export function PantallaAjustes() {
   const { security } = useVaultSecurity();
@@ -82,9 +82,11 @@ export function PantallaAjustes() {
         onClose={() => setBackupModalVisible(false)}
       />
 
-      <ModalGestionCategorias
+      <ModalSelectorCategorias
         visible={categoriesModalVisible}
+        modo="GESTION"
         onClose={() => setCategoriesModalVisible(false)}
+        tipoFlujoInicial="EXPENSE"
       />
     </View>
   );

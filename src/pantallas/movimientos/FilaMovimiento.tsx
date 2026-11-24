@@ -20,80 +20,12 @@ const resolverIcono = (tx: MovimientoEnriquecido) => {
     return { tipo: 'transferencia' as const };
   }
 
-  const icon = tx.categoryIcon || '';
-  if (/\p{Extended_Pictographic}/u.test(icon)) {
+  const icon = tx.categoryIcon?.trim();
+  if (icon && /\p{Extended_Pictographic}/u.test(icon)) {
     return { tipo: 'emoji' as const, valor: icon };
   }
 
-  const nombre = (tx.categoryName || tx.payee || '').toLowerCase();
-  if (
-    nombre.includes('comida') ||
-    nombre.includes('alimento') ||
-    nombre.includes('restaurante') ||
-    nombre.includes('cena') ||
-    nombre.includes('almuerzo')
-  ) {
-    return { tipo: 'emoji' as const, valor: '🥗' };
-  }
-  if (
-    nombre.includes('salario') ||
-    nombre.includes('sueldo') ||
-    nombre.includes('nómina') ||
-    nombre.includes('pago')
-  ) {
-    return { tipo: 'emoji' as const, valor: '💵' };
-  }
-  if (
-    nombre.includes('transporte') ||
-    nombre.includes('uber') ||
-    nombre.includes('gasolina') ||
-    nombre.includes('nafta') ||
-    nombre.includes('auto')
-  ) {
-    return { tipo: 'emoji' as const, valor: '🚗' };
-  }
-  if (
-    nombre.includes('casa') ||
-    nombre.includes('hogar') ||
-    nombre.includes('alquiler') ||
-    nombre.includes('luz') ||
-    nombre.includes('agua')
-  ) {
-    return { tipo: 'emoji' as const, valor: '🏠' };
-  }
-  if (
-    nombre.includes('ocio') ||
-    nombre.includes('cine') ||
-    nombre.includes('suscrip') ||
-    nombre.includes('netflix') ||
-    nombre.includes('spotify')
-  ) {
-    return { tipo: 'emoji' as const, valor: '🎬' };
-  }
-  if (
-    nombre.includes('salud') ||
-    nombre.includes('farmacia') ||
-    nombre.includes('médico') ||
-    nombre.includes('doctor')
-  ) {
-    return { tipo: 'emoji' as const, valor: '💊' };
-  }
-  if (
-    nombre.includes('super') ||
-    nombre.includes('compra') ||
-    nombre.includes('mercado')
-  ) {
-    return { tipo: 'emoji' as const, valor: '🛒' };
-  }
-  if (
-    nombre.includes('educación') ||
-    nombre.includes('curso') ||
-    nombre.includes('libro')
-  ) {
-    return { tipo: 'emoji' as const, valor: '📚' };
-  }
-
-  if (icon && icon !== 'receipt' && icon !== 'category') {
+  if (icon) {
     return { tipo: 'material' as const, valor: icon };
   }
 
@@ -230,6 +162,8 @@ const estilos = StyleSheet.create({
   },
   emoji: {
     fontSize: 22,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   info: {
     flex: 1,

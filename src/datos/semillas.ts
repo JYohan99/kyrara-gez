@@ -1,125 +1,127 @@
 import * as SQLite from 'expo-sqlite';
 import { obtenerBaseDatos } from './conexion';
-import { Categoria } from './tipos';
 
-export const CATEGORIAS_PREDETERMINADAS: Omit<Categoria, 'id'>[] = [
+export interface CategoriaDefinicion {
+  id: string;
+  name: string;
+  group: string;
+  flowType: 'EXPENSE' | 'INCOME';
+  icon: string;
+  color: string;
+}
+
+export const CATEGORIAS_PREDETERMINADAS: CategoriaDefinicion[] = [
   // ==========================================
-  // GASTOS (EXPENSE) - ICONOS DETALLADOS DE OBJETOS REALES
+  // GASTOS (EXPENSE) - ICONOS 3D
   // ==========================================
 
   // --- Alimentación y Consumo ---
-  { name: 'Supermercado y Despensa', flowType: 'EXPENSE', icon: 'shopping-cart', color: '#FF8A9E', isSystem: true },
-  { name: 'Restaurantes y Bares', flowType: 'EXPENSE', icon: 'restaurant', color: '#FF8A9E', isSystem: true },
-  { name: 'Cafetería y Panadería', flowType: 'EXPENSE', icon: 'local-cafe', color: '#FF8A9E', isSystem: true },
-  { name: 'Comida Rápida y Delivery', flowType: 'EXPENSE', icon: 'fastfood', color: '#FF8A9E', isSystem: true },
+  { id: 'cat_supermercado', name: 'Supermercado', group: 'Alimentación y Consumo', flowType: 'EXPENSE', icon: '🛒', color: '#FF8A9E' },
+  { id: 'cat_restaurantes', name: 'Restaurantes', group: 'Alimentación y Consumo', flowType: 'EXPENSE', icon: '🍽️', color: '#FF8A9E' },
+  { id: 'cat_cafeteria', name: 'Cafetería', group: 'Alimentación y Consumo', flowType: 'EXPENSE', icon: '☕', color: '#FF8A9E' },
+  { id: 'cat_comida_rapida', name: 'Comida Rápida', group: 'Alimentación y Consumo', flowType: 'EXPENSE', icon: '🍔', color: '#FF8A9E' },
 
   // --- Vivienda e Inmuebles ---
-  { name: 'Alquiler de Vivienda', flowType: 'EXPENSE', icon: 'house', color: '#D1BCFF', isSystem: true },
-  { name: 'Electricidad y Luz', flowType: 'EXPENSE', icon: 'lightbulb', color: '#D1BCFF', isSystem: true },
-  { name: 'Agua y Saneamiento', flowType: 'EXPENSE', icon: 'plumbing', color: '#D1BCFF', isSystem: true },
-  { name: 'Gas y Calefacción', flowType: 'EXPENSE', icon: 'propane-tank', color: '#D1BCFF', isSystem: true },
-  { name: 'Gastos Comunes y Expensas', flowType: 'EXPENSE', icon: 'apartment', color: '#D1BCFF', isSystem: true },
-  { name: 'Mantenimiento y Reparación Hogar', flowType: 'EXPENSE', icon: 'home-repair-service', color: '#D1BCFF', isSystem: true },
-  { name: 'Muebles y Artículos del Hogar', flowType: 'EXPENSE', icon: 'weekend', color: '#D1BCFF', isSystem: true },
+  { id: 'cat_alquiler_vivienda', name: 'Alquiler de Vivienda', group: 'Vivienda e Inmuebles', flowType: 'EXPENSE', icon: '🏡', color: '#D1BCFF' },
+  { id: 'cat_electricidad', name: 'Electricidad', group: 'Vivienda e Inmuebles', flowType: 'EXPENSE', icon: '💡', color: '#D1BCFF' },
+  { id: 'cat_agua', name: 'Agua', group: 'Vivienda e Inmuebles', flowType: 'EXPENSE', icon: '🚰', color: '#D1BCFF' },
+  { id: 'cat_gas', name: 'Gas', group: 'Vivienda e Inmuebles', flowType: 'EXPENSE', icon: '🔥', color: '#D1BCFF' },
+  { id: 'cat_gastos_comunes', name: 'Gastos Comunes', group: 'Vivienda e Inmuebles', flowType: 'EXPENSE', icon: '🏢', color: '#D1BCFF' },
+  { id: 'cat_mantenimiento_hogar', name: 'Reparación Hogar', group: 'Vivienda e Inmuebles', flowType: 'EXPENSE', icon: '🛠️', color: '#D1BCFF' },
+  { id: 'cat_muebles_hogar', name: 'Artículos del Hogar', group: 'Vivienda e Inmuebles', flowType: 'EXPENSE', icon: '🛋️', color: '#D1BCFF' },
 
-  // --- Conectividad y Servicios Digitales ---
-  { name: 'Internet y Wifi', flowType: 'EXPENSE', icon: 'router', color: '#A5E7FF', isSystem: true },
-  { name: 'Telefonía Móvil y Celular', flowType: 'EXPENSE', icon: 'smartphone', color: '#A5E7FF', isSystem: true },
-  { name: 'Suscripciones y Streaming', flowType: 'EXPENSE', icon: 'live-tv', color: '#A5E7FF', isSystem: true },
-  { name: 'Software y Herramientas Digitales', flowType: 'EXPENSE', icon: 'computer', color: '#A5E7FF', isSystem: true },
+  // --- Conectividad y Digital ---
+  { id: 'cat_internet', name: 'Internet', group: 'Conectividad y Digital', flowType: 'EXPENSE', icon: '📶', color: '#A5E7FF' },
+  { id: 'cat_telefonia', name: 'Telefonía Móvil', group: 'Conectividad y Digital', flowType: 'EXPENSE', icon: '📱', color: '#A5E7FF' },
+  { id: 'cat_suscripciones', name: 'Suscripciones', group: 'Conectividad y Digital', flowType: 'EXPENSE', icon: '🎬', color: '#A5E7FF' },
+  { id: 'cat_software', name: 'Software y Herramientas Digitales', group: 'Conectividad y Digital', flowType: 'EXPENSE', icon: '💻', color: '#A5E7FF' },
 
   // --- Transporte y Movilidad ---
-  { name: 'Combustible y Nafta', flowType: 'EXPENSE', icon: 'local-gas-station', color: '#FFB4AB', isSystem: true },
-  { name: 'Transporte Público y Boletos', flowType: 'EXPENSE', icon: 'directions-bus', color: '#FFB4AB', isSystem: true },
-  { name: 'Taxi, Uber y Aplicaciones', flowType: 'EXPENSE', icon: 'local-taxi', color: '#FFB4AB', isSystem: true },
-  { name: 'Mantenimiento y Taller Mecánico', flowType: 'EXPENSE', icon: 'car-repair', color: '#FFB4AB', isSystem: true },
-  { name: 'Peajes y Estacionamiento', flowType: 'EXPENSE', icon: 'traffic', color: '#FFB4AB', isSystem: true },
-  { name: 'Seguro de Vehículo', flowType: 'EXPENSE', icon: 'car-rental', color: '#FFB4AB', isSystem: true },
+  { id: 'cat_combustible', name: 'Combustibl', group: 'Transporte y Movilidad', flowType: 'EXPENSE', icon: '⛽', color: '#FFB4AB' },
+  { id: 'cat_transporte_publico', name: 'Transporte Público y Boletos', group: 'Transporte y Movilidad', flowType: 'EXPENSE', icon: '🚌', color: '#FFB4AB' },
+  { id: 'cat_taller_mecanico', name: 'Taller Mecánico', group: 'Transporte y Movilidad', flowType: 'EXPENSE', icon: '🔧', color: '#FFB4AB' },
+  { id: 'cat_peajes', name: 'Peajes y Estacionamiento', group: 'Transporte y Movilidad', flowType: 'EXPENSE', icon: '🅿️', color: '#FFB4AB' },
+  { id: 'cat_seguro_vehiculo', name: 'Seguro de Vehículo', group: 'Transporte y Movilidad', flowType: 'EXPENSE', icon: '🚗', color: '#FFB4AB' },
 
-  // --- Salud y Bienestar Personal ---
-  { name: 'Farmacia y Medicamentos', flowType: 'EXPENSE', icon: 'medication', color: '#55D8E9', isSystem: true },
-  { name: 'Consultas Médicas y Odontología', flowType: 'EXPENSE', icon: 'medical-services', color: '#55D8E9', isSystem: true },
-  { name: 'Cuidado Personal y Peluquería', flowType: 'EXPENSE', icon: 'content-cut', color: '#55D8E9', isSystem: true },
-  { name: 'Gimnasio y Actividad Física', flowType: 'EXPENSE', icon: 'fitness-center', color: '#55D8E9', isSystem: true },
+  // --- Salud y Bienestar ---
+  { id: 'cat_farmacia', name: 'Farmacia', group: 'Salud y Bienestar', flowType: 'EXPENSE', icon: '💊', color: '#55D8E9' },
+  { id: 'cat_medico', name: 'Consultas Médicas', group: 'Salud y Bienestar', flowType: 'EXPENSE', icon: '🩺', color: '#55D8E9' },
+  { id: 'cat_cuidado_personal', name: 'Cuidado Personal', group: 'Salud y Bienestar', flowType: 'EXPENSE', icon: '💈', color: '#55D8E9' },
+  { id: 'cat_gimnasio', name: 'Gimnasio', group: 'Salud y Bienestar', flowType: 'EXPENSE', icon: '🏋️', color: '#55D8E9' },
 
   // --- Educación y Familia ---
-  { name: 'Educación y Matrículas', flowType: 'EXPENSE', icon: 'school', color: '#EADDFF', isSystem: true },
-  { name: 'Cursos y Capacitación', flowType: 'EXPENSE', icon: 'menu-book', color: '#EADDFF', isSystem: true },
-  { name: 'Libros y Material de Estudio', flowType: 'EXPENSE', icon: 'book', color: '#EADDFF', isSystem: true },
-  { name: 'Ropa, Calzado y Accesorios', flowType: 'EXPENSE', icon: 'checkroom', color: '#EADDFF', isSystem: true },
-  { name: 'Mascotas, Veterinaria y Alimento', flowType: 'EXPENSE', icon: 'pets', color: '#EADDFF', isSystem: true },
+  { id: 'cat_educacion', name: 'Educación', group: 'Educación y Familia', flowType: 'EXPENSE', icon: '🎓', color: '#EADDFF' },
+  { id: 'cat_libros', name: 'Libros', group: 'Educación y Familia', flowType: 'EXPENSE', icon: '📖', color: '#EADDFF' },
+  { id: 'cat_ropa', name: 'Ropa, Calzado y Accesorios', group: 'Educación y Familia', flowType: 'EXPENSE', icon: '👕', color: '#EADDFF' },
+  { id: 'cat_mascotas', name: 'Mascotas', group: 'Educación y Familia', flowType: 'EXPENSE', icon: '🐾', color: '#EADDFF' },
 
-  // --- Ocio, Cultura y Vida Social ---
-  { name: 'Cine, Salidas y Entretenimiento', flowType: 'EXPENSE', icon: 'theater-comedy', color: '#FFD8E4', isSystem: true },
-  { name: 'Viajes, Vacaciones y Alojamiento', flowType: 'EXPENSE', icon: 'luggage', color: '#FFD8E4', isSystem: true },
-  { name: 'Regalos y Celebraciones', flowType: 'EXPENSE', icon: 'card-giftcard', color: '#FFD8E4', isSystem: true },
-  { name: 'Donaciones y Solidaridad', flowType: 'EXPENSE', icon: 'volunteer-activism', color: '#FFD8E4', isSystem: true },
+  // --- Ocio y Vida Social ---
+  { id: 'cat_entretenimiento', name: 'Entretenimiento', group: 'Ocio y Vida Social', flowType: 'EXPENSE', icon: '🎭', color: '#FFD8E4' },
+  { id: 'cat_viajes', name: 'Viajes, Vacaciones y Alojamiento', group: 'Ocio y Vida Social', flowType: 'EXPENSE', icon: '✈️', color: '#FFD8E4' },
+  { id: 'cat_regalos', name: 'Regalos', group: 'Ocio y Vida Social', flowType: 'EXPENSE', icon: '🎁', color: '#FFD8E4' },
 
-  // --- Negocio, Taller, Producción y Comercio ---
-  { name: 'Compra de Mercadería (Reventa)', flowType: 'EXPENSE', icon: 'inventory-2', color: '#FFCC80', isSystem: true },
-  { name: 'Materias Primas e Insumos', flowType: 'EXPENSE', icon: 'palette', color: '#FFCC80', isSystem: true },
-  { name: 'Herramientas y Maquinaria', flowType: 'EXPENSE', icon: 'handyman', color: '#FFCC80', isSystem: true },
-  { name: 'Embalaje, Cajas y Packaging', flowType: 'EXPENSE', icon: 'inventory', color: '#FFCC80', isSystem: true },
-  { name: 'Envíos, Fletes y Cadetería', flowType: 'EXPENSE', icon: 'local-shipping', color: '#FFCC80', isSystem: true },
-  { name: 'Publicidad, Redes y Marketing', flowType: 'EXPENSE', icon: 'campaign', color: '#FFCC80', isSystem: true },
-  { name: 'Alquiler de Local o Taller Comercial', flowType: 'EXPENSE', icon: 'store', color: '#FFCC80', isSystem: true },
+  // --- Negocio, Taller y Comercio ---
+  { id: 'cat_compra_mercaderia', name: 'Compra de Mercadería', group: 'Negocio, Taller y Comercio', flowType: 'EXPENSE', icon: '📦', color: '#FFCC80' },
+  { id: 'cat_materias_primas', name: 'Materias Primas e Insumos', group: 'Negocio, Taller y Comercio', flowType: 'EXPENSE', icon: '🪵', color: '#FFCC80' },
+  { id: 'cat_herramientas', name: 'Herramientas y Maquinaria', group: 'Negocio, Taller y Comercio', flowType: 'EXPENSE', icon: '⚙️', color: '#FFCC80' },
+  { id: 'cat_packaging', name: 'Embalaje, Cajas y Packaging', group: 'Negocio, Taller y Comercio', flowType: 'EXPENSE', icon: '🏷️', color: '#FFCC80' },
+  { id: 'cat_envios', name: 'Envíos y Fletes', group: 'Negocio, Taller y Comercio', flowType: 'EXPENSE', icon: '🚚', color: '#FFCC80' },
+  { id: 'cat_publicidad', name: 'Publicidad, Redes y Marketing', group: 'Negocio, Taller y Comercio', flowType: 'EXPENSE', icon: '📢', color: '#FFCC80' },
+  { id: 'cat_alquiler_comercial', name: 'Alquiler de Local', group: 'Negocio, Taller y Comercio', flowType: 'EXPENSE', icon: '🏪', color: '#FFCC80' },
 
-  // --- Obligaciones Financieras y Otros ---
-  { name: 'Impuestos, Tasas y Tributos', flowType: 'EXPENSE', icon: 'receipt-long', color: '#CF6679', isSystem: true },
-  { name: 'Comisiones Bancarias y del POS', flowType: 'EXPENSE', icon: 'credit-card', color: '#CF6679', isSystem: true },
-  { name: 'Cuotas de Préstamos e Intereses', flowType: 'EXPENSE', icon: 'account-balance', color: '#CF6679', isSystem: true },
-  { name: 'Otros Gastos Varios', flowType: 'EXPENSE', icon: 'shopping-bag', color: '#958DA1', isSystem: true },
+  // --- Finanzas y Obligaciones ---
+  { id: 'cat_impuestos', name: 'Impuestos, Tasas y Tributos', group: 'Finanzas y Obligaciones', flowType: 'EXPENSE', icon: '🏛️', color: '#CF6679' },
+  { id: 'cat_comisiones_pos', name: 'Comisiones Bancarias', group: 'Finanzas y Obligaciones', flowType: 'EXPENSE', icon: '💳', color: '#CF6679' },
+  { id: 'cat_prestamos', name: 'Cuotas de Préstamos e Intereses', group: 'Finanzas y Obligaciones', flowType: 'EXPENSE', icon: '🏦', color: '#CF6679' },
+  { id: 'cat_otros_gastos', name: 'Otros Gastos Varios', group: 'Finanzas y Obligaciones', flowType: 'EXPENSE', icon: '💸', color: '#CF6679' },
 
   // ==========================================
-  // INGRESOS (INCOME) - ICONOS DETALLADOS DE OBJETOS REALES
+  // INGRESOS (INCOME)
   // ==========================================
 
-  // --- Ventas y Facturación Comercial ---
-  { name: 'Ventas de Productos', flowType: 'INCOME', icon: 'point-of-sale', color: '#57F5AB', isSystem: true },
-  { name: 'Cobro de Servicios y Mano de Obra', flowType: 'INCOME', icon: 'design-services', color: '#57F5AB', isSystem: true },
-  { name: 'Ventas de Artesanías y Creaciones', flowType: 'INCOME', icon: 'brush', color: '#57F5AB', isSystem: true },
-  { name: 'Comisiones por Ventas', flowType: 'INCOME', icon: 'paid', color: '#57F5AB', isSystem: true },
+  // --- Ventas y Comercio ---
+  { id: 'cat_ventas_productos', name: 'Ventas de Productos', group: 'Ventas y Comercio', flowType: 'INCOME', icon: '🛍️', color: '#57F5AB' },
+  { id: 'cat_cobro_servicios', name: 'Cobro de Servicios y Mano de Obra', group: 'Ventas y Comercio', flowType: 'INCOME', icon: '💼', color: '#57F5AB' },
+  { id: 'cat_artesanias', name: 'Ventas de Artesanías y Creaciones', group: 'Ventas y Comercio', flowType: 'INCOME', icon: '🎨', color: '#57F5AB' },
+  { id: 'cat_comisiones_ventas', name: 'Comisiones por Ventas', group: 'Ventas y Comercio', flowType: 'INCOME', icon: '📈', color: '#57F5AB' },
 
-  // --- Trabajo, Empleo y Honorarios ---
-  { name: 'Sueldo y Salario', flowType: 'INCOME', icon: 'work', color: '#57F5AB', isSystem: true },
-  { name: 'Honorarios Profesionales', flowType: 'INCOME', icon: 'badge', color: '#57F5AB', isSystem: true },
-  { name: 'Trabajos Independientes y Extras', flowType: 'INCOME', icon: 'work-history', color: '#57F5AB', isSystem: true },
-  { name: 'Propinas y Gratificaciones', flowType: 'INCOME', icon: 'savings', color: '#57F5AB', isSystem: true },
-  { name: 'Aguinaldo y Bonificaciones', flowType: 'INCOME', icon: 'card-giftcard', color: '#57F5AB', isSystem: true },
+  // --- Trabajo y Empleo ---
+  { id: 'cat_sueldo', name: 'Sueldo', group: 'Trabajo y Empleo', flowType: 'INCOME', icon: '💵', color: '#57F5AB' },
+  { id: 'cat_honorarios', name: 'Honorarios Profesionales', group: 'Trabajo y Empleo', flowType: 'INCOME', icon: '👔', color: '#57F5AB' },
+  { id: 'cat_independientes', name: 'Trabajos Independientes y Extras', group: 'Trabajo y Empleo', flowType: 'INCOME', icon: '⚡', color: '#57F5AB' },
+  { id: 'cat_propinas', name: 'Propinas y Gratificaciones', group: 'Trabajo y Empleo', flowType: 'INCOME', icon: '🪙', color: '#57F5AB' },
+  { id: 'cat_aguinaldo', name: 'Aguinaldo y Bonificaciones', group: 'Trabajo y Empleo', flowType: 'INCOME', icon: '🎉', color: '#57F5AB' },
 
-  // --- Rendimientos e Inversiones ---
-  { name: 'Rendimientos e Inversiones', flowType: 'INCOME', icon: 'analytics', color: '#55D8E9', isSystem: true },
-  { name: 'Alquileres Cobrados', flowType: 'INCOME', icon: 'apartment', color: '#55D8E9', isSystem: true },
-  { name: 'Dividendos y Ganancias de Capital', flowType: 'INCOME', icon: 'account-balance', color: '#55D8E9', isSystem: true },
+  // --- Rentas e Inversiones ---
+  { id: 'cat_inversiones', name: 'Rendimientos e Inversiones', group: 'Rentas e Inversiones', flowType: 'INCOME', icon: '📊', color: '#55D8E9' },
+  { id: 'cat_alquileres_cobrados', name: 'Alquileres Cobrados', group: 'Rentas e Inversiones', flowType: 'INCOME', icon: '🏠', color: '#55D8E9' },
+  { id: 'cat_dividendos', name: 'Dividendos y Ganancias de Capital', group: 'Rentas e Inversiones', flowType: 'INCOME', icon: '💰', color: '#55D8E9' },
 
   // --- Otros Ingresos ---
-  { name: 'Cobro de Deudas y Préstamos', flowType: 'INCOME', icon: 'request-quote', color: '#A5E7FF', isSystem: true },
-  { name: 'Reembolsos y Devoluciones', flowType: 'INCOME', icon: 'currency-exchange', color: '#A5E7FF', isSystem: true },
-  { name: 'Premios y Sorteos', flowType: 'INCOME', icon: 'emoji-events', color: '#A5E7FF', isSystem: true },
-  { name: 'Regalos en Efectivo', flowType: 'INCOME', icon: 'redeem', color: '#A5E7FF', isSystem: true },
-  { name: 'Subsidios y Ayudas Estatales', flowType: 'INCOME', icon: 'assured-workload', color: '#A5E7FF', isSystem: true },
-  { name: 'Otros Ingresos Varios', flowType: 'INCOME', icon: 'payments', color: '#57F5AB', isSystem: true },
+  { id: 'cat_cobro_deudas', name: 'Cobro de Deudas y Préstamos', group: 'Otros Ingresos', flowType: 'INCOME', icon: '🧾', color: '#A5E7FF' },
+  { id: 'cat_reembolsos', name: 'Reembolsos y Devoluciones', group: 'Otros Ingresos', flowType: 'INCOME', icon: '🔄', color: '#A5E7FF' },
+  { id: 'cat_premios', name: 'Premios y Sorteos', group: 'Otros Ingresos', flowType: 'INCOME', icon: '🏆', color: '#A5E7FF' },
+  { id: 'cat_regalos_efectivo', name: 'Regalos en Efectivo', group: 'Otros Ingresos', flowType: 'INCOME', icon: '🎁', color: '#A5E7FF' },
+  { id: 'cat_subsidios', name: 'Subsidios y Ayudas Estatales', group: 'Otros Ingresos', flowType: 'INCOME', icon: '🏛️', color: '#A5E7FF' },
+  { id: 'cat_otros_ingresos', name: 'Otros Ingresos Varios', group: 'Otros Ingresos', flowType: 'INCOME', icon: '✨', color: '#57F5AB' },
 ];
 
 export function sembrarCategoriasPredeterminadas(db: SQLite.SQLiteDatabase = obtenerBaseDatos()): void {
-  for (const cat of CATEGORIAS_PREDETERMINADAS) {
-    const existente = db.getFirstSync<{ id: string }>(
-      'SELECT id FROM categories WHERE name = ? AND flow_type = ?',
-      [cat.name, cat.flowType]
-    );
+  // Limpiar categorías del sistema viejas con IDs aleatorios
+  try {
+    db.runSync("DELETE FROM categories WHERE is_system = 1 AND id NOT LIKE 'cat_%'");
+  } catch { }
 
-    if (!existente) {
-      const id = 'cat_' + Math.random().toString(36).substring(2, 10);
-      db.runSync(
-        'INSERT INTO categories (id, name, flow_type, icon, color, is_system) VALUES (?, ?, ?, ?, ?, ?)',
-        [id, cat.name, cat.flowType, cat.icon, cat.color, cat.isSystem ? 1 : 0]
-      );
-    } else {
-      db.runSync(
-        'UPDATE categories SET icon = ?, color = ?, is_system = 1 WHERE id = ?',
-        [cat.icon, cat.color, existente.id]
-      );
-    }
+  for (const cat of CATEGORIAS_PREDETERMINADAS) {
+    db.runSync(
+      `INSERT INTO categories (id, name, flow_type, icon, color, is_system)
+       VALUES (?, ?, ?, ?, ?, 1)
+       ON CONFLICT(id) DO UPDATE SET
+         name = excluded.name,
+         icon = excluded.icon,
+         color = excluded.color;`,
+      [cat.id, cat.name, cat.flowType, cat.icon, cat.color]
+    );
   }
 }
 

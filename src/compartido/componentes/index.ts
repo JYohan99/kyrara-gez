@@ -8,3 +8,4 @@ export * from './EncabezadoSuperior';
 export * from './BotonFlotanteAccion';
 export * from './EstadoVacio';
 export * from './ModalGuiaPantalla';
+export * from './ModalSelectorCategorias';

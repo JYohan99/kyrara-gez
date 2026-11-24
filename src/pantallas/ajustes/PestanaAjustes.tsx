@@ -128,54 +128,9 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
 
   return (
     <View style={styles.container}>
-      {/* Header Intro */}
-      <View style={styles.sectionHeaderRow}>
-        <View>
-          <Text style={[styles.mainSectionTitle, TYPOGRAPHY.headlineLg]}>
-            Ajustes y Privacidad
-          </Text>
-          <Text style={[styles.mainSectionSubtitle, TYPOGRAPHY.bodySm]}>
-            Control absoluto y almacenamiento local en tu terminal
-          </Text>
-        </View>
-      </View>
-
-      {/* Bóveda Cero Nube Hero Banner */}
-      <GlassCard style={styles.vaultBanner}>
-        <View style={styles.vaultBannerTop}>
-          <View style={styles.vaultShieldIcon}>
-            <MaterialIcons name="enhanced-encryption" size={26} color={COLORS.primary} />
-          </View>
-          <View style={styles.vaultBannerTitles}>
-            <Text style={[styles.vaultCaps, TYPOGRAPHY.labelCaps]}>BÓVEDA CERO NUBE</Text>
-            <Text style={[styles.vaultHeadline, TYPOGRAPHY.headlineSm]}>
-              Tu dinero no sale de este teléfono
-            </Text>
-          </View>
-        </View>
-        <Text style={[styles.vaultDescription, TYPOGRAPHY.bodySm]}>
-          Kyrara Gez opera sin servidores remotos, telemetría ni cuentas online. Las transacciones,
-          presupuestos y balances residen únicamente en la memoria física de tu teléfono con SQLite cifrado.
-        </Text>
-        <View style={styles.vaultBadgesRow}>
-          <View style={styles.safePill}>
-            <MaterialIcons name="verified-user" size={14} color={COLORS.cashflowIncome} />
-            <Text style={[styles.safePillText, TYPOGRAPHY.labelCaps]}>100% Offline & Privado</Text>
-          </View>
-
-        </View>
-      </GlassCard>
 
       {/* Mis Categorías */}
       <View style={styles.settingsSection}>
-        <View style={styles.settingsSectionHeader}>
-          <View style={styles.settingsSectionLeft}>
-            <MaterialIcons name="tune" size={18} color={COLORS.secondary} />
-            <Text style={[styles.settingsSectionTitle, TYPOGRAPHY.headlineSm]}>Mis Categorías</Text>
-          </View>
-          <Text style={[styles.settingsSectionRightTag, TYPOGRAPHY.labelCaps]}>ACTIVAS</Text>
-        </View>
-
         <GlassCard style={styles.settingsGroup}>
           <TouchableOpacity
             style={styles.settingItemRow}
@@ -191,14 +146,14 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.settingItemTitle, TYPOGRAPHY.bodyMd]}>
-                  Activar o Desactivar Categorías
+                  Gestionar Categorías
                 </Text>
                 <Text style={[styles.settingItemSubtitle, TYPOGRAPHY.bodySm]}>
                   {activasCount} de {allCategories.length} categorías activas
                 </Text>
               </View>
             </View>
-            <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurfaceVariant} />
+
           </TouchableOpacity>
         </GlassCard>
       </View>
@@ -335,16 +290,6 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
 
       {/* Gestión de Datos Locales (Backups & Restores) */}
       <View style={styles.settingsSection}>
-        <View style={styles.settingsSectionHeader}>
-          <View style={styles.settingsSectionLeft}>
-            <MaterialIcons name="save" size={18} color={COLORS.cashflowIncome} />
-            <Text style={[styles.settingsSectionTitle, TYPOGRAPHY.headlineSm]}>
-              Gestión de Datos Locales
-            </Text>
-          </View>
-          <Text style={[styles.settingsSectionRightTag, TYPOGRAPHY.labelCaps]}>RESPALDO</Text>
-        </View>
-
         <GlassCard style={styles.backupCard}>
           <View style={styles.backupCardTop}>
             <View style={styles.backupIconBox}>
@@ -407,13 +352,6 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
             </View>
             <MaterialIcons name="file-download" size={20} color={COLORS.cashflowIncome} />
           </TouchableOpacity>
-
-          <View style={styles.backupInfoRow}>
-            <MaterialIcons name="info" size={16} color={COLORS.secondary} />
-            <Text style={[styles.backupInfoText, TYPOGRAPHY.bodySm]}>
-              Los archivos se generan y guardan directamente en tu teléfono.
-            </Text>
-          </View>
         </GlassCard>
       </View>
 

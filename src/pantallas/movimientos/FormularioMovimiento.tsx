@@ -17,14 +17,14 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { ModalSelectorFecha as DatePickerModal } from '@/compartido/componentes/ModalSelectorFecha';
 import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import { ModalSelectorCategorias } from '@/compartido/componentes/ModalSelectorCategorias';
+import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
 import {
   TipoFlujo as FlowType,
   TipoCuenta,
   crearMovimiento as createTransaction,
   Cuenta as Account,
-  Categoria as Category,
 } from '@/datos';
-import { obtenerGrupoCategoria } from '@/datos/consultas/categorias';
 import {
   useCuentasBoveda as useVaultAccounts,
   useCategoriasBoveda as useVaultCategories,
@@ -231,162 +231,6 @@ const ModalSelectorCuentas: React.FC<PropiedadesModalCuentas> = React.memo(
   }
 );
 ModalSelectorCuentas.displayName = 'ModalSelectorCuentas';
-
-// ==========================================
-// SUBCOMPONENTE: MODAL TODAS LAS CATEGORÍAS
-// ==========================================
-
-interface PropiedadesModalCategorias {
-  visible: boolean;
-  categories: Category[];
-  frequencyMap: Record<string, number>;
-  selectedCategoryId: string;
-  onSelect: (id: string) => void;
-  onClose: () => void;
-}
-
-const ModalSelectorCategorias: React.FC<PropiedadesModalCategorias> = React.memo(
-  ({ visible, categories, frequencyMap, selectedCategoryId, onSelect, onClose }) => {
-    const [busqueda, setBusqueda] = useState('');
-
-    const categoriasFiltradas = useMemo(() => {
-      if (!busqueda.trim()) return categories;
-      const q = busqueda.trim().toLowerCase();
-      return categories.filter(
-        c =>
-          c.name.toLowerCase().includes(q) ||
-          obtenerGrupoCategoria(c.name).toLowerCase().includes(q)
-      );
-    }, [categories, busqueda]);
-
-    const grupos = useMemo(() => {
-      const mapa = new Map<string, Category[]>();
-
-      // Si no hay búsqueda y hay categorías frecuentes (con uso > 0), añadir sección "Más Usadas"
-      if (!busqueda.trim()) {
-        const frecuentes = categories
-          .filter(c => (frequencyMap[c.id] || 0) > 0)
-          .slice(0, 6);
-        if (frecuentes.length > 0) {
-          mapa.set('★ Más Usadas', frecuentes);
-        }
-      }
-
-      for (const cat of categoriasFiltradas) {
-        const g = obtenerGrupoCategoria(cat.name);
-        if (!mapa.has(g)) {
-          mapa.set(g, []);
-        }
-        mapa.get(g)!.push(cat);
-      }
-
-      return Array.from(mapa.entries()).map(([nombre, items]) => ({
-        nombre,
-        items,
-      }));
-    }, [categoriasFiltradas, categories, frequencyMap, busqueda]);
-
-    return (
-      <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-        <View style={styles.pickerModalOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
-          <View style={styles.pickerModalCard}>
-            <View style={styles.pickerModalHeader}>
-              <Text style={[styles.pickerModalTitle, TYPOGRAPHY.titularPequeno]}>
-                Todas las categorías
-              </Text>
-              <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <MaterialIcons name="close" size={20} color={COLORS.outline} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Buscador Rápido */}
-            <View style={styles.searchBoxInModal}>
-              <MaterialIcons name="search" size={18} color={COLORS.onSurfaceVariant} />
-              <TextInput
-                value={busqueda}
-                onChangeText={setBusqueda}
-                placeholder="Buscar por nombre o grupo..."
-                placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-                style={styles.searchInputInModal}
-              />
-              {busqueda.length > 0 && (
-                <TouchableOpacity onPress={() => setBusqueda('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <MaterialIcons name="cancel" size={16} color={COLORS.onSurfaceVariant} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.modalCategoryScroll}>
-              {grupos.length === 0 ? (
-                <View style={{ paddingVertical: 30, alignItems: 'center' }}>
-                  <Text style={{ color: COLORS.onSurfaceVariant, fontSize: 13 }}>
-                    No se encontraron categorías
-                  </Text>
-                </View>
-              ) : (
-                grupos.map(grupo => (
-                  <View key={grupo.nombre} style={styles.groupSection}>
-                    <Text style={styles.groupTitle}>{grupo.nombre}</Text>
-                    <View style={styles.categoriesGridInModal}>
-                      {grupo.items.map(cat => {
-                        const isSelected = selectedCategoryId === cat.id;
-                        return (
-                          <TouchableOpacity
-                            key={grupo.nombre + '_' + cat.id}
-                            style={[
-                              styles.categoryGridItem,
-                              isSelected && {
-                                borderColor: cat.color,
-                                backgroundColor: `${cat.color}20`,
-                              },
-                            ]}
-                            onPress={() => {
-                              triggerSelection();
-                              onSelect(cat.id);
-                              onClose();
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <View
-                              style={[
-                                styles.categoryGridItemIconBox,
-                                { backgroundColor: `${cat.color}25` },
-                              ]}
-                            >
-                              <MaterialIcons
-                                name={(cat.icon as any) || 'category'}
-                                size={16}
-                                color={cat.color}
-                              />
-                            </View>
-                            <Text
-                              style={[
-                                styles.categoryGridItemText,
-                                isSelected && { color: '#FFFFFF', fontWeight: '700' },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {cat.name}
-                            </Text>
-                            {isSelected && (
-                              <MaterialIcons name="check" size={14} color={cat.color} />
-                            )}
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-                ))
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    );
-  }
-);
-ModalSelectorCategorias.displayName = 'ModalSelectorCategorias';
 
 // ==========================================
 // SUBCOMPONENTE: CÁPSULA SELECTORA DE TIPO
@@ -644,33 +488,66 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
         style={
           isScreen
             ? [
-                styles.screenContent,
-                {
-                  paddingTop: Math.max(insets.top, 16),
-                  paddingBottom: Math.max(insets.bottom, 20),
-                },
-              ]
+              styles.screenContent,
+              {
+                paddingTop: Math.max(insets.top, 16),
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]
             : [styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) }]
         }
       >
-        {/* Barra Superior: Cerrar (X) + Selector de Tipo */}
-        <View style={styles.topBar}>
-          {onCancel ? (
+        {/* Manija de Arrastre Superior */}
+        {!isScreen && <View style={styles.drawerHandle} />}
+
+        {/* Encabezado Estándar del Modal */}
+        <View style={styles.header}>
+          <View style={styles.headerTitleCol}>
+            <View style={styles.titleWithIcon}>
+              <View style={[styles.headerIconCircle, { backgroundColor: `${actionColor}15` }]}>
+                <MaterialIcons
+                  name={
+                    type === 'EXPENSE'
+                      ? 'trending-down'
+                      : type === 'INCOME'
+                        ? 'trending-up'
+                        : 'swap-horiz'
+                  }
+                  size={20}
+                  color={actionColor}
+                />
+              </View>
+              <View>
+                <Text style={[styles.headerTitle, TYPOGRAPHY.titularPequeno]}>
+                  Nuevo Movimiento
+                </Text>
+                <Text style={styles.headerSubtitle}>
+                  {type === 'EXPENSE'
+                    ? 'Registra un gasto o salida de dinero'
+                    : type === 'INCOME'
+                      ? 'Registra un cobro o ingreso a tu cuenta'
+                      : 'Transfiere dinero entre tus cuentas'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {onCancel && (
             <TouchableOpacity
-              style={styles.circularCloseBtn}
+              style={styles.closeBtn}
               onPress={onCancel}
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Cerrar modal"
             >
-              <MaterialIcons name="close" size={20} color={COLORS.onSurface} />
+              <MaterialIcons name="close" size={20} color={COLORS.onSurfaceVariant} />
             </TouchableOpacity>
-          ) : (
-            <View style={styles.topBarSpacer} />
           )}
+        </View>
 
+        {/* Selector de Tipo (Gasto / Ingreso / Traspaso) */}
+        <View style={styles.typeSelectorRow}>
           <ControlSegmentadoTipo type={type} onChangeType={handleTypeChange} />
-
-          <View style={styles.topBarSpacer} />
         </View>
 
         {/* Cuerpo del Formulario con Desplazamiento */}
@@ -949,8 +826,8 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
                       }}
                       activeOpacity={0.7}
                     >
-                      <MaterialIcons
-                        name={(cat.icon as any) || 'category'}
+                      <IconoCategoria
+                        icon={cat.icon}
                         size={15}
                         color={isSelected ? '#FFFFFF' : cat.color}
                       />
@@ -1023,14 +900,14 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
         onClose={() => setIsTargetAccountModalVisible(false)}
       />
 
-      {/* Modal Todas las Categorías */}
+      {/* Modal Todas las Categorías (Reutiliza el componente unificado) */}
       <ModalSelectorCategorias
         visible={isCategoryPickerVisible}
-        categories={categories}
-        frequencyMap={frequencyMap}
-        selectedCategoryId={activeCategoryId}
-        onSelect={setUserSelectedCategoryId}
+        modo="SELECCION"
+        categoriaSeleccionadaId={activeCategoryId}
+        onSeleccionarCategoria={setUserSelectedCategoryId}
         onClose={() => setIsCategoryPickerVisible(false)}
+        tipoFlujoInicial={type === 'TRANSFER' ? 'EXPENSE' : type}
       />
     </KeyboardAvoidingView>
   );

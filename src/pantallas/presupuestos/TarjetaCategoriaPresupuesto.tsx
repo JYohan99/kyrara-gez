@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
 import { PresupuestoEnriquecido } from '@/datos/tipos';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 
@@ -39,8 +40,8 @@ export const TarjetaCategoriaPresupuesto: React.FC<PropiedadesTarjetaCategoriaPr
               { backgroundColor: `${budget.categoryColor}25` },
             ]}
           >
-            <MaterialIcons
-              name={budget.categoryIcon as any || 'category'}
+            <IconoCategoria
+              icon={budget.categoryIcon}
               size={22}
               color={budget.categoryColor || COLORS.primary}
             />

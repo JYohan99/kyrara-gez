@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
 import { guardarPresupuesto as setBudget, eliminarPresupuesto as deleteBudget } from '@/datos/consultas/presupuestos';
 import { PresupuestoEnriquecido, Categoria } from '@/datos/tipos';
 import {
@@ -198,8 +199,8 @@ const BudgetModalDrawer: React.FC<BudgetModalDrawerProps> = ({
                       isSelected && styles.catChipSelected,
                     ]}
                   >
-                    <MaterialIcons
-                      name={cat.icon as any || 'category'}
+                    <IconoCategoria
+                      icon={cat.icon}
                       size={16}
                       color={isSelected ? '#FFFFFF' : COLORS.onSurfaceVariant}
                     />

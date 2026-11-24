@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
 import { useCategoriasBoveda as useVaultCategories } from '@/datos/hooks';
 import { eliminarCategoria as deleteCategory } from '@/datos/consultas/categorias';
@@ -140,8 +141,8 @@ export const PestanaCategorias: React.FC<PropiedadesPestanaCategorias> = ({ onNe
                 { backgroundColor: `${mostFrequentCat.color}25` },
               ]}
             >
-              <MaterialIcons
-                name={mostFrequentCat.icon as any || 'category'}
+              <IconoCategoria
+                icon={mostFrequentCat.icon}
                 size={22}
                 color={mostFrequentCat.color}
               />
@@ -176,8 +177,8 @@ export const PestanaCategorias: React.FC<PropiedadesPestanaCategorias> = ({ onNe
                     { backgroundColor: `${cat.color}22` },
                   ]}
                 >
-                  <MaterialIcons
-                    name={cat.icon as any || 'category'}
+                  <IconoCategoria
+                    icon={cat.icon}
                     size={20}
                     color={cat.color}
                   />

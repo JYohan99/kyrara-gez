@@ -35,23 +35,62 @@ export const styles = StyleSheet.create({
     paddingBottom: 24,
   },
 
-  // Barra Superior
-  topBar: {
+  // Barra Superior / Encabezado Estándar del Modal
+  drawerHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    marginBottom: 12,
   },
-  circularCloseBtn: {
+  headerTitleCol: {
+    flex: 1,
+  },
+  titleWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerIconCircle: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  topBarSpacer: {
-    width: 38,
+  headerTitle: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
+    letterSpacing: -0.2,
+  },
+  headerSubtitle: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeSelectorRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
 
   // Cápsula Segmentada de Tipo

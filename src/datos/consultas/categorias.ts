@@ -1,89 +1,60 @@
 import { obtenerBaseDatos } from '../conexion';
 import { Categoria } from '../tipos';
 import { emitirCambioBoveda } from '../sincronizacion';
+import { CATEGORIAS_PREDETERMINADAS } from '../semillas';
 
-export const GRUPOS_CATEGORIAS: Record<string, string> = {
+export const ORDEN_GRUPOS: string[] = [
   // --- Gastos ---
-  'Supermercado y Despensa': 'Alimentación y Consumo',
-  'Restaurantes y Bares': 'Alimentación y Consumo',
-  'Cafetería y Panadería': 'Alimentación y Consumo',
-  'Comida Rápida y Delivery': 'Alimentación y Consumo',
-
-  'Alquiler de Vivienda': 'Vivienda e Inmuebles',
-  'Electricidad y Luz': 'Vivienda e Inmuebles',
-  'Agua y Saneamiento': 'Vivienda e Inmuebles',
-  'Gas y Calefacción': 'Vivienda e Inmuebles',
-  'Gastos Comunes y Expensas': 'Vivienda e Inmuebles',
-  'Mantenimiento y Reparación Hogar': 'Vivienda e Inmuebles',
-  'Muebles y Artículos del Hogar': 'Vivienda e Inmuebles',
-
-  'Internet y Wifi': 'Conectividad y Digital',
-  'Telefonía Móvil y Celular': 'Conectividad y Digital',
-  'Suscripciones y Streaming': 'Conectividad y Digital',
-  'Software y Herramientas Digitales': 'Conectividad y Digital',
-
-  'Combustible y Nafta': 'Transporte y Movilidad',
-  'Transporte Público y Boletos': 'Transporte y Movilidad',
-  'Taxi, Uber y Aplicaciones': 'Transporte y Movilidad',
-  'Mantenimiento y Taller Mecánico': 'Transporte y Movilidad',
-  'Peajes y Estacionamiento': 'Transporte y Movilidad',
-  'Seguro de Vehículo': 'Transporte y Movilidad',
-
-  'Farmacia y Medicamentos': 'Salud y Bienestar',
-  'Consultas Médicas y Odontología': 'Salud y Bienestar',
-  'Cuidado Personal y Peluquería': 'Salud y Bienestar',
-  'Gimnasio y Actividad Física': 'Salud y Bienestar',
-
-  'Educación y Matrículas': 'Educación y Familia',
-  'Cursos y Capacitación': 'Educación y Familia',
-  'Libros y Material de Estudio': 'Educación y Familia',
-  'Ropa, Calzado y Accesorios': 'Educación y Familia',
-  'Mascotas, Veterinaria y Alimento': 'Educación y Familia',
-
-  'Cine, Salidas y Entretenimiento': 'Ocio y Vida Social',
-  'Viajes, Vacaciones y Alojamiento': 'Ocio y Vida Social',
-  'Regalos y Celebraciones': 'Ocio y Vida Social',
-  'Donaciones y Solidaridad': 'Ocio y Vida Social',
-
-  'Compra de Mercadería (Reventa)': 'Negocio, Taller y Comercio',
-  'Materias Primas e Insumos': 'Negocio, Taller y Comercio',
-  'Herramientas y Maquinaria': 'Negocio, Taller y Comercio',
-  'Embalaje, Cajas y Packaging': 'Negocio, Taller y Comercio',
-  'Envíos, Fletes y Cadetería': 'Negocio, Taller y Comercio',
-  'Publicidad, Redes y Marketing': 'Negocio, Taller y Comercio',
-  'Alquiler de Local o Taller Comercial': 'Negocio, Taller y Comercio',
-
-  'Impuestos, Tasas y Tributos': 'Finanzas y Obligaciones',
-  'Comisiones Bancarias y del POS': 'Finanzas y Obligaciones',
-  'Cuotas de Préstamos e Intereses': 'Finanzas y Obligaciones',
-  'Otros Gastos Varios': 'Finanzas y Obligaciones',
+  'Alimentación y Consumo',
+  'Vivienda e Inmuebles',
+  'Conectividad y Digital',
+  'Transporte y Movilidad',
+  'Salud y Bienestar',
+  'Educación y Familia',
+  'Ocio y Vida Social',
+  'Negocio, Taller y Comercio',
+  'Finanzas y Obligaciones',
 
   // --- Ingresos ---
-  'Ventas de Productos': 'Ventas y Comercio',
-  'Cobro de Servicios y Mano de Obra': 'Ventas y Comercio',
-  'Ventas de Artesanías y Creaciones': 'Ventas y Comercio',
-  'Comisiones por Ventas': 'Ventas y Comercio',
+  'Ventas y Comercio',
+  'Trabajo y Empleo',
+  'Rentas e Inversiones',
+  'Otros Ingresos',
+];
 
-  'Sueldo y Salario': 'Trabajo y Empleo',
-  'Honorarios Profesionales': 'Trabajo y Empleo',
-  'Trabajos Independientes y Extras': 'Trabajo y Empleo',
-  'Propinas y Gratificaciones': 'Trabajo y Empleo',
-  'Aguinaldo y Bonificaciones': 'Trabajo y Empleo',
-
-  'Rendimientos e Inversiones': 'Rentas e Inversiones',
-  'Alquileres Cobrados': 'Rentas e Inversiones',
-  'Dividendos y Ganancias de Capital': 'Rentas e Inversiones',
-
-  'Cobro de Deudas y Préstamos': 'Otros Ingresos',
-  'Reembolsos y Devoluciones': 'Otros Ingresos',
-  'Premios y Sorteos': 'Otros Ingresos',
-  'Regalos en Efectivo': 'Otros Ingresos',
-  'Subsidios y Ayudas Estatales': 'Otros Ingresos',
-  'Otros Ingresos Varios': 'Otros Ingresos',
-};
+// Generado automáticamente desde semillas.ts (¡no requiere duplicar nombres a mano!)
+export const GRUPOS_CATEGORIAS: Record<string, string> = Object.fromEntries(
+  CATEGORIAS_PREDETERMINADAS.map(c => [c.name, c.group])
+);
 
 export function obtenerGrupoCategoria(nombre: string): string {
-  return GRUPOS_CATEGORIAS[nombre] || 'General';
+  if (!nombre) return 'General';
+
+  // 1. Coincidencia directa
+  if (GRUPOS_CATEGORIAS[nombre]) {
+    return GRUPOS_CATEGORIAS[nombre];
+  }
+
+  // 2. Coincidencia insensible a mayúsculas/minúsculas y espacios
+  const nombreLimpio = nombre.trim().toLowerCase();
+  for (const [clave, grupo] of Object.entries(GRUPOS_CATEGORIAS)) {
+    if (clave.trim().toLowerCase() === nombreLimpio) {
+      return grupo;
+    }
+  }
+
+  // 3. Coincidencia por inclusión (ej: si se acorta "Electricidad y Luz" a "Luz")
+  for (const [clave, grupo] of Object.entries(GRUPOS_CATEGORIAS)) {
+    const claveLimpia = clave.trim().toLowerCase();
+    if (
+      (nombreLimpio.length >= 3 && claveLimpia.includes(nombreLimpio)) ||
+      (claveLimpia.length >= 3 && nombreLimpio.includes(claveLimpia))
+    ) {
+      return grupo;
+    }
+  }
+
+  return 'General';
 }
 
 export function obtenerCategorias(flowType?: 'EXPENSE' | 'INCOME', soloActivas = false): Categoria[] {

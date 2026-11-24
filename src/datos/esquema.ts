@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { obtenerBaseDatos } from './conexion';
 import { sembrarCategoriasPredeterminadas, sembrarCuentasPredeterminadas } from './semillas';
 
+
 let esquemaVerificado = false;
 
 export function forzarVerificacionEsquema(): void {
@@ -370,17 +371,19 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
     }
   } catch { }
 
-  // 6. Sembrado si la base de datos está vacía
+  // 7. Migración a iconos 3D estilo emoji para todas las categorías (ejecución única)
   try {
-    const countRow = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM categories');
-    if (!countRow || countRow.count === 0) {
+    const migradoIconos3D = db.getFirstSync<{ value: string }>(
+      "SELECT value FROM settings WHERE key = 'categorias_iconos_3d_v1'"
+    );
+    if (!migradoIconos3D) {
       sembrarCategoriasPredeterminadas(db);
+      db.runSync("INSERT OR REPLACE INTO settings (key, value) VALUES ('categorias_iconos_3d_v1', '1')");
     }
-  } catch {
-    // Ignorar si falla sembrado
-  }
+  } catch { }
 
   try {
+
     const accCountRow = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM accounts');
     if (!accCountRow || accCountRow.count === 0) {
       sembrarCuentasPredeterminadas(db);
