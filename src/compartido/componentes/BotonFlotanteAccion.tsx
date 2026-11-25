@@ -192,7 +192,5 @@ const styles = StyleSheet.create({
 
 // Alias en inglés para compatibilidad
 BotonFlotanteAccion.displayName = 'BotonFlotanteAccion';
-export const FloatingActionButton = BotonFlotanteAccion;
-export type FloatingActionButtonProps = PropiedadesBotonFlotante;
 
 

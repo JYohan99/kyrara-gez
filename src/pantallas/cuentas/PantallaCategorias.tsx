@@ -42,7 +42,5 @@ export function PantallaCategorias() {
   );
 }
 
-export const CategoriesScreen = PantallaCategorias;
 export const PantallaCuentas = PantallaCategorias;
-export const AccountsVaultScreen = PantallaCategorias;
 

@@ -9,7 +9,7 @@ import {
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard, EncabezadoSuperior, BotonFlotanteAccion } from '@/compartido/componentes';
+import { TarjetaVidrio as GlassCard, EncabezadoSuperior, BotonFlotanteAccion, OrbeGlossy } from '@/compartido/componentes';
 import { ModalNuevoMovimiento as NewTransactionModal } from '@/pantallas/movimientos/ModalNuevoMovimiento';
 import { ModalDetalleMovimiento as TransactionDetailModal } from '@/pantallas/movimientos/ModalDetalleMovimiento';
 import { vibracionSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
@@ -167,33 +167,39 @@ export function PantallaInicio() {
           </View>
           <View style={styles.actionsGrid}>
             <TouchableOpacity
-              style={styles.actionBtnExpense}
-              activeOpacity={0.7}
+              style={styles.actionTile}
+              activeOpacity={0.78}
               onPress={() => openModal('EXPENSE')}
             >
-              <MaterialIcons name="remove-circle-outline" size={18} color={COLORS.cashflowExpense} />
+              <OrbeGlossy tamano={42} tono="gasto" sombra>
+                <MaterialIcons name="arrow-upward" size={20} color="#FFFFFF" />
+              </OrbeGlossy>
               <Text style={[styles.actionBtnText, { color: COLORS.cashflowExpense }, TYPOGRAPHY.labelCaps]}>
                 Gasto
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionBtnIncome}
-              activeOpacity={0.7}
+              style={styles.actionTile}
+              activeOpacity={0.78}
               onPress={() => openModal('INCOME')}
             >
-              <MaterialIcons name="add-circle-outline" size={18} color={COLORS.cashflowIncome} />
+              <OrbeGlossy tamano={42} tono="ingreso" sombra>
+                <MaterialIcons name="arrow-downward" size={20} color="#FFFFFF" />
+              </OrbeGlossy>
               <Text style={[styles.actionBtnText, { color: COLORS.cashflowIncome }, TYPOGRAPHY.labelCaps]}>
                 Ingreso
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionBtnTransfer}
-              activeOpacity={0.7}
+              style={styles.actionTile}
+              activeOpacity={0.78}
               onPress={() => openModal('TRANSFER')}
             >
-              <MaterialIcons name="swap-horiz" size={18} color={COLORS.primary} />
+              <OrbeGlossy tamano={42} tono="violeta" sombra>
+                <MaterialIcons name="swap-horiz" size={20} color="#FFFFFF" />
+              </OrbeGlossy>
               <Text style={[styles.actionBtnText, { color: COLORS.primary }, TYPOGRAPHY.labelCaps]}>
                 Traspaso
               </Text>
@@ -224,18 +230,15 @@ export function PantallaInicio() {
               >
                 <GlassCard variant="high" style={styles.accountCard}>
                   <View style={styles.accountCardTop}>
-                    <View
-                      style={[
-                        styles.accountIconBox,
-                        {
-                          backgroundColor:
-                            acc.type === 'CASH'
-                              ? `${COLORS.cashflowIncome}20`
-                              : acc.type === 'BANK'
-                                ? `${COLORS.secondaryContainer}20`
-                                : `${COLORS.primaryContainer}20`,
-                        },
-                      ]}
+                    <OrbeGlossy
+                      tamano={38}
+                      tono={
+                        acc.type === 'CASH'
+                          ? 'ingreso'
+                          : acc.type === 'BANK'
+                            ? 'cian'
+                            : 'violeta'
+                      }
                     >
                       <MaterialIcons
                         name={
@@ -248,15 +251,9 @@ export function PantallaInicio() {
                                 : 'lock'
                         }
                         size={18}
-                        color={
-                          acc.type === 'CASH'
-                            ? COLORS.cashflowIncome
-                            : acc.type === 'BANK'
-                              ? COLORS.secondary
-                              : COLORS.primary
-                        }
+                        color="#FFFFFF"
                       />
-                    </View>
+                    </OrbeGlossy>
                     <Text style={[styles.accountTypeBadge, TYPOGRAPHY.labelCaps]}>
                       {acc.type === 'CASH'
                         ? 'Físico'
@@ -401,25 +398,6 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     fontSize: 12,
   },
-  liveBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    backgroundColor: 'rgba(87, 245, 171, 0.1)',
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.cashflowIncome,
-  },
-  liveText: {
-    color: COLORS.cashflowIncome,
-    fontSize: 9,
-  },
   heroCard: {
     padding: 20,
     borderRadius: 24,
@@ -472,10 +450,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(138, 79, 255, 0.15)',
   },
-  flowBadgeText: {
-    color: COLORS.primary,
-    fontSize: 9,
-  },
   balanceRow: {
     marginVertical: 4,
   },
@@ -525,35 +499,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  actionBtnExpense: {
+  actionTile: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 138, 158, 0.1)',
-  },
-  actionBtnIncome: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(87, 245, 171, 0.1)',
-  },
-  actionBtnTransfer: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(138, 79, 255, 0.1)',
+    gap: 7,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: 'rgba(10, 14, 16, 0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.12)',
   },
   actionBtnText: {
     fontSize: 10,
+    fontWeight: '700',
   },
   sectionContainer: {
     gap: 10,
@@ -615,13 +574,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  accountIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   accountTypeBadge: {
     color: COLORS.onSurfaceVariant,
     fontSize: 9,
@@ -667,5 +619,4 @@ const styles = StyleSheet.create({
 });
 
 // Alias compatible
-export const HomeScreen = PantallaInicio;
 

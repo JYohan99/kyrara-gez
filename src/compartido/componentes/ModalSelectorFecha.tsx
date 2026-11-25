@@ -10,6 +10,11 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES } from '../tema/colores';
 import { TIPOGRAFIA } from '../tema/tipografia';
+import { TarjetaVidrio } from './TarjetaVidrio';
+import { EncabezadoModal } from './EncabezadoModal';
+import { OrbeGlossy } from './OrbeGlossy';
+import { ChipFiltro } from './ChipFiltro';
+import { BotonBrillante } from './BotonBrillante';
 import {
   NOMBRES_MESES,
   NOMBRES_DIAS_CORTO,
@@ -149,75 +154,54 @@ export const ModalSelectorFecha: React.FC<PropiedadesModalSelectorFecha> = ({
     <View style={estilos.superposicion}>
       <Pressable style={estilos.fondo} onPress={onClose} />
 
-      <View style={estilos.tarjetaCalendario}>
-        {/* Header con título y botón cerrar */}
-        <View style={estilos.filaCabecera}>
-          <View style={estilos.envoltorioTituloCabecera}>
-            <MaterialIcons name="calendar-month" size={20} color={COLORES.primario} />
-            <Text style={[estilos.titulo, TIPOGRAFIA.etiquetaMayusculas]}>Fecha de Operación</Text>
-          </View>
-          <TouchableOpacity
-            onPress={onClose}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <MaterialIcons name="close" size={20} color={COLORES.enSuperficieVariante} />
-          </TouchableOpacity>
-        </View>
+      <TarjetaVidrio variant="high" style={estilos.tarjetaCalendario}>
+        <EncabezadoModal
+          titulo="Fecha de Operación"
+          icono="calendar-month"
+          tono="violeta"
+          onCerrar={onClose}
+          style={estilos.cabeceraModal}
+        />
 
         {/* Atajos rápidos (Hoy / Ayer) */}
         <View style={estilos.filaAtajos}>
-          <TouchableOpacity
-            style={[estilos.chipAtajo, esTemporalHoy && estilos.chipAtajoActivo]}
+          <ChipFiltro
+            etiqueta="Hoy"
+            activo={esTemporalHoy}
+            tono="violeta"
             onPress={manejarRapidoHoy}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                estilos.textoChipAtajo,
-                esTemporalHoy && estilos.textoChipAtajoActivo,
-              ]}
-            >
-              Hoy
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[estilos.chipAtajo, esTemporalAyer && estilos.chipAtajoActivo]}
+          />
+          <ChipFiltro
+            etiqueta="Ayer"
+            activo={esTemporalAyer}
+            tono="violeta"
             onPress={manejarRapidoAyer}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                estilos.textoChipAtajo,
-                esTemporalAyer && estilos.textoChipAtajoActivo,
-              ]}
-            >
-              Ayer
-            </Text>
-          </TouchableOpacity>
+          />
         </View>
 
         {/* Navegación Mes / Año */}
         <View style={estilos.filaNavegacionMes}>
-          <TouchableOpacity
-            style={estilos.botonNav}
+          <OrbeGlossy
+            tamano={34}
+            tono="obsidiana"
             onPress={manejarMesAnterior}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Mes anterior"
           >
-            <MaterialIcons name="chevron-left" size={24} color={COLORES.enSuperficie} />
-          </TouchableOpacity>
+            <MaterialIcons name="chevron-left" size={22} color={COLORES.enSuperficie} />
+          </OrbeGlossy>
 
           <Text style={[estilos.textoNavMes, TIPOGRAFIA.titularPequeno]}>
             {NOMBRES_MESES[mesVista]} {anioVista}
           </Text>
 
-          <TouchableOpacity
-            style={estilos.botonNav}
+          <OrbeGlossy
+            tamano={34}
+            tono="obsidiana"
             onPress={manejarMesSiguiente}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Mes siguiente"
           >
-            <MaterialIcons name="chevron-right" size={24} color={COLORES.enSuperficie} />
-          </TouchableOpacity>
+            <MaterialIcons name="chevron-right" size={22} color={COLORES.enSuperficie} />
+          </OrbeGlossy>
         </View>
 
         {/* Encabezados de días de la semana */}
@@ -238,16 +222,11 @@ export const ModalSelectorFecha: React.FC<PropiedadesModalSelectorFecha> = ({
             <Text style={estilos.textoBotonCancelar}>Cancelar</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={estilos.botonConfirmar}
-            onPress={manejarConfirmar}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="check" size={18} color="#FFFFFF" />
-            <Text style={estilos.textoBotonConfirmar}>Confirmar</Text>
-          </TouchableOpacity>
+          <View style={estilos.confirmarWrap}>
+            <BotonBrillante title="Confirmar" onPress={manejarConfirmar} />
+          </View>
         </View>
-      </View>
+      </TarjetaVidrio>
     </View>
   );
 };
@@ -278,59 +257,16 @@ const estilos = StyleSheet.create({
   tarjetaCalendario: {
     width: '100%',
     maxWidth: 360,
-    backgroundColor: COLORES.superficieContenedor,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 18,
-    borderWidth: 1,
-    borderColor: COLORES.bordeCristal,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 12,
   },
-  filaCabecera: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  cabeceraModal: {
     marginBottom: 12,
-  },
-  envoltorioTituloCabecera: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  titulo: {
-    color: COLORES.primario,
-    letterSpacing: 1.2,
   },
   filaAtajos: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 14,
-  },
-  chipAtajo: {
-    flex: 1,
-    paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: COLORES.superficieContenedorAlto,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  chipAtajoActivo: {
-    backgroundColor: 'rgba(138, 79, 255, 0.25)',
-    borderColor: COLORES.primario,
-  },
-  textoChipAtajo: {
-    color: COLORES.enSuperficieVariante,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  textoChipAtajoActivo: {
-    color: COLORES.primario,
-    fontWeight: '700',
+    marginBottom: 12,
   },
   filaNavegacionMes: {
     flexDirection: 'row',
@@ -344,14 +280,6 @@ const estilos = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     textTransform: 'capitalize',
-  },
-  botonNav: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORES.superficieContenedorAlto,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   filaDiasSemana: {
     flexDirection: 'row',
@@ -424,36 +352,27 @@ const estilos = StyleSheet.create({
   },
   filaAcciones: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 18,
+    gap: 10,
+    marginTop: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    borderTopColor: 'rgba(165, 231, 255, 0.1)',
   },
   botonCancelar: {
-    paddingVertical: 9,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 10,
+    borderRadius: 14,
+    backgroundColor: 'rgba(9, 13, 15, 0.68)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.14)',
   },
   textoBotonCancelar: {
     color: COLORES.enSuperficieVariante,
     fontSize: 13,
-    fontWeight: '600',
-  },
-  botonConfirmar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: COLORES.primarioContenedor,
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    borderRadius: 10,
-  },
-  textoBotonConfirmar: {
-    color: '#FFFFFF',
-    fontSize: 13,
     fontWeight: '700',
+  },
+  confirmarWrap: {
+    flex: 1,
   },
 });

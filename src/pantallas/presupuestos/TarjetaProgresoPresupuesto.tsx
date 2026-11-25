@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { TarjetaVidrio as GlassCard, OrbeGlossy, BarraProgreso3D } from '@/compartido/componentes';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 
 export interface PropiedadesTarjetaProgresoPresupuesto {
@@ -32,47 +32,51 @@ export const TarjetaProgresoPresupuesto: React.FC<PropiedadesTarjetaProgresoPres
   daysRemaining,
   bankBalance,
 }) => {
+  const isOver = totalPercent >= 100 || remainingTotal < 0;
+  const isWarning = totalPercent >= 90;
+
   return (
-    <GlassCard style={styles.heroCard}>
+    <GlassCard variant="high" style={styles.heroCard}>
       {/* Header Row */}
       <View style={styles.heroHeaderRow}>
-        <View style={styles.heroTitleGroup}>
-          <View style={styles.heroTitleDot} />
+        <OrbeGlossy tamano={42} tono={isOver ? 'gasto' : 'cian'} sombra>
+          <MaterialIcons name="donut-large" size={20} color="#FFFFFF" />
+        </OrbeGlossy>
+
+        <View style={styles.heroHeaderTextCol}>
           <Text style={[styles.heroCategoryLabel, TYPOGRAPHY.labelCaps]}>
-            Presupuesto General de {monthName}
+            Presupuesto General
+          </Text>
+          <Text style={styles.heroMonthSub} numberOfLines={1}>
+            {monthName} • Dinero disponible restante
           </Text>
         </View>
 
         <View
           style={[
             styles.percentBadge,
-            totalPercent >= 90
-              ? styles.percentBadgeWarning
-              : styles.percentBadgeNormal,
+            isWarning ? styles.percentBadgeWarning : styles.percentBadgeNormal,
           ]}
         >
           <Text
             style={[
               styles.percentBadgeText,
               TYPOGRAPHY.labelCaps,
-              { color: totalPercent >= 90 ? COLORS.cashflowExpense : COLORS.secondary },
+              { color: isWarning ? COLORS.cashflowExpense : COLORS.secondary },
             ]}
           >
-            {totalPercent}% consumido
+            {totalPercent}%
           </Text>
         </View>
       </View>
 
       {/* Main Available Balance */}
       <View style={styles.heroBalanceSection}>
-        <Text style={[styles.heroBalanceSubtitle, TYPOGRAPHY.bodySm]}>
-          Dinero disponible restante
-        </Text>
         <Text
           style={[
             styles.heroBalanceAmount,
             TYPOGRAPHY.displayHeroMobile,
-            { color: remainingTotal < 0 ? COLORS.cashflowExpense : COLORS.secondary },
+            { color: remainingTotal < 0 ? COLORS.cashflowExpense : '#FFFFFF' },
           ]}
         >
           {formatCurrency(remainingTotal)}
@@ -83,7 +87,7 @@ export const TarjetaProgresoPresupuesto: React.FC<PropiedadesTarjetaProgresoPres
       <View style={styles.heroGrid}>
         <View style={styles.heroGridBox}>
           <Text style={[styles.gridLabel, TYPOGRAPHY.labelCaps]}>Límite Total</Text>
-          <Text style={[styles.gridValue, TYPOGRAPHY.numericTable]}>
+          <Text style={[styles.gridValue, TYPOGRAPHY.numericTable]} numberOfLines={1}>
             {formatCurrency(totalLimit)}
           </Text>
         </View>
@@ -96,49 +100,33 @@ export const TarjetaProgresoPresupuesto: React.FC<PropiedadesTarjetaProgresoPres
               TYPOGRAPHY.numericTable,
               { color: COLORS.cashflowExpense },
             ]}
+            numberOfLines={1}
           >
             {formatCurrency(totalSpent)}
           </Text>
         </View>
       </View>
 
-      {/* Progress Bar with Pace Indicators */}
+      {/* Progress Bar with Clean Non-Overlapping Pace Row */}
       <View style={styles.progressContainer}>
-        <View style={styles.progressBarTrack}>
-          <View
-            style={[
-              styles.progressBarFill,
-              {
-                width: `${Math.min(100, totalPercent)}%`,
-                backgroundColor:
-                  totalPercent >= 100
-                    ? COLORS.cashflowExpense
-                    : totalPercent >= 90
-                    ? '#FFB4AB'
-                    : COLORS.secondaryContainer,
-              },
-            ]}
-          />
-        </View>
+        <BarraProgreso3D
+          porcentaje={totalPercent}
+          tono={totalPercent >= 100 ? 'gasto' : totalPercent >= 90 ? 'alerta' : 'cian'}
+          altura={10}
+        />
 
-        {/* Pace Indicators */}
-        <View style={styles.paceMarkersContainer}>
-          <View
-            style={[
-              styles.paceMarkerDay,
-              { left: `${Math.min(94, Math.max(6, dayPacePercent))}%` },
-            ]}
-          >
+        <View style={styles.paceFooterRow}>
+          <View style={styles.paceDayGroup}>
             <View style={styles.paceMarkerPip} />
             <Text style={[styles.paceMarkerText, TYPOGRAPHY.labelCaps]}>
-              Día {currentDay} ({dayPacePercent}%)
+              Día {currentDay} ({dayPacePercent}% del mes)
             </Text>
           </View>
 
           <View
             style={[
-              styles.paceMarkerSpend,
-              { left: `${Math.min(95, Math.max(10, totalPercent))}%` },
+              styles.pacePill,
+              paceDiff > 0 ? styles.pacePillExpense : styles.pacePillIncome,
             ]}
           >
             <Text
@@ -162,19 +150,21 @@ export const TarjetaProgresoPresupuesto: React.FC<PropiedadesTarjetaProgresoPres
       {/* Insight Speed Badge & Bank Reference */}
       <View style={styles.insightSection}>
         <View style={styles.insightBadge}>
-          <MaterialIcons name="speed" size={20} color={COLORS.secondary} />
+          <OrbeGlossy tamano={30} tono="cian">
+            <MaterialIcons name="speed" size={16} color="#FFFFFF" />
+          </OrbeGlossy>
           <Text style={[styles.insightText, TYPOGRAPHY.bodySm]}>
             Te quedan{' '}
             <Text style={styles.insightHighlight}>
               {formatCurrency(dailyAvailable)}/día
             </Text>{' '}
-            para los {daysRemaining} días restantes del mes.
+            para los {daysRemaining} días restantes.
           </Text>
         </View>
 
         <View style={styles.bankReferenceRow}>
           <Text style={[styles.bankReferenceLabel, TYPOGRAPHY.bodySm]}>
-            En cuentas bancarias:
+            Saldo total en cuentas:
           </Text>
           <Text style={[styles.bankReferenceValue, TYPOGRAPHY.numericTable]}>
             {formatCurrency(bankBalance)}
@@ -188,54 +178,55 @@ export const TarjetaProgresoPresupuesto: React.FC<PropiedadesTarjetaProgresoPres
 const styles = StyleSheet.create({
   heroCard: {
     padding: 18,
-    borderRadius: 20,
-    backgroundColor: 'rgba(24, 28, 29, 0.95)',
+    borderRadius: 22,
     gap: 14,
   },
   heroHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
   },
-  heroTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  heroTitleDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.secondary,
+  heroHeaderTextCol: {
+    flex: 1,
   },
   heroCategoryLabel: {
     color: COLORS.secondary,
-    letterSpacing: 1.1,
+    fontSize: 10,
+    letterSpacing: 1,
+  },
+  heroMonthSub: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 11.5,
+    marginTop: 2,
   },
   percentBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 999,
+    borderWidth: 1,
   },
   percentBadgeNormal: {
     backgroundColor: 'rgba(0, 210, 255, 0.12)',
+    borderColor: 'rgba(165, 231, 255, 0.25)',
   },
   percentBadgeWarning: {
     backgroundColor: 'rgba(255, 138, 158, 0.15)',
+    borderColor: 'rgba(255, 138, 158, 0.35)',
   },
   percentBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: '800',
   },
   heroBalanceSection: {
     alignItems: 'center',
-    paddingVertical: 4,
-  },
-  heroBalanceSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    marginBottom: 4,
+    paddingVertical: 2,
   },
   heroBalanceAmount: {
-    fontWeight: '700',
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    textAlign: 'center',
   },
   heroGrid: {
     flexDirection: 'row',
@@ -243,74 +234,77 @@ const styles = StyleSheet.create({
   },
   heroGridBox: {
     flex: 1,
+    alignItems: 'center',
     padding: 12,
-    borderRadius: 12,
-    backgroundColor: COLORS.surfaceContainerHighest,
+    borderRadius: 14,
+    backgroundColor: 'rgba(9, 13, 15, 0.58)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.12)',
     gap: 4,
   },
   gridLabel: {
     color: COLORS.onSurfaceVariant,
-    fontSize: 10,
+    fontSize: 9.5,
+    textAlign: 'center',
   },
   gridValue: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
+    fontWeight: '800',
+    textAlign: 'center',
   },
   progressContainer: {
     gap: 8,
-    paddingTop: 4,
+    paddingTop: 2,
   },
-  progressBarTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.surfaceContainerHighest,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  paceMarkersContainer: {
-    height: 20,
-    position: 'relative',
-  },
-  paceMarkerDay: {
-    position: 'absolute',
-    transform: [{ translateX: -30 }],
+  paceFooterRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  paceDayGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   paceMarkerPip: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.onSurface,
-    marginBottom: 2,
+    backgroundColor: COLORS.secondary,
   },
   paceMarkerText: {
     color: COLORS.onSurfaceVariant,
-    fontSize: 9,
+    fontSize: 9.5,
   },
-  paceMarkerSpend: {
-    position: 'absolute',
-    transform: [{ translateX: -30 }],
-    alignItems: 'center',
-    top: 2,
+  pacePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  pacePillIncome: {
+    backgroundColor: 'rgba(87, 245, 171, 0.12)',
+  },
+  pacePillExpense: {
+    backgroundColor: 'rgba(255, 138, 158, 0.15)',
   },
   paceDiffText: {
-    fontSize: 9,
+    fontSize: 9.5,
+    fontWeight: '700',
   },
   insightSection: {
     gap: 10,
-    paddingTop: 6,
+    paddingTop: 4,
   },
   insightBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0, 210, 255, 0.08)',
+    padding: 11,
+    borderRadius: 15,
+    backgroundColor: 'rgba(9, 13, 15, 0.56)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.15)',
+    borderColor: 'rgba(165, 231, 255, 0.14)',
   },
   insightText: {
     color: COLORS.onSurface,
@@ -325,17 +319,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 4,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(165, 231, 255, 0.1)',
+    paddingHorizontal: 2,
   },
   bankReferenceLabel: {
     color: COLORS.onSurfaceVariant,
   },
   bankReferenceValue: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });
 
 // Alias compatibles
 export const BudgetHeroCard = TarjetaProgresoPresupuesto;
-export type BudgetHeroCardProps = PropiedadesTarjetaProgresoPresupuesto;
-

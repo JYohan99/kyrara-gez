@@ -92,7 +92,6 @@ export function PantallaAjustes() {
   );
 }
 
-export const SettingsScreen = PantallaAjustes;
 
 const styles = StyleSheet.create({
   screen: {

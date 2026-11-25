@@ -21,5 +21,3 @@ export function cerrarBaseDatos(): void {
 }
 
 // Alias compatibles
-export const getDatabase = obtenerBaseDatos;
-export const closeDatabase = cerrarBaseDatos;

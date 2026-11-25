@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
 import { guardarPresupuesto as setBudget, eliminarPresupuesto as deleteBudget } from '@/datos/consultas/presupuestos';
@@ -33,7 +34,6 @@ export interface PropiedadesModalPresupuesto {
   onClose: () => void;
   onSaved?: () => void;
 }
-export type BudgetModalProps = PropiedadesModalPresupuesto;
 
 interface BudgetModalDrawerProps {
   period: string;
@@ -161,24 +161,17 @@ const BudgetModalDrawer: React.FC<BudgetModalDrawerProps> = ({
         contentContainerStyle={styles.drawerScrollContent}
       >
 
-        <View style={styles.drawerHeader}>
-          <View>
-            <Text style={[styles.drawerTitle, TYPOGRAPHY.headlineSm]}>
-              {isEditing && editingBudget
-                ? `Editar: ${editingBudget.categoryName}`
-                : 'Nuevo Presupuesto'}
-            </Text>
-            <Text style={[styles.drawerSubtitle, TYPOGRAPHY.bodySm]}>
-              Ajusta el tope máximo mensual
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.drawerCloseBtn}
-          >
-            <MaterialIcons name="close" size={18} color={COLORS.onSurface} />
-          </TouchableOpacity>
-        </View>
+        <EncabezadoModal
+          titulo={
+            isEditing && editingBudget
+              ? `Editar: ${editingBudget.categoryName}`
+              : 'Nuevo Presupuesto'
+          }
+          subtitulo="Ajusta el tope máximo mensual"
+          icono="donut-large"
+          tono="violeta"
+          onCerrar={onClose}
+        />
 
         {/* Category selector if creating new */}
         {!isEditing && (
@@ -338,10 +331,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalDrawer: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: '#101518',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingTop: 16,
+    borderTopWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.18)',
+    paddingTop: 14,
     paddingHorizontal: 22,
     maxHeight: '85%',
     flexShrink: 1,
@@ -357,24 +352,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.surfaceContainerHighest,
+    backgroundColor: 'rgba(165, 231, 255, 0.25)',
     alignSelf: 'center',
-    marginBottom: 8,
-  },
-  drawerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  drawerTitle: {
-    color: COLORS.onSurface,
-  },
-  drawerSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
-  drawerCloseBtn: {
-    padding: 6,
+    marginBottom: 10,
   },
   modalCategoryPicker: {
     gap: 8,
@@ -391,12 +371,15 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: COLORS.surfaceContainerHigh,
+    borderRadius: 14,
+    backgroundColor: 'rgba(9, 13, 15, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.12)',
     marginRight: 8,
   },
   catChipSelected: {
     backgroundColor: COLORS.primaryContainer,
+    borderColor: 'rgba(209, 188, 255, 0.45)',
   },
   catChipText: {
     color: COLORS.onSurfaceVariant,
@@ -409,16 +392,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.14)',
+    borderRadius: 18,
   },
   amountCurrencyPrefix: {
     color: COLORS.secondary,
     marginRight: 6,
   },
   amountInput: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     textAlign: 'center',
     minWidth: 100,
   },
@@ -429,8 +414,10 @@ const styles = StyleSheet.create({
   stepperBtn: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: COLORS.surfaceContainerHigh,
+    borderRadius: 12,
+    backgroundColor: 'rgba(9, 13, 15, 0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.12)',
     alignItems: 'center',
   },
   stepperBtnText: {

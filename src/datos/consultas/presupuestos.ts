@@ -1,6 +1,5 @@
 import { obtenerBaseDatos } from '../conexion';
 import { Presupuesto, PresupuestoEnriquecido } from '../tipos';
-import { obtenerCategorias } from './categorias';
 import { emitirCambioBoveda } from '../sincronizacion';
 
 export function fijarPresupuesto(data: {
@@ -130,40 +129,9 @@ export function clonarPresupuestos(desdePeriodo: string, haciaPeriodo: string): 
   return cloned;
 }
 
-export function sembrarPresupuestosRecomendados(periodo: string): void {
-  const db = obtenerBaseDatos();
-  const categories = obtenerCategorias('EXPENSE');
-
-  const presets: Record<string, number> = {
-    'Alimentación': 1000000, // $ 10.000
-    'Transporte': 500000,    // $ 5.000
-    'Vivienda y Servicios': 1800000, // $ 18.000
-    'Salud y Cuidado': 300000, // $ 3.000
-    'Ocio y Suscripciones': 450000, // $ 4.500
-    'Educación': 250000, // $ 2.500
-    'Otros Gastos': 300000, // $ 3.000
-  };
-
-  db.withTransactionSync(() => {
-    for (const cat of categories) {
-      const limit = presets[cat.name] || 400000;
-      fijarPresupuesto({
-        categoryId: cat.id,
-        monthlyLimit: limit,
-        period: periodo,
-        alertThreshold: 0.9,
-      });
-    }
-  });
-
-  emitirCambioBoveda();
-}
-
 // Alias compatibles
 export const setBudget = fijarPresupuesto;
 export const guardarPresupuesto = fijarPresupuesto;
-export const getBudgets = obtenerPresupuestos;
 export const deleteBudget = eliminarPresupuesto;
 export const cloneBudgets = clonarPresupuestos;
-export const seedRecommendedBudgets = sembrarPresupuestosRecomendados;
 

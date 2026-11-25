@@ -181,6 +181,5 @@ export function eliminarCategoria(id: string): void {
 }
 
 // Alias compatibles
-export const getCategories = obtenerCategorias;
 export const createCategory = crearCategoria;
 export const deleteCategory = eliminarCategoria;

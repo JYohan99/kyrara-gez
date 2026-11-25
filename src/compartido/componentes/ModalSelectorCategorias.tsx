@@ -6,16 +6,17 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
-  Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { COLORES as COLORS } from '@/compartido/tema';
 import { useCategoriasBoveda } from '@/datos/hooks';
 import { obtenerGrupoCategoria, ORDEN_GRUPOS } from '@/datos/consultas/categorias';
 import { Categoria, TipoFlujo } from '@/datos/tipos';
 import { triggerSelection } from '@/compartido/utilidades/hapticos';
 import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
 import { BarraBusqueda } from '@/compartido/componentes/BarraBusqueda';
+import { SelectorSegmentado } from '@/compartido/componentes/SelectorSegmentado';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
 
 export interface PropiedadesModalSelectorCategorias {
   visible: boolean;
@@ -134,88 +135,44 @@ export const ModalSelectorCategorias: React.FC<PropiedadesModalSelectorCategoria
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={styles.sheetCard}>
-          {/* Encabezado */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleCol}>
-              <View style={styles.titleWithIcon}>
-                <View style={styles.headerIconCircle}>
-                  <MaterialIcons
-                    name={modo === 'GESTION' ? 'tune' : 'category'}
-                    size={20}
-                    color={COLORS.secondary}
-                  />
-                </View>
-                <View>
-                  <Text style={[styles.headerTitle, TYPOGRAPHY.titularPequeno]}>
-                    {modo === 'GESTION' ? 'Mis Categorías Visibles' : 'Todas las categorías'}
-                  </Text>
-                  <Text style={styles.headerSubtitle}>
-                    {modo === 'GESTION'
-                      ? `${activasCount} de ${allCategories.length} activas en ${tipoFlujo === 'EXPENSE' ? 'Gastos' : 'Ingresos'}`
-                      : 'Toca una categoría para seleccionarla en el movimiento'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={onClose}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <MaterialIcons name="close" size={20} color={COLORS.onSurfaceVariant} />
-            </TouchableOpacity>
-          </View>
+          {/* Encabezado glossy 3D */}
+          <EncabezadoModal
+            titulo={modo === 'GESTION' ? 'Mis Categorías Visibles' : 'Todas las categorías'}
+            subtitulo={
+              modo === 'GESTION'
+                ? `${activasCount} de ${allCategories.length} activas en ${tipoFlujo === 'EXPENSE' ? 'Gastos' : 'Ingresos'}`
+                : 'Toca una categoría para seleccionarla en el movimiento'
+            }
+            icono={modo === 'GESTION' ? 'tune' : 'category'}
+            tono="cian"
+            onCerrar={onClose}
+            mostrarManija={false}
+          />
 
           {/* En modo GESTIÓN: Selector de Gastos / Ingresos */}
           {modo === 'GESTION' && (
-            <View style={styles.segmentTrack}>
-              <TouchableOpacity
-                style={[styles.segmentBtn, tipoFlujo === 'EXPENSE' && styles.segmentBtnActive]}
-                onPress={() => {
-                  triggerSelection();
-                  setTipoFlujo('EXPENSE');
-                }}
-                activeOpacity={0.8}
-              >
-                <MaterialIcons
-                  name="trending-down"
-                  size={16}
-                  color={tipoFlujo === 'EXPENSE' ? '#06120D' : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.segmentBtnText,
-                    tipoFlujo === 'EXPENSE' && styles.segmentBtnTextActive,
-                  ]}
-                >
-                  Gastos
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.segmentBtn, tipoFlujo === 'INCOME' && styles.segmentBtnActive]}
-                onPress={() => {
-                  triggerSelection();
-                  setTipoFlujo('INCOME');
-                }}
-                activeOpacity={0.8}
-              >
-                <MaterialIcons
-                  name="trending-up"
-                  size={16}
-                  color={tipoFlujo === 'INCOME' ? '#06120D' : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.segmentBtnText,
-                    tipoFlujo === 'INCOME' && styles.segmentBtnTextActive,
-                  ]}
-                >
-                  Ingresos
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <SelectorSegmentado<'EXPENSE' | 'INCOME'>
+              opciones={[
+                {
+                  valor: 'EXPENSE',
+                  etiqueta: 'Gastos',
+                  icono: 'trending-down',
+                  tonoActivo: 'gasto',
+                  colorIconoInactivo: COLORS.cashflowExpense,
+                },
+                {
+                  valor: 'INCOME',
+                  etiqueta: 'Ingresos',
+                  icono: 'trending-up',
+                  tonoActivo: 'ingreso',
+                  colorIconoInactivo: COLORS.cashflowIncome,
+                },
+              ]}
+              valorSeleccionado={tipoFlujo === 'INCOME' ? 'INCOME' : 'EXPENSE'}
+              onSeleccionar={setTipoFlujo}
+              compacto
+              style={{ marginBottom: 12 }}
+            />
           )}
 
           {/* Barra de Búsqueda y Acciones Rápidas */}
@@ -382,96 +339,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  headerTitleCol: {
-    flex: 1,
-  },
-  titleWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  headerIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(87, 245, 171, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  headerSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentTrack: {
-    flexDirection: 'row',
-    backgroundColor: '#161B1E',
-    borderRadius: 12,
-    padding: 3,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  segmentBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 9,
-    gap: 6,
-  },
-  segmentBtnActive: {
-    backgroundColor: COLORS.secondary,
-  },
-  segmentBtnText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  segmentBtnTextActive: {
-    color: '#06120D',
-  },
   toolbar: {
     marginTop: 12,
     marginBottom: 6,
     gap: 8,
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1B2124',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'ios' ? 9 : 6,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  searchInput: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 13,
   },
   quickActions: {
     flexDirection: 'row',

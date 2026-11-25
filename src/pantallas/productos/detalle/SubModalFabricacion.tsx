@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   TextInput,
   Alert,
@@ -14,7 +13,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import { BotonBrillante, EncabezadoModal, TarjetaVidrio } from '@/compartido/componentes';
 import {
   gatillarExito as triggerSuccess,
   gatillarError as triggerError,
@@ -161,26 +160,18 @@ export const SubModalFabricacion: React.FC<PropiedadesSubModalFabricacion> = ({
         style={styles.modalOverlay}
       >
         <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <View style={styles.iconCircle}>
-                <MaterialIcons name="precision-manufacturing" size={20} color="#00D2FF" />
-              </View>
-              <View>
-                <Text style={[styles.title, TYPOGRAPHY.titularPequeno]}>
-                  Fabricar Artesanía
-                </Text>
-                <Text style={styles.subtitle} numberOfLines={1}>
-                  {artesania.name} (Stock actual: {artesania.currentStock} {artesania.saleUnit || 'un.'})
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
-              <MaterialIcons name="close" size={20} color={COLORS.onSurfaceVariant} />
-            </TouchableOpacity>
+          <View style={styles.dragHandleContainer}>
+            <View style={styles.dragHandle} />
           </View>
+
+          <EncabezadoModal
+            titulo="Fabricar Artesanía"
+            subtitulo={`${artesania.name} (Stock: ${artesania.currentStock} ${artesania.saleUnit || 'un.'})`}
+            icono="precision-manufacturing"
+            tono="cian"
+            onCerrar={onClose}
+            style={styles.modalHeader}
+          />
 
           <ScrollView style={styles.bodyScroll} showsVerticalScrollIndicator={false}>
             {/* Input Cantidad a Fabricar */}
@@ -201,7 +192,7 @@ export const SubModalFabricacion: React.FC<PropiedadesSubModalFabricacion> = ({
             </View>
 
             {/* Inversión estimada banner */}
-            <View style={styles.costBanner}>
+            <TarjetaVidrio variant="high" style={styles.costBanner}>
               <View style={styles.costInfo}>
                 <Text style={styles.costLabel}>INVERSIÓN TOTAL DE LA PRODUCCIÓN</Text>
                 <Text style={styles.costValue}>
@@ -213,7 +204,7 @@ export const SubModalFabricacion: React.FC<PropiedadesSubModalFabricacion> = ({
                   Costo: {formatCurrency(costoUnitarioEstimado)} / un.
                 </Text>
               </View>
-            </View>
+            </TarjetaVidrio>
 
             {/* Desglose de Insumos Consumidos */}
             <View style={styles.materialsSection}>
@@ -307,56 +298,35 @@ export const SubModalFabricacion: React.FC<PropiedadesSubModalFabricacion> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(6, 9, 11, 0.84)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#0F1613',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: '#101518',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     maxHeight: '90%',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.25)',
+    borderTopWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.18)',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  dragHandleContainer: {
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    paddingTop: 10,
+    paddingBottom: 6,
   },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(165, 231, 255, 0.25)',
   },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0, 210, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 12,
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
-  closeBtn: {
-    padding: 6,
+  modalHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 8,
   },
   bodyScroll: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingHorizontal: 20,
+    paddingTop: 6,
   },
   inputSection: {
     marginBottom: 14,
@@ -370,10 +340,10 @@ const styles = StyleSheet.create({
   quantityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16221E',
-    borderRadius: 12,
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.3)',
+    borderColor: 'rgba(165, 231, 255, 0.16)',
     paddingHorizontal: 14,
   },
   quantityInput: {
@@ -447,9 +417,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   materialsTable: {
-    backgroundColor: '#16221E',
-    borderRadius: 10,
-    padding: 8,
+    backgroundColor: 'rgba(9, 13, 15, 0.62)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.1)',
+    padding: 10,
     gap: 8,
   },
   materialRow: {
@@ -517,17 +489,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   notesInput: {
-    backgroundColor: '#16221E',
-    borderRadius: 8,
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(165, 231, 255, 0.12)',
     color: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     fontSize: 13,
   },
   footer: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(165, 231, 255, 0.1)',
   },
 });

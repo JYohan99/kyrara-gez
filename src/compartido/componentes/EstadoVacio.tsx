@@ -8,9 +8,11 @@ import {
   ViewStyle,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORES } from '../tema/colores';
 import { TIPOGRAFIA } from '../tema/tipografia';
 import { TarjetaVidrio } from './TarjetaVidrio';
+import { OrbeGlossy } from './OrbeGlossy';
 import { vibracionSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 
 export interface PropiedadesEstadoVacio {
@@ -45,9 +47,9 @@ export const EstadoVacio: React.FC<PropiedadesEstadoVacio> = ({
 
   const contenido = (
     <>
-      <View style={estilos.cajaIcono}>
-        <MaterialIcons name={icono} size={32} color={colorIcono} />
-      </View>
+      <OrbeGlossy tamano={64} tono="obsidiana" sombra style={estilos.orbeIcono}>
+        <MaterialIcons name={icono} size={30} color={colorIcono} />
+      </OrbeGlossy>
       <Text style={[estilos.titulo, TIPOGRAFIA.titularPequeno]}>{titulo}</Text>
       {Boolean(descripcion) && (
         <Text style={[estilos.descripcion, TIPOGRAFIA.cuerpoPequeno]}>
@@ -57,21 +59,36 @@ export const EstadoVacio: React.FC<PropiedadesEstadoVacio> = ({
 
       {Boolean(textoBoton && onBotonPress) && (
         <TouchableOpacity
-          style={estilos.botonAccion}
           onPress={handleBotonPress}
-          activeOpacity={0.8}
+          activeOpacity={0.82}
+          style={estilos.botonTouch}
         >
-          {Boolean(iconoBoton) && (
-            <MaterialIcons
-              name={iconoBoton}
-              size={16}
-              color={COLORES.secundario}
-              style={estilos.iconoEnBoton}
+          <LinearGradient
+            colors={['#5CE0FF', '#00B8E6', '#00566A']}
+            locations={[0, 0.55, 1]}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 0.8, y: 1 }}
+            style={estilos.botonAccion}
+          >
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.45)', 'rgba(255, 255, 255, 0.04)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              pointerEvents="none"
+              style={estilos.botonBrillo}
             />
-          )}
-          <Text style={[estilos.textoBoton, TIPOGRAFIA.etiquetaMayusculas]}>
-            {textoBoton}
-          </Text>
+            {Boolean(iconoBoton) && (
+              <MaterialIcons
+                name={iconoBoton}
+                size={16}
+                color="#FFFFFF"
+                style={estilos.iconoEnBoton}
+              />
+            )}
+            <Text style={[estilos.textoBoton, TIPOGRAFIA.etiquetaMayusculas]}>
+              {textoBoton}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       )}
 
@@ -100,13 +117,7 @@ const estilos = StyleSheet.create({
     gap: 12,
     marginTop: 16,
   },
-  cajaIcono: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: COLORES.superficieContenedorAlto,
-    alignItems: 'center',
-    justifyContent: 'center',
+  orbeIcono: {
     marginBottom: 4,
   },
   titulo: {
@@ -119,25 +130,35 @@ const estilos = StyleSheet.create({
     lineHeight: 20,
     maxWidth: 290,
   },
+  botonTouch: {
+    marginTop: 6,
+    borderRadius: 999,
+  },
   botonAccion: {
-    marginTop: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 16,
-    backgroundColor: COLORES.superficieContenedorAlto,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    overflow: 'hidden',
+  },
+  botonBrillo: {
+    position: 'absolute',
+    top: 1,
+    left: 6,
+    right: 6,
+    height: '46%',
+    borderRadius: 999,
   },
   iconoEnBoton: {
-    marginRight: 2,
+    marginRight: 6,
   },
   textoBoton: {
-    color: COLORES.secundario,
+    color: '#FFFFFF',
+    fontWeight: '800',
+    letterSpacing: 0.6,
   },
 });
-
-// Alias compatibles en inglés
-export const EmptyState = EstadoVacio;
-export type EmptyStateProps = PropiedadesEstadoVacio;

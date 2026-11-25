@@ -4,26 +4,21 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY, COMMON_STYLES } from '@/compartido/tema';
-import { EncabezadoSuperior, BotonFlotanteAccion, EstadoVacio } from '@/compartido/componentes';
-import { clonarPresupuestos as cloneBudgets, sembrarPresupuestosRecomendados as seedRecommendedBudgets } from '@/datos/consultas/presupuestos';
+import { EncabezadoSuperior, BotonFlotanteAccion, EstadoVacio, TarjetaVidrio, OrbeGlossy, ChipFiltro } from '@/compartido/componentes';
+import { clonarPresupuestos as cloneBudgets } from '@/datos/consultas/presupuestos';
 import { PresupuestoEnriquecido } from '@/datos/tipos';
 import { usePresupuestosBoveda as useVaultBudgets, useCuentasBoveda as useVaultAccounts, useCategoriasBoveda as useVaultCategories } from '@/datos/hooks';
 import { gatillarSeleccion as triggerSelection, gatillarExito as triggerSuccess } from '@/compartido/utilidades/hapticos';
+import { NOMBRES_MESES as MONTH_NAMES } from '@/compartido/utilidades/fecha';
 
 import { TarjetaProgresoPresupuesto as BudgetHeroCard } from './TarjetaProgresoPresupuesto';
 import { TarjetaCategoriaPresupuesto as BudgetCategoryCard } from './TarjetaCategoriaPresupuesto';
 import { ModalPresupuesto as BudgetModal } from './ModalPresupuesto';
 import { ModalCopiarPresupuesto as CloneBudgetModal } from './ModalCopiarPresupuesto';
-
-const MONTH_NAMES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
 
 type SortMode = 'PERCENT' | 'LIMIT' | 'NAME';
 
@@ -37,7 +32,7 @@ export function PantallaPresupuestos() {
 
   const [sortMode, setSortMode] = useState<SortMode>('PERCENT');
 
-  // Hooks reactivos de la bóveda
+  // Hooks reactivos de la bÃ³veda
   const { budgets } = useVaultBudgets(period);
   const { totalBalance: bankBalance } = useVaultAccounts();
   const { categories: expenseCategories } = useVaultCategories('EXPENSE');
@@ -157,13 +152,7 @@ export function PantallaPresupuestos() {
     const count = cloneBudgets(previousPeriod, period);
     setCloneModalVisible(false);
     triggerSuccess();
-    Alert.alert('Presupuestos duplicados', `Se copiaron ${count} límites de ${previousMonthName}.`);
-  };
-
-  const handleSeedDefaults = () => {
-    triggerSelection();
-    seedRecommendedBudgets(period);
-    triggerSuccess();
+    Alert.alert('Presupuestos duplicados', `Se copiaron ${count} lÃ­mites de ${previousMonthName}.`);
   };
 
   return (
@@ -179,38 +168,37 @@ export function PantallaPresupuestos() {
         showsVerticalScrollIndicator={false}
       >
         {/* Month Navigator Toolbar */}
-        <View style={styles.navToolbar}>
-          <View style={styles.monthSelector}>
-            <TouchableOpacity
-              onPress={handlePrevMonth}
-              style={styles.navArrowBtn}
-              accessibilityLabel="Mes anterior"
-            >
-              <MaterialIcons name="chevron-left" size={20} color={COLORS.onSurface} />
-            </TouchableOpacity>
+        <TarjetaVidrio variant="low" style={styles.navToolbarCard}>
+          <OrbeGlossy
+            tamano={36}
+            tono="obsidiana"
+            onPress={handlePrevMonth}
+            accessibilityLabel="Mes anterior"
+          >
+            <MaterialIcons name="chevron-left" size={20} color={COLORS.onSurface} />
+          </OrbeGlossy>
 
-            <View style={styles.monthCenterInfo}>
-              <Text style={[styles.monthCenterTitle, TYPOGRAPHY.headlineSm]}>
-                {monthName} {year}
+          <View style={styles.monthCenterInfo}>
+            <Text style={[styles.monthCenterTitle, TYPOGRAPHY.headlineSm]}>
+              {monthName} {year}
+            </Text>
+            <View style={styles.dayProgressRow}>
+              <View style={styles.pulseDot} />
+              <Text style={[styles.dayProgressText, TYPOGRAPHY.labelCaps]}>
+                DÃ­a {currentDay} de {totalDays}
               </Text>
-              <View style={styles.dayProgressRow}>
-                <View style={styles.pulseDot} />
-                <Text style={[styles.dayProgressText, TYPOGRAPHY.labelCaps]}>
-                  Día {currentDay} de {totalDays}
-                </Text>
-              </View>
             </View>
-
-            <TouchableOpacity
-              onPress={handleNextMonth}
-              style={styles.navArrowBtn}
-              accessibilityLabel="Mes siguiente"
-            >
-              <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurface} />
-            </TouchableOpacity>
           </View>
 
-        </View>
+          <OrbeGlossy
+            tamano={36}
+            tono="obsidiana"
+            onPress={handleNextMonth}
+            accessibilityLabel="Mes siguiente"
+          >
+            <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurface} />
+          </OrbeGlossy>
+        </TarjetaVidrio>
 
         {/* HERO CARD: Presupuesto General */}
         <BudgetHeroCard
@@ -231,25 +219,28 @@ export function PantallaPresupuestos() {
         <View style={styles.categoriesHeaderRow}>
           <View style={styles.catTitleWithCount}>
             <Text style={[styles.sectionTitle, TYPOGRAPHY.titleBalance]}>
-              Límites por Categoría
+              LÃ­mites por CategorÃ­a
             </Text>
             <View style={styles.countBadge}>
               <Text style={[styles.countBadgeText, TYPOGRAPHY.labelCaps]}>
-                {budgets.length} Activas
+                {budgets.length}
               </Text>
             </View>
           </View>
 
-          <TouchableOpacity onPress={toggleSort} activeOpacity={0.7}>
-            <Text style={[styles.sortButtonText, TYPOGRAPHY.labelCaps]}>
-              Ordenar:{' '}
-              {sortMode === 'PERCENT'
+          <ChipFiltro
+            etiqueta={
+              sortMode === 'PERCENT'
                 ? '% Gastado'
                 : sortMode === 'LIMIT'
-                ? 'Límite'
-                : 'Nombre'}
-            </Text>
-          </TouchableOpacity>
+                ? 'LÃ­mite'
+                : 'Nombre'
+            }
+            icono="sort"
+            activo
+            tono="cian"
+            onPress={toggleSort}
+          />
         </View>
 
         {/* Empty state or Budget List */}
@@ -258,30 +249,17 @@ export function PantallaPresupuestos() {
             icono="donut-large"
             colorIcono={COLORS.primary}
             titulo="Define tus topes mensuales"
-            descripcion="Asigna un límite de gasto a categorías como Alimentación o Transporte para recibir alertas visuales antes de superarlo."
+            descripcion="Asigna un lÃ­mite de gasto a categorÃ­as como AlimentaciÃ³n o Transporte para recibir alertas visuales antes de superarlo."
           >
             <View style={styles.emptyActionsRow}>
-              <TouchableOpacity
-                style={styles.emptySeedBtn}
-                onPress={handleSeedDefaults}
-                activeOpacity={0.8}
-              >
-                <MaterialIcons name="auto-awesome" size={18} color="#FFFFFF" />
-                <Text style={[styles.emptySeedBtnText, TYPOGRAPHY.labelCaps]}>
-                  Cargar sugeridos
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.emptyNewBtn}
+              <ChipFiltro
+                etiqueta="Crear lÃ­mite"
+                icono="add"
+                activo
+                tono="cian"
+                mayusculas
                 onPress={openNewModal}
-                activeOpacity={0.8}
-              >
-                <MaterialIcons name="add" size={18} color={COLORS.primary} />
-                <Text style={[styles.emptyNewBtnText, TYPOGRAPHY.labelCaps]}>
-                  Crear límite
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
           </EstadoVacio>
         ) : (
@@ -296,40 +274,35 @@ export function PantallaPresupuestos() {
           </View>
         )}
 
-        {/* BOTTOM FAST-ACTION CARD: Duplicar patrón */}
+        {/* BOTTOM FAST-ACTION CARD: Duplicar patrÃ³n */}
         {sortedBudgets.length > 0 && (
-          <View style={styles.bottomBannerCard}>
+          <TarjetaVidrio variant="surface" style={styles.bottomBannerCard}>
             <View style={styles.bottomBannerLeft}>
-              <View style={styles.bottomBannerIconBox}>
-                <MaterialIcons name="history-toggle-off" size={20} color={COLORS.primary} />
-              </View>
+              <OrbeGlossy tamano={42} tono="violeta" sombra>
+                <MaterialIcons name="history-toggle-off" size={20} color="#FFFFFF" />
+              </OrbeGlossy>
               <View style={styles.bottomBannerTextCol}>
                 <Text style={[styles.bottomBannerCaps, TYPOGRAPHY.labelCaps]}>
-                  DUPLICAR PATRÓN
+                  DUPLICAR PATRÃ“N
                 </Text>
                 <Text style={[styles.bottomBannerTitle, TYPOGRAPHY.bodySm]}>
-                  Copia los límites de {previousMonthName} en 1 toque
+                  Copia los lÃ­mites de {previousMonthName} en 1 toque
                 </Text>
               </View>
             </View>
 
-            <TouchableOpacity
-              style={styles.bottomBannerApplyBtn}
-              onPress={() => {
-                triggerSelection();
-                setCloneModalVisible(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.bottomBannerApplyText, TYPOGRAPHY.labelCaps]}>
-                Aplicar
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <ChipFiltro
+              etiqueta="Aplicar"
+              activo
+              tono="violeta"
+              mayusculas
+              onPress={() => setCloneModalVisible(true)}
+            />
+          </TarjetaVidrio>
         )}
       </ScrollView>
 
-      {/* Botón Circular Flotante (FAB) - Nuevo Presupuesto */}
+      {/* BotÃ³n Circular Flotante (FAB) - Nuevo Presupuesto */}
       <BotonFlotanteAccion
         onPress={openNewModal}
         accessibilityLabel="Nuevo presupuesto"
@@ -359,29 +332,19 @@ export function PantallaPresupuestos() {
 }
 
 const styles = StyleSheet.create({
-  navToolbar: {
+  navToolbarCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  monthSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  navArrowBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 20,
   },
   monthCenterInfo: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   monthCenterTitle: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
   },
   dayProgressRow: {
     flexDirection: 'row',
@@ -397,18 +360,20 @@ const styles = StyleSheet.create({
   },
   dayProgressText: {
     color: COLORS.onSurfaceVariant,
-    fontSize: 9,
+    fontSize: 9.5,
   },
   categoriesHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 4,
+    gap: 8,
   },
   catTitleWithCount: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
   },
   sectionTitle: {
     color: COLORS.onSurface,
@@ -416,74 +381,39 @@ const styles = StyleSheet.create({
   countBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 8,
-    backgroundColor: COLORS.surfaceContainerHighest,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0, 210, 255, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.2)',
   },
   countBadgeText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 9,
-  },
-  sortButtonText: {
     color: COLORS.secondary,
-    letterSpacing: 0.8,
+    fontSize: 10,
+    fontWeight: '800',
   },
   budgetList: {
     gap: 12,
   },
   emptyActionsRow: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
     marginTop: 8,
-  },
-  emptySeedBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: COLORS.primaryContainer,
-  },
-  emptySeedBtnText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-  },
-  emptyNewBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: COLORS.surfaceContainerHighest,
-  },
-  emptyNewBtnText: {
-    color: COLORS.primary,
-    fontSize: 10,
   },
   bottomBannerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 14,
-    borderRadius: 16,
-    backgroundColor: 'rgba(24, 28, 29, 0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 18,
+    gap: 10,
   },
   bottomBannerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     flex: 1,
-  },
-  bottomBannerIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: 'rgba(138, 79, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   bottomBannerTextCol: {
     flex: 1,
@@ -496,16 +426,5 @@ const styles = StyleSheet.create({
     color: COLORS.onSurface,
     marginTop: 2,
   },
-  bottomBannerApplyBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: COLORS.surfaceContainerHighest,
-  },
-  bottomBannerApplyText: {
-    color: COLORS.onSurface,
-    fontSize: 10,
-  },
 });
 
-export const BudgetsScreen = PantallaPresupuestos;

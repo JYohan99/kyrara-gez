@@ -11,6 +11,7 @@ import {
   Producto,
 } from '../tipos';
 import { emitirCambioBoveda } from '../sincronizacion';
+import { hoyISO } from '@/compartido/utilidades/fecha';
 import {
   obtenerProductoPorId,
   esServicio,
@@ -44,14 +45,6 @@ interface FilaOperacionInventario {
   created_at: number;
 }
 
-function hoyISO(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
 /**
  * Obtiene o crea la categoría financiera "Ventas" en la tabla categories
  * para asociar los ingresos cobrados al sistema de movimientos.
@@ -71,6 +64,30 @@ function obtenerOCrearCategoriaVentas(): string {
   const newId = 'cat_ventas_' + Math.random().toString(36).substring(2, 8);
   db.runSync(
     "INSERT INTO categories (id, name, flow_type, icon, color, is_system) VALUES (?, 'Ventas', 'INCOME', 'sell', '#57F5AB', 1)",
+    [newId]
+  );
+  return newId;
+}
+
+/**
+ * Obtiene o crea la categoría financiera "Compras de inventario" en la tabla categories
+ * para asociar las compras pagadas desde una cuenta al sistema de movimientos/gastos.
+ */
+function obtenerOCrearCategoriaComprasInventario(): string {
+  const db = obtenerBaseDatos();
+  const cat = db.getFirstSync<{ id: string }>(
+    "SELECT id FROM categories WHERE flow_type = 'EXPENSE' AND (LOWER(name) LIKE '%inventario%' OR LOWER(name) LIKE '%mercader%' OR LOWER(name) LIKE '%compra%' OR LOWER(name) LIKE '%otros gastos%') LIMIT 1"
+  );
+  if (cat) return cat.id;
+
+  const fallback = db.getFirstSync<{ id: string }>(
+    "SELECT id FROM categories WHERE flow_type = 'EXPENSE' LIMIT 1"
+  );
+  if (fallback) return fallback.id;
+
+  const newId = 'cat_compras_inv_' + Math.random().toString(36).substring(2, 8);
+  db.runSync(
+    "INSERT INTO categories (id, name, flow_type, icon, color, is_system) VALUES (?, 'Compras de inventario', 'EXPENSE', 'shopping-bag', '#FF8A9E', 1)",
     [newId]
   );
   return newId;
@@ -112,6 +129,34 @@ function mapearFilaAOperacion(fila: FilaOperacionInventario): OperacionInventari
 }
 
 /**
+ * Devuelve la cuenta (o modo NO_ACCOUNT) utilizada en la última venta del producto.
+ */
+export function obtenerUltimaCuentaVentaProducto(
+  productId: string
+): { accountId: string | null; paymentMethod: string | null } | null {
+  asegurarEsquemaBaseDatos();
+  const db = obtenerBaseDatos();
+  const row = db.getFirstSync<{
+    account_id: string | null;
+    payment_method: string | null;
+  }>(
+    `SELECT account_id, payment_method
+     FROM inventory_operations
+     WHERE product_id = ?
+       AND type = 'SALE'
+       AND (payment_method IN ('IMMEDIATE_ACCOUNT', 'NO_ACCOUNT') OR account_id IS NOT NULL)
+     ORDER BY date DESC, created_at DESC
+     LIMIT 1`,
+    [productId]
+  );
+  if (!row) return null;
+  return {
+    accountId: row.account_id ?? null,
+    paymentMethod: row.payment_method ?? null,
+  };
+}
+
+/**
  * Obtiene el historial completo de operaciones de inventario de un producto enriquecido con nombres de cuentas y deudas.
  */
 export function obtenerOperacionesProducto(productId: string): OperacionInventario[] {
@@ -136,6 +181,7 @@ export interface DatosRegistrarCompra {
   productId: string;
   quantity: number; // Unidades a sumar (> 0)
   unitCost?: number; // Costo unitario en centavos (>= 0)
+  accountId?: string; // Opcional: si se indica, descuenta de la cuenta y crea un gasto en Movimientos
   supplier?: string;
   notes?: string;
   actualizarCostoProducto?: boolean;
@@ -144,6 +190,8 @@ export interface DatosRegistrarCompra {
 
 /**
  * Registra una compra de mercadería / insumos aumentando el stock del producto.
+ * Si se indica accountId y hay costo total > 0, también registra el gasto en Movimientos
+ * y descuenta el saldo de la cuenta seleccionada.
  */
 export function registrarCompraInventario(datos: DatosRegistrarCompra): OperacionInventario {
   const cantidad = Number(datos.quantity);
@@ -168,16 +216,49 @@ export function registrarCompraInventario(datos: DatosRegistrarCompra): Operacio
   const fechaOperacion = datos.date || ahora;
   const idOperacion = 'op_buy_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 6);
   const proveedor = datos.supplier?.trim() || producto.supplier || null;
+  const accountId = datos.accountId?.trim() || null;
+  let transactionId: string | null = null;
+  const paymentMethod = accountId ? 'IMMEDIATE_ACCOUNT' : 'NO_ACCOUNT';
+  const paymentStatus = accountId ? 'PAID' : null;
 
   const db = obtenerBaseDatos();
 
   db.withTransactionSync(() => {
+    // 0. Si se vinculó a una cuenta y el monto es mayor a 0, registrar gasto y descontar saldo
+    if (accountId && costoTotal > 0) {
+      transactionId = 'tx_buy_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+      const categoriaId = obtenerOCrearCategoriaComprasInventario();
+      const notaBase = `Compra stock: ${cantidad} x ${producto.name}${proveedor ? ` (${proveedor})` : ''}`;
+
+      db.runSync(
+        `INSERT INTO transactions (
+          id, amount, type, source_account_id, target_account_id,
+          category_id, date, note, payee
+        ) VALUES (?, ?, 'EXPENSE', ?, NULL, ?, ?, ?, ?)`,
+        [
+          transactionId,
+          costoTotal,
+          accountId,
+          categoriaId,
+          fechaOperacion,
+          datos.notes?.trim() ? `${notaBase} - ${datos.notes.trim()}` : notaBase,
+          proveedor || 'Proveedor',
+        ]
+      );
+
+      db.runSync(
+        'UPDATE accounts SET current_balance = current_balance - ? WHERE id = ?',
+        [costoTotal, accountId]
+      );
+    }
+
     // 1. Insertar registro inmutable de la operación de compra
     db.runSync(
       `INSERT INTO inventory_operations (
         id, product_id, type, quantity, previous_stock, new_stock,
-        unit_cost, total_cost, reason, supplier, notes, date, created_at
-      ) VALUES (?, ?, 'PURCHASE', ?, ?, ?, ?, ?, 'Compra a proveedor', ?, ?, ?, ?)`,
+        unit_cost, total_cost, payment_status, payment_method, account_id, transaction_id,
+        reason, supplier, notes, date, created_at
+      ) VALUES (?, ?, 'PURCHASE', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Compra a proveedor', ?, ?, ?, ?)`,
       [
         idOperacion,
         datos.productId,
@@ -186,6 +267,10 @@ export function registrarCompraInventario(datos: DatosRegistrarCompra): Operacio
         newStock,
         costoUnitario,
         costoTotal,
+        paymentStatus,
+        paymentMethod,
+        accountId,
+        transactionId,
         proveedor,
         datos.notes?.trim() || null,
         fechaOperacion,
@@ -227,6 +312,10 @@ export function registrarCompraInventario(datos: DatosRegistrarCompra): Operacio
     newStock,
     unitCost: costoUnitario,
     totalCost: costoTotal,
+    paymentStatus: (paymentStatus as any) || undefined,
+    paymentMethod,
+    accountId: accountId || undefined,
+    transactionId: transactionId || undefined,
     reason: 'Compra a proveedor',
     supplier: proveedor || undefined,
     notes: datos.notes?.trim() || undefined,
@@ -449,7 +538,7 @@ export interface DatosRegistrarVenta {
   unitPrice: number; // precio unitario de venta en centavos (>= 0)
   unitCost?: number; // costo unitario histórico específico (ej. por formato de servicio)
   formatName?: string; // nombre del formato o medida (ej: '1x1')
-  paymentMode: 'IMMEDIATE_ACCOUNT' | 'CREDIT_PENDING';
+  paymentMode: 'IMMEDIATE_ACCOUNT' | 'CREDIT_PENDING' | 'NO_ACCOUNT';
   accountId?: string; // obligatorio si paymentMode === 'IMMEDIATE_ACCOUNT'
   customer?: string; // obligatorio si paymentMode === 'CREDIT_PENDING'
   dueDate?: string; // 'YYYY-MM-DD' opcional para venta a crédito
@@ -506,7 +595,12 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
   let transactionId: string | null = null;
   let debtId: string | null = null;
   let accountId: string | null = null;
-  let paymentStatus: 'PAID' | 'PENDING' = 'PAID';
+  const paymentStatus: 'PAID' | 'PENDING' | 'UNLINKED' =
+    datos.paymentMode === 'IMMEDIATE_ACCOUNT'
+      ? 'PAID'
+      : datos.paymentMode === 'CREDIT_PENDING'
+      ? 'PENDING'
+      : 'UNLINKED';
 
   const db = obtenerBaseDatos();
 
@@ -516,7 +610,6 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
         throw new Error('Debes seleccionar la cuenta donde ingresa el dinero cobrado.');
       }
       accountId = datos.accountId;
-      paymentStatus = 'PAID';
 
       // 1. Registrar ingreso en la tabla transactions
       transactionId = 'tx_sale_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 7);
@@ -545,12 +638,11 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
         'UPDATE accounts SET current_balance = current_balance + ? WHERE id = ?',
         [totalPrice, accountId]
       );
-    } else {
+    } else if (datos.paymentMode === 'CREDIT_PENDING') {
       // Pendiente de cobro (a crédito / fiado): no altera el dinero de cuentas, crea cuenta por cobrar en debts
       if (!cliente) {
         throw new Error('Debes indicar el nombre del cliente para registrar una venta a crédito o pendiente de cobro.');
       }
-      paymentStatus = 'PENDING';
       debtId = 'debt_sale_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 7);
       const formatLabel = formatName ? ` [${formatName}]` : '';
       const conceptoDeuda = `Venta de ${cantidad} x ${producto.name}${formatLabel}`;
@@ -576,6 +668,7 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
         ]
       );
     }
+    // Si paymentMode === 'NO_ACCOUNT', no crea movimiento ni deuda ni altera cuentas
 
     // 3. Reducir stock del producto sólo si no es un servicio ilimitado
     if (!isService) {
@@ -633,7 +726,7 @@ export function registrarVentaInventario(datos: DatosRegistrarVenta): OperacionI
     grossProfit,
     customer: cliente,
     formatName: formatName || undefined,
-    paymentStatus,
+    paymentStatus: paymentStatus === 'UNLINKED' ? undefined : paymentStatus,
     paymentMethod: datos.paymentMode,
     accountId: accountId || undefined,
     transactionId: transactionId || undefined,

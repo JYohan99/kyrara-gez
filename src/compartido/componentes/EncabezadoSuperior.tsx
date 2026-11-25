@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   StatusBar as RNStatusBar,
   Platform,
 } from 'react-native';
@@ -14,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '../tema';
 import { EmblemaKyrara as KyraraEmblem } from './EmblemaKyrara';
 import { ModalGuiaPantalla } from './ModalGuiaPantalla';
-import { gatillarSeleccion as triggerSelection } from '../utilidades/hapticos';
+import { OrbeGlossy } from './OrbeGlossy';
 
 export interface PropiedadesEncabezadoSuperior {
   seccion: string;
@@ -29,7 +28,6 @@ export interface PropiedadesEncabezadoSuperior {
   paddingInferior?: number;
   paddingSuperior?: number;
 }
-export type TopHeaderProps = PropiedadesEncabezadoSuperior;
 
 const MESES_CORTOS = [
   'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
@@ -64,7 +62,6 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
   const logoSizeCalculado = Math.min(tamanoLogo, 44);
 
   const handlePressVolver = () => {
-    triggerSelection();
     if (onPressVolver) {
       onPressVolver();
     } else if (router.canGoBack()) {
@@ -75,7 +72,6 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
   };
 
   const handlePressAjustes = () => {
-    triggerSelection();
     if (onPressAjustes) {
       onPressAjustes();
     } else if (onPressAvatar) {
@@ -93,7 +89,6 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
         paddingInferior !== undefined && { paddingBottom: paddingInferior },
       ]}
     >
-      {/* Borde exterior metálico/cristal de la cápsula */}
       <LinearGradient
         colors={[
           'rgba(165, 231, 255, 0.48)',
@@ -104,7 +99,6 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
         end={{ x: 0, y: 1 }}
         style={styles.capsuleRim}
       >
-        {/* Cuerpo oscuro glossy de la cápsula */}
         <LinearGradient
           colors={['#202B30', '#11181B', '#090D0F', '#141D20']}
           locations={[0, 0.46, 0.55, 1]}
@@ -112,7 +106,6 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
           end={{ x: 0, y: 1 }}
           style={styles.capsuleBody}
         >
-          {/* Reflejo especular superior (efecto cristal 3D) */}
           <LinearGradient
             colors={[
               'rgba(255, 255, 255, 0.24)',
@@ -125,7 +118,6 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
             style={styles.capsuleGloss}
           />
 
-          {/* Izquierda: Logo y nombre de sección */}
           <View style={styles.brandRow}>
             <KyraraEmblem size={logoSizeCalculado} />
             <View style={styles.brandTextCol}>
@@ -138,7 +130,6 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
             </View>
           </View>
 
-          {/* Derecha: Periodo y orbes 3D glossy */}
           <View style={styles.headerRight}>
             {mostrarPeriodo && (
               <View style={styles.periodPillBadge}>
@@ -149,67 +140,28 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
             )}
 
             {mostrarAyuda && (
-              <TouchableOpacity
-                style={styles.orbBezel}
-                onPress={() => {
-                  triggerSelection();
-                  setModalGuiaVisible(true);
-                }}
-                activeOpacity={0.78}
-                accessibilityRole="button"
+              <OrbeGlossy
+                tamano={39}
+                tono="violeta"
+                onPress={() => setModalGuiaVisible(true)}
                 accessibilityLabel="Guía y tutorial"
               >
-                <LinearGradient
-                  colors={['#B894FF', COLORS.primarioContenedor, COLORS.enPrimario]}
-                  locations={[0, 0.52, 1]}
-                  start={{ x: 0.2, y: 0 }}
-                  end={{ x: 0.8, y: 1 }}
-                  style={styles.orbSphere}
-                >
-                  <LinearGradient
-                    colors={['rgba(255, 255, 255, 0.58)', 'rgba(255, 255, 255, 0.05)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    pointerEvents="none"
-                    style={styles.orbGloss}
-                  />
-                  <MaterialIcons
-                    name="help-outline"
-                    size={18}
-                    color="#FFFFFF"
-                  />
-                </LinearGradient>
-              </TouchableOpacity>
+                <MaterialIcons name="help-outline" size={18} color="#FFFFFF" />
+              </OrbeGlossy>
             )}
 
-            <TouchableOpacity
-              style={styles.orbBezel}
+            <OrbeGlossy
+              tamano={39}
+              tono="cian"
               onPress={esModoVolver ? handlePressVolver : handlePressAjustes}
-              activeOpacity={0.78}
-              accessibilityRole="button"
               accessibilityLabel={esModoVolver ? 'Volver' : 'Ajustes'}
             >
-              <LinearGradient
-                colors={['#6CE5FF', COLORS.secundarioContenedor, COLORS.enSecundarioContenedor]}
-                locations={[0, 0.52, 1]}
-                start={{ x: 0.2, y: 0 }}
-                end={{ x: 0.8, y: 1 }}
-                style={styles.orbSphere}
-              >
-                <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.62)', 'rgba(255, 255, 255, 0.06)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  pointerEvents="none"
-                  style={styles.orbGloss}
-                />
-                <MaterialIcons
-                  name={esModoVolver ? 'arrow-back' : 'settings'}
-                  size={19}
-                  color="#FFFFFF"
-                />
-              </LinearGradient>
-            </TouchableOpacity>
+              <MaterialIcons
+                name={esModoVolver ? 'arrow-back' : 'settings'}
+                size={19}
+                color="#FFFFFF"
+              />
+            </OrbeGlossy>
           </View>
         </LinearGradient>
       </LinearGradient>
@@ -223,7 +175,6 @@ export const EncabezadoSuperior: React.FC<PropiedadesEncabezadoSuperior> = ({
   );
 };
 
-export const TopHeader = EncabezadoSuperior;
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -303,32 +254,5 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     fontSize: 9.5,
     letterSpacing: 0.7,
-  },
-  orbBezel: {
-    width: 39,
-    height: 39,
-    borderRadius: 20,
-    padding: 2,
-    backgroundColor: 'rgba(5, 8, 10, 0.85)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orbSphere: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  orbGloss: {
-    position: 'absolute',
-    top: 1.5,
-    left: 4,
-    right: 4,
-    height: '48%',
-    borderRadius: 999,
   },
 });

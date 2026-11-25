@@ -21,6 +21,8 @@ import {
 } from '@/compartido/utilidades/moneda';
 import { ModalSelectorFecha } from '@/compartido/componentes/ModalSelectorFecha';
 import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
+import { SelectorSegmentado } from '@/compartido/componentes/SelectorSegmentado';
 import {
   gatillarExito as triggerSuccess,
   gatillarError as triggerError,
@@ -185,22 +187,15 @@ const ContenidoModalDeuda: React.FC<PropiedadesContenidoModalDeuda> = ({
           { paddingBottom: Math.max(insets.bottom + 12, 20) },
         ]}
       >
-        {/* Header */}
-        <View style={styles.sheetHeader}>
-          <View style={styles.indicatorBar} />
-          <View style={styles.titleRow}>
-            <Text style={[styles.sheetTitle, TYPOGRAPHY.headlineSm]}>
-              {deudaParaEditar ? 'Editar Deuda' : 'Nueva Deuda'}
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.closeBtn}
-            >
-              <MaterialIcons name="close" size={22} color={COLORS.onSurfaceVariant} />
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* Header glossy 3D */}
+        <EncabezadoModal
+          titulo={deudaParaEditar ? 'Editar Deuda' : 'Nueva Deuda'}
+          subtitulo={tipo === 'RECEIVABLE' ? 'Registra dinero que te deben' : 'Registra una obligación por pagar'}
+          icono="handshake"
+          tono={tipo === 'RECEIVABLE' ? 'ingreso' : 'gasto'}
+          onCerrar={onClose}
+          style={{ paddingHorizontal: 20, paddingTop: 12, marginBottom: 4 }}
+        />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -210,61 +205,26 @@ const ContenidoModalDeuda: React.FC<PropiedadesContenidoModalDeuda> = ({
           contentContainerStyle={styles.scrollContent}
         >
           {/* Segmented Type Selector */}
-          <View style={styles.typeSelectorContainer}>
-            <TouchableOpacity
-              style={[
-                styles.typeTab,
-                tipo === 'RECEIVABLE' && styles.typeTabActiveReceivable,
-              ]}
-              activeOpacity={0.8}
-              onPress={() => {
-                triggerSelection();
-                setTipo('RECEIVABLE');
-              }}
-            >
-              <MaterialIcons
-                name="call-received"
-                size={18}
-                color={tipo === 'RECEIVABLE' ? '#0B0F10' : COLORS.cashflowIncome}
-              />
-              <Text
-                style={[
-                  styles.typeTabText,
-                  TYPOGRAPHY.labelCaps,
-                  tipo === 'RECEIVABLE' && styles.typeTabTextActive,
-                ]}
-              >
-                Me deben
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.typeTab,
-                tipo === 'PAYABLE' && styles.typeTabActivePayable,
-              ]}
-              activeOpacity={0.8}
-              onPress={() => {
-                triggerSelection();
-                setTipo('PAYABLE');
-              }}
-            >
-              <MaterialIcons
-                name="call-made"
-                size={18}
-                color={tipo === 'PAYABLE' ? '#FFFFFF' : COLORS.cashflowExpense}
-              />
-              <Text
-                style={[
-                  styles.typeTabText,
-                  TYPOGRAPHY.labelCaps,
-                  tipo === 'PAYABLE' && styles.typeTabTextActive,
-                ]}
-              >
-                Debo
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <SelectorSegmentado<TipoDeuda>
+            opciones={[
+              {
+                valor: 'RECEIVABLE',
+                etiqueta: 'Me deben',
+                icono: 'call-received',
+                tonoActivo: 'ingreso',
+                colorIconoInactivo: COLORS.cashflowIncome,
+              },
+              {
+                valor: 'PAYABLE',
+                etiqueta: 'Debo',
+                icono: 'call-made',
+                tonoActivo: 'gasto',
+                colorIconoInactivo: COLORS.cashflowExpense,
+              },
+            ]}
+            valorSeleccionado={tipo}
+            onSeleccionar={setTipo}
+          />
 
           {/* Persona */}
           <View style={styles.fieldGroup}>
@@ -519,68 +479,10 @@ const styles = StyleSheet.create({
   scrollArea: {
     flexShrink: 1,
   },
-  sheetHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 14,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderGlass,
-  },
-  indicatorBar: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginBottom: 10,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  sheetTitle: {
-    color: COLORS.onSurface,
-  },
-  closeBtn: {
-    padding: 4,
-  },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 36,
-  },
-  typeSelectorContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: 14,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlass,
-    marginBottom: 18,
-  },
-  typeTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 8,
-  },
-  typeTabActiveReceivable: {
-    backgroundColor: COLORS.cashflowIncome,
-  },
-  typeTabActivePayable: {
-    backgroundColor: COLORS.cashflowExpense,
-  },
-  typeTabText: {
-    color: COLORS.onSurfaceVariant,
-  },
-  typeTabTextActive: {
-    color: '#0B0F10',
-    fontWeight: '700',
   },
   fieldGroup: {
     marginBottom: 16,

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { SelectorSegmentado } from '@/compartido/componentes/SelectorSegmentado';
 import { MaterialArtesania, Producto } from '@/datos/tipos';
 import {
   formatearMoneda as formatCurrency,
@@ -177,53 +178,16 @@ export const EditorMaterialesArtesania: React.FC<PropiedadesEditorMaterialesArte
           </Text>
 
           {/* Selector de modo: Catálogo vs Manual */}
-          <View style={styles.modeSwitcher}>
-            <TouchableOpacity
-              style={[styles.modeBtn, modo === 'CATALOGO' && styles.modeBtnActive]}
-              onPress={() => {
-                triggerSelection();
-                setModo('CATALOGO');
-              }}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="inventory"
-                size={14}
-                color={modo === 'CATALOGO' ? '#06120D' : COLORS.onSurfaceVariant}
-              />
-              <Text
-                style={[
-                  styles.modeBtnText,
-                  modo === 'CATALOGO' && styles.modeBtnTextActive,
-                ]}
-              >
-                Del Catálogo
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modeBtn, modo === 'MANUAL' && styles.modeBtnActive]}
-              onPress={() => {
-                triggerSelection();
-                setModo('MANUAL');
-              }}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="edit"
-                size={14}
-                color={modo === 'MANUAL' ? '#06120D' : COLORS.onSurfaceVariant}
-              />
-              <Text
-                style={[
-                  styles.modeBtnText,
-                  modo === 'MANUAL' && styles.modeBtnTextActive,
-                ]}
-              >
-                Ingreso Manual
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <SelectorSegmentado<'CATALOGO' | 'MANUAL'>
+            opciones={[
+              { valor: 'CATALOGO', etiqueta: 'Del Catálogo', icono: 'inventory', tonoActivo: 'cian' },
+              { valor: 'MANUAL', etiqueta: 'Ingreso Manual', icono: 'edit', tonoActivo: 'violeta' },
+            ]}
+            valorSeleccionado={modo}
+            onSeleccionar={setModo}
+            compacto
+            style={{ marginBottom: 12 }}
+          />
 
           {modo === 'CATALOGO' ? (
             <View style={styles.catalogSelectContainer}>
@@ -441,27 +405,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#00D2FF',
   },
-  investmentBanner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 210, 255, 0.08)',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.25)',
-    marginBottom: 14,
-  },
-  investmentInfo: {
-    flex: 1,
-  },
-  investmentLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    color: '#00D2FF',
-    marginBottom: 4,
-  },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -477,20 +420,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#00D2FF',
   },
-  investmentBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0, 210, 255, 0.15)',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  investmentBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#00D2FF',
-  },
   formCard: {
     backgroundColor: '#16221E',
     borderRadius: 12,
@@ -504,34 +433,6 @@ const styles = StyleSheet.create({
     color: '#00D2FF',
     marginBottom: 10,
     letterSpacing: 0.5,
-  },
-  modeSwitcher: {
-    flexDirection: 'row',
-    backgroundColor: '#0D1512',
-    borderRadius: 8,
-    padding: 3,
-    marginBottom: 12,
-  },
-  modeBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 7,
-    borderRadius: 6,
-  },
-  modeBtnActive: {
-    backgroundColor: '#00D2FF',
-  },
-  modeBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.onSurfaceVariant,
-  },
-  modeBtnTextActive: {
-    color: '#06120D',
-    fontWeight: '800',
   },
   catalogSelectContainer: {
     marginBottom: 12,
@@ -654,19 +555,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#06120D',
-  },
-  emptyListNotice: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    gap: 8,
-  },
-  emptyListText: {
-    fontSize: 12,
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-    lineHeight: 17,
-    paddingHorizontal: 16,
   },
   materialsList: {
     gap: 8,

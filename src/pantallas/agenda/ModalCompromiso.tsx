@@ -15,8 +15,16 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { ModalSelectorFecha } from '@/compartido/componentes/ModalSelectorFecha';
-import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import {
+  ModalSelectorFecha,
+  BotonBrillante,
+  EncabezadoModal,
+  TarjetaVidrio,
+  SelectorSegmentado,
+  ChipFiltro,
+  OrbeGlossy,
+  OpcionSegmento,
+} from '@/compartido/componentes';
 import {
   Compromiso,
   OcurrenciaCompromiso,
@@ -49,11 +57,11 @@ interface ItemRecordatorioForm {
 }
 
 const OPCIONES_ANTICIPACION = [
-  { label: 'El mismo día', value: 0 },
+  { label: 'Mismo día', value: 0 },
   { label: '1 día antes', value: 1 },
   { label: '2 días antes', value: 2 },
   { label: '3 días antes', value: 3 },
-  { label: '1 semana antes', value: 7 },
+  { label: '1 semana', value: 7 },
 ];
 
 interface PropiedadesContenidoModalCompromiso {
@@ -135,6 +143,26 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
     }
     return new Date();
   }, [date]);
+
+  const diaDelMes = parseInt(date.split('-')[2] || '1', 10);
+
+  const opcionesProgramacion = useMemo<OpcionSegmento<TipoProgramacionCompromiso>[]>(
+    () => [
+      {
+        valor: 'SINGLE',
+        etiqueta: 'Único',
+        icono: 'event-available',
+        tonoActivo: 'cian',
+      },
+      {
+        valor: 'MONTHLY',
+        etiqueta: `Mensual (Día ${diaDelMes})`,
+        icono: 'update',
+        tonoActivo: 'violeta',
+      },
+    ],
+    [diaDelMes]
+  );
 
   const handleAddReminder = () => {
     triggerSelection();
@@ -234,6 +262,15 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
     <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
       <View style={styles.drawerHandle} />
 
+      <EncabezadoModal
+        titulo={isEditing ? 'Editar Compromiso' : 'Nuevo Compromiso'}
+        subtitulo="Programa un pago, tarea o recordatorio"
+        icono="event"
+        tono="violeta"
+        onCerrar={onClose}
+        style={styles.modalHeader}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={styles.scrollArea}
@@ -241,189 +278,139 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
         keyboardDismissMode="interactive"
         contentContainerStyle={styles.drawerScrollContent}
       >
-        {/* Header */}
-        <View style={styles.modalHeaderRow}>
-          <View style={styles.modalTitleBox}>
-            <MaterialIcons name="event" size={22} color={COLORS.primary} />
-            <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
-              {isEditing ? 'Editar Compromiso' : 'Nuevo Compromiso'}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <MaterialIcons name="close" size={22} color={COLORS.onSurfaceVariant} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Campo: Título (Obligatorio) */}
-        <View style={styles.inputGroup}>
-          <TextInput
-            ref={titleInputRef}
-            style={[styles.textInput, TYPOGRAPHY.bodySm]}
-            placeholder="Título"
-            placeholderTextColor={COLORS.outline}
-            value={title}
-            onChangeText={setTitle}
-            autoFocus={true}
-          />
-        </View>
-
-        {/* Fila: Fecha y Hora */}
-        <View style={styles.rowTwoCols}>
-          {/* Fecha */}
-          <View style={[styles.inputGroup, { flex: 1 }]}>
-            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Fecha *</Text>
-            <TouchableOpacity
-              style={styles.dateSelectorBtn}
-              onPress={() => setDatePickerVisible(true)}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons name="calendar-today" size={16} color={COLORS.primary} />
-              <Text style={[styles.dateSelectorText, TYPOGRAPHY.numericTable]}>{date}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Hora Opcional */}
-          <View style={[styles.inputGroup, { flex: 1 }]}>
-            <View style={styles.switchLabelRow}>
-              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Hora</Text>
-              <Switch
-                value={hasTime}
-                onValueChange={v => {
-                  triggerSelection();
-                  setHasTime(v);
-                }}
-                trackColor={{ false: COLORS.surfaceContainerHigh, true: COLORS.primaryContainer }}
-                thumbColor={hasTime ? COLORS.primary : COLORS.outline}
-                style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+        {/* Bloque 1: Título, Fecha y Hora */}
+        <TarjetaVidrio variant="low" style={styles.sectionCard}>
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Título *</Text>
+            <View style={styles.inputWithIconRow}>
+              <MaterialIcons name="edit-note" size={18} color={COLORS.secondary} />
+              <TextInput
+                ref={titleInputRef}
+                style={[styles.textInputInside, TYPOGRAPHY.bodySm]}
+                placeholder="Ej: Pago de alquiler, reunión, entrega..."
+                placeholderTextColor={COLORS.outline}
+                value={title}
+                onChangeText={setTitle}
+                autoFocus={true}
               />
             </View>
-            {hasTime ? (
-              <TextInput
-                style={[styles.textInput, TYPOGRAPHY.numericTable, { textAlign: 'center' }]}
-                placeholder="09:00"
-                placeholderTextColor={COLORS.outline}
-                value={time}
-                onChangeText={val => setTime(val.replace(/[^0-9:]/g, '').slice(0, 5))}
-                keyboardType="numbers-and-punctuation"
-                maxLength={5}
-              />
-            ) : (
-              <View style={styles.disabledTimeBox}>
-                <Text style={[styles.disabledTimeText, TYPOGRAPHY.labelCaps]}>Todo el día</Text>
+          </View>
+
+          <View style={styles.rowTwoCols}>
+            {/* Fecha */}
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Fecha *</Text>
+              <TouchableOpacity
+                style={styles.dateSelectorBtn}
+                onPress={() => {
+                  triggerSelection();
+                  setDatePickerVisible(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="calendar-today" size={16} color={COLORS.secondary} />
+                <Text style={[styles.dateSelectorText, TYPOGRAPHY.numericTable]}>{date}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Hora Opcional */}
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <View style={styles.switchLabelRow}>
+                <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Hora</Text>
+                <Switch
+                  value={hasTime}
+                  onValueChange={v => {
+                    triggerSelection();
+                    setHasTime(v);
+                  }}
+                  trackColor={{ false: 'rgba(255,255,255,0.12)', true: COLORS.primaryContainer }}
+                  thumbColor={hasTime ? '#FFFFFF' : COLORS.outline}
+                  style={{ transform: [{ scaleX: 0.78 }, { scaleY: 0.78 }] }}
+                />
               </View>
-            )}
+              {hasTime ? (
+                <TextInput
+                  style={[styles.textInput, TYPOGRAPHY.numericTable, styles.timeInput]}
+                  placeholder="09:00"
+                  placeholderTextColor={COLORS.outline}
+                  value={time}
+                  onChangeText={val => setTime(val.replace(/[^0-9:]/g, '').slice(0, 5))}
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={5}
+                />
+              ) : (
+                <View style={styles.disabledTimeBox}>
+                  <Text style={[styles.disabledTimeText, TYPOGRAPHY.labelCaps]}>Todo el día</Text>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
+        </TarjetaVidrio>
 
-        {/* Selector de Tipo de Programación: Único o Mensual */}
-        <View style={styles.inputGroup}>
+        {/* Bloque 2: Tipo de Programación */}
+        <TarjetaVidrio variant="low" style={styles.sectionCard}>
           <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Tipo de programación</Text>
-          <View style={styles.recurrenceSwitchTrack}>
-            <TouchableOpacity
-              style={[
-                styles.recurrenceOptionBtn,
-                recurrenceType === 'SINGLE' && styles.recurrenceOptionActive,
-              ]}
-              onPress={() => {
-                triggerSelection();
-                setRecurrenceType('SINGLE');
-              }}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="event-available"
-                size={16}
-                color={recurrenceType === 'SINGLE' ? '#FFFFFF' : COLORS.onSurfaceVariant}
-              />
-              <Text
-                style={[
-                  styles.recurrenceOptionText,
-                  TYPOGRAPHY.labelCaps,
-                  recurrenceType === 'SINGLE' && styles.recurrenceOptionTextActive,
-                ]}
-              >
-                Compromiso único
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.recurrenceOptionBtn,
-                recurrenceType === 'MONTHLY' && styles.recurrenceOptionActive,
-              ]}
-              onPress={() => {
-                triggerSelection();
-                setRecurrenceType('MONTHLY');
-              }}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="update"
-                size={16}
-                color={recurrenceType === 'MONTHLY' ? '#FFFFFF' : COLORS.onSurfaceVariant}
-              />
-              <Text
-                style={[
-                  styles.recurrenceOptionText,
-                  TYPOGRAPHY.labelCaps,
-                  recurrenceType === 'MONTHLY' && styles.recurrenceOptionTextActive,
-                ]}
-              >
-                Mensual (Día {parseInt(date.split('-')[2] || '1', 10)})
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <SelectorSegmentado
+            opciones={opcionesProgramacion}
+            valorSeleccionado={recurrenceType}
+            onSeleccionar={setRecurrenceType}
+            compacto
+          />
           {recurrenceType === 'MONTHLY' && (
             <Text style={[styles.helperNoticeText, TYPOGRAPHY.bodySm]}>
-              Se repetirá cada mes el día {parseInt(date.split('-')[2] || '1', 10)}. En meses que no contengan este día (ej: 31 de feb), se omitirá automáticamente.
+              Se repetirá cada mes el día {diaDelMes}. En meses sin ese día (ej: 31 de feb), se omitirá automáticamente.
             </Text>
           )}
-        </View>
+        </TarjetaVidrio>
 
-        {/* Campo: Persona relacionada (Opcional) */}
-        <View style={styles.inputGroup}>
-          <View style={styles.inputWithIconRow}>
-            <MaterialIcons name="person-outline" size={18} color={COLORS.onSurfaceVariant} />
+        {/* Bloque 3: Detalles Opcionales */}
+        <TarjetaVidrio variant="low" style={styles.sectionCard}>
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Persona relacionada</Text>
+            <View style={styles.inputWithIconRow}>
+              <MaterialIcons name="person-outline" size={18} color={COLORS.onSurfaceVariant} />
+              <TextInput
+                style={[styles.textInputInside, TYPOGRAPHY.bodySm]}
+                placeholder="Opcional (cliente, contacto, proveedor...)"
+                placeholderTextColor={COLORS.outline}
+                value={relatedPerson}
+                onChangeText={setRelatedPerson}
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Notas o descripción</Text>
             <TextInput
-              style={[styles.textInputInside, TYPOGRAPHY.bodySm]}
-              placeholder="Persona relacionada"
+              style={[styles.textInput, styles.textAreaInput, TYPOGRAPHY.bodySm]}
+              placeholder="Agrega detalles adicionales..."
               placeholderTextColor={COLORS.outline}
-              value={relatedPerson}
-              onChangeText={setRelatedPerson}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
             />
           </View>
-        </View>
+        </TarjetaVidrio>
 
-        {/* Campo: Notas / Descripción (Opcional) */}
-        <View style={styles.inputGroup}>
-          <TextInput
-            style={[styles.textInput, styles.textAreaInput, TYPOGRAPHY.bodySm]}
-            placeholder="Notas o descripción"
-            placeholderTextColor={COLORS.outline}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-          />
-        </View>
-
-        {/* Sección: Recordatorios y Avisos */}
-        <View style={styles.inputGroup}>
+        {/* Bloque 4: Recordatorios y Avisos */}
+        <TarjetaVidrio variant="low" style={styles.sectionCard}>
           <View style={styles.sectionHeaderRow}>
             <View style={styles.flexRowCenter}>
-              <MaterialIcons name="notifications-none" size={16} color={COLORS.primary} />
-              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps, { marginBottom: 0, marginLeft: 6 }]}>
+              <OrbeGlossy tamano={28} tono="violeta">
+                <MaterialIcons name="notifications-none" size={14} color="#FFFFFF" />
+              </OrbeGlossy>
+              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps, styles.reminderSectionLabel]}>
                 Recordatorios ({reminders.length})
               </Text>
             </View>
-            <TouchableOpacity
+            <ChipFiltro
+              etiqueta="Agregar"
+              activo
+              tono="violeta"
               onPress={handleAddReminder}
-              style={styles.addReminderPill}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="add" size={14} color={COLORS.primary} />
-            </TouchableOpacity>
+            />
           </View>
 
           {reminders.length === 0 ? (
@@ -436,45 +423,41 @@ const ContenidoModalCompromiso: React.FC<PropiedadesContenidoModalCompromiso> = 
             <View style={styles.remindersList}>
               {reminders.map(rem => (
                 <View key={rem.id} style={styles.reminderCard}>
-                  <View style={styles.reminderCardLeft}>
-                    <MaterialIcons name="alarm" size={16} color={COLORS.primary} />
-                    <View style={styles.daysBeforePillsRow}>
-                      {OPCIONES_ANTICIPACION.map(opc => {
-                        const selected = rem.daysBefore === opc.value;
-                        return (
-                          <TouchableOpacity
-                            key={opc.value}
-                            style={[styles.daysPill, selected && styles.daysPillSelected]}
-                            onPress={() => handleUpdateReminderDays(rem.id, opc.value)}
-                          >
-                            <Text
-                              style={[
-                                styles.daysPillText,
-                                TYPOGRAPHY.labelCaps,
-                                selected && styles.daysPillTextSelected,
-                              ]}
-                            >
-                              {opc.label}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
+                  <View style={styles.reminderTopRow}>
+                    <View style={styles.flexRowCenter}>
+                      <OrbeGlossy tamano={26} tono="obsidiana">
+                        <MaterialIcons name="alarm" size={13} color={COLORS.secondary} />
+                      </OrbeGlossy>
+                      <Text style={styles.reminderCardTitle}>Anticipación del aviso</Text>
                     </View>
+                    <OrbeGlossy
+                      tamano={26}
+                      tono="gasto"
+                      onPress={() => handleRemoveReminder(rem.id)}
+                      accessibilityLabel="Eliminar recordatorio"
+                    >
+                      <MaterialIcons name="close" size={14} color="#FFFFFF" />
+                    </OrbeGlossy>
                   </View>
 
-                  <TouchableOpacity
-                    onPress={() => handleRemoveReminder(rem.id)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <MaterialIcons name="remove-circle-outline" size={18} color={COLORS.cashflowExpense} />
-                  </TouchableOpacity>
+                  <View style={styles.daysBeforePillsRow}>
+                    {OPCIONES_ANTICIPACION.map(opc => (
+                      <ChipFiltro
+                        key={opc.value}
+                        etiqueta={opc.label}
+                        activo={rem.daysBefore === opc.value}
+                        tono="violeta"
+                        onPress={() => handleUpdateReminderDays(rem.id, opc.value)}
+                      />
+                    ))}
+                  </View>
                 </View>
               ))}
             </View>
           )}
-        </View>
+        </TarjetaVidrio>
 
-        {/* Botones de Acción */}
+        {/* Botón de Acción Principal */}
         <View style={styles.actionsRow}>
           <BotonBrillante
             title={isEditing ? 'Guardar Cambios' : 'Crear Compromiso'}
@@ -545,232 +528,179 @@ export const ModalCompromiso: React.FC<PropiedadesModalCompromiso> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
+    backgroundColor: 'rgba(6, 9, 11, 0.8)',
     justifyContent: 'flex-end',
   },
   modalDrawer: {
-    backgroundColor: '#121719',
+    backgroundColor: '#101518',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlassHighlight,
+    borderTopWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.18)',
+    paddingTop: 12,
     maxHeight: '90%',
     flexShrink: 1,
+  },
+  drawerHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(165, 231, 255, 0.25)',
+    alignSelf: 'center',
+    marginBottom: 8,
+  },
+  modalHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 8,
   },
   scrollArea: {
     flexShrink: 1,
   },
-  drawerHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.outline,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 6,
-  },
   drawerScrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 36,
-    gap: 16,
+    paddingTop: 4,
+    paddingBottom: 32,
+    gap: 14,
   },
-  modalHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 4,
-  },
-  modalTitleBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  modalTitle: {
-    color: COLORS.onSurface,
+  sectionCard: {
+    borderRadius: 20,
+    padding: 14,
+    gap: 12,
   },
   inputGroup: {
     gap: 6,
   },
   inputLabel: {
     color: COLORS.onSurfaceVariant,
+    fontSize: 10,
     letterSpacing: 0.6,
   },
   textInput: {
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.borderGlass,
+    borderColor: 'rgba(165, 231, 255, 0.12)',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
+  },
+  timeInput: {
+    textAlign: 'center',
   },
   textAreaInput: {
     minHeight: 74,
   },
   rowTwoCols: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   dateSelectorBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.borderGlass,
-    paddingHorizontal: 14,
+    borderColor: 'rgba(165, 231, 255, 0.14)',
+    paddingHorizontal: 12,
     paddingVertical: 12,
   },
   dateSelectorText: {
-    color: COLORS.onSurface,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   switchLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 20,
-    marginBottom: 4,
+    height: 18,
   },
   disabledTimeBox: {
-    backgroundColor: COLORS.surfaceContainerLow,
+    backgroundColor: 'rgba(9, 13, 15, 0.5)',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.borderGlass,
+    borderColor: 'rgba(165, 231, 255, 0.08)',
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   disabledTimeText: {
-    color: COLORS.outline,
-    fontSize: 10,
-  },
-  recurrenceSwitchTrack: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: 14,
-    padding: 4,
-    gap: 4,
-  },
-  recurrenceOptionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  recurrenceOptionActive: {
-    backgroundColor: COLORS.primaryContainer,
-  },
-  recurrenceOptionText: {
     color: COLORS.onSurfaceVariant,
     fontSize: 10,
-  },
-  recurrenceOptionTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
   },
   helperNoticeText: {
     color: COLORS.onSurfaceVariant,
     fontSize: 11,
-    fontStyle: 'italic',
-    paddingHorizontal: 4,
+    lineHeight: 16,
   },
   inputWithIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceContainerLowest,
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.borderGlass,
+    borderColor: 'rgba(165, 231, 255, 0.12)',
     paddingHorizontal: 12,
   },
   textInputInside: {
     flex: 1,
     paddingHorizontal: 8,
     paddingVertical: 12,
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    gap: 8,
   },
   flexRowCenter: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
-  addReminderPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(138, 79, 255, 0.16)',
-    borderWidth: 1,
-    borderColor: 'rgba(138, 79, 255, 0.35)',
+  reminderSectionLabel: {
+    marginBottom: 0,
   },
   noRemindersBox: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: 12,
+    backgroundColor: 'rgba(9, 13, 15, 0.52)',
+    borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: COLORS.borderGlass,
+    borderColor: 'rgba(165, 231, 255, 0.08)',
   },
   noRemindersText: {
-    color: COLORS.outline,
+    color: COLORS.onSurfaceVariant,
     fontSize: 12,
     textAlign: 'center',
   },
   remindersList: {
-    gap: 8,
+    gap: 10,
   },
   reminderCard: {
+    backgroundColor: 'rgba(9, 13, 15, 0.58)',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.1)',
+    gap: 10,
+  },
+  reminderTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.surfaceContainer,
-    borderRadius: 14,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlass,
   },
-  reminderCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
+  reminderCardTitle: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   daysBeforePillsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
-    flex: 1,
-  },
-  daysPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  daysPillSelected: {
-    backgroundColor: COLORS.primaryContainer,
-  },
-  daysPillText: {
-    fontSize: 9,
-    color: COLORS.onSurfaceVariant,
-  },
-  daysPillTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    gap: 6,
   },
   actionsRow: {
-    marginTop: 10,
+    marginTop: 4,
   },
 });

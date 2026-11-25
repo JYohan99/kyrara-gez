@@ -16,6 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
 import { BotonBrillante as GlowButton } from '@/compartido/componentes/BotonBrillante';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
 import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
 import {
   MovimientoEnriquecido as EnrichedTransaction,
@@ -92,7 +93,7 @@ export function ModalDetalleMovimiento({
   const handleSaveEdit = () => {
     const amountCents = parseAmountToCents(editAmountStr);
     if (amountCents <= 0) {
-      Alert.alert('Error', 'Ingresa un monto válido mayor a 0');
+      Alert.alert('Error', 'Ingresa un monto vÃ¡lido mayor a 0');
       return;
     }
 
@@ -106,23 +107,23 @@ export function ModalDetalleMovimiento({
       setIsEditing(false);
       if (onUpdated) onUpdated();
     } catch {
-      Alert.alert('Error', 'No se pudo actualizar la transacción');
+      Alert.alert('Error', 'No se pudo actualizar la transacciÃ³n');
     }
   };
 
   const handleShareVoucher = async () => {
     triggerImpactLight();
-    const message = `🏛️ KYRARA GEZ • COMPROBANTE DE BÓVEDA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const message = `ðŸ›ï¸ KYRARA GEZ â€¢ COMPROBANTE DE BÃ“VEDA
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
 Tipo: ${typeLabel}
 Monto: ${isIncome ? '+' : isExpense ? '-' : ''}${formatCurrency(transaction.amount)}
 Beneficiario/Comercio: ${transaction.payee || transaction.categoryName}
-Categoría: ${transaction.categoryName}
-Cuenta: ${transaction.sourceAccountName}${transaction.targetAccountName ? ` ➔ ${transaction.targetAccountName}` : ''}
+CategorÃ­a: ${transaction.categoryName}
+Cuenta: ${transaction.sourceAccountName}${transaction.targetAccountName ? ` âž” ${transaction.targetAccountName}` : ''}
 Fecha: ${formattedDate} a las ${formattedTime}
 ${transaction.note ? `Nota: "${transaction.note}"\n` : ''}ID Local: TX-${transaction.id}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+Seguridad Cero Nube â€¢ Cifrado Local SQLite AES-256`;
 
     try {
       await Share.share({
@@ -138,7 +139,7 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
     triggerWarning();
     Alert.alert(
       'Eliminar Registro',
-      '¿Deseas revertir esta operación de tu bóveda local? El saldo de la cuenta será restablecido automáticamente.',
+      'Â¿Deseas revertir esta operaciÃ³n de tu bÃ³veda local? El saldo de la cuenta serÃ¡ restablecido automÃ¡ticamente.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -178,24 +179,17 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
           }}
         />
         <View style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerBadge}>
-              <MaterialIcons name="verified-user" size={14} color={COLORS.secondary} />
-              <Text style={[styles.headerBadgeText, TYPOGRAPHY.labelCaps]}>
-                Comprobante de Bóveda
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => {
-                setIsEditing(false);
-                onClose();
-              }}
-              style={styles.closeBtn}
-            >
-              <MaterialIcons name="close" size={22} color={COLORS.outline} />
-            </TouchableOpacity>
-          </View>
+          <EncabezadoModal
+            titulo="Comprobante de BÃ³veda"
+            subtitulo={typeLabel}
+            icono="verified-user"
+            tono={isIncome ? 'ingreso' : isExpense ? 'gasto' : 'cian'}
+            onCerrar={() => {
+              setIsEditing(false);
+              onClose();
+            }}
+            style={styles.modalHeader}
+          />
 
           <ScrollView
             keyboardShouldPersistTaps="handled"
@@ -244,7 +238,7 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
               <View style={styles.watermarkRow}>
                 <MaterialIcons name="lock" size={12} color={COLORS.outline} />
                 <Text style={[styles.watermarkText, TYPOGRAPHY.labelCaps]}>
-                  Bóveda Cero Nube • Hash TX-{transaction.id.slice(0, 8).toUpperCase()}
+                  BÃ³veda Cero Nube â€¢ Hash TX-{transaction.id.slice(0, 8).toUpperCase()}
                 </Text>
               </View>
 
@@ -270,9 +264,9 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
                   )}
                 </View>
 
-                {/* Categoría */}
+                {/* CategorÃ­a */}
                 <View style={styles.dataRow}>
-                  <Text style={[styles.dataLabel, TYPOGRAPHY.labelCaps]}>Categoría</Text>
+                  <Text style={[styles.dataLabel, TYPOGRAPHY.labelCaps]}>CategorÃ­a</Text>
                   <View style={styles.categoryBadge}>
                     <IconoCategoria
                       icon={transaction.categoryIcon}
@@ -292,7 +286,7 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
                     <MaterialIcons name="account-balance" size={14} color={COLORS.secondary} />
                     <Text style={[styles.accountName, TYPOGRAPHY.bodySm]}>
                       {transaction.sourceAccountName}
-                      {transaction.targetAccountName ? ` ➔ ${transaction.targetAccountName}` : ''}
+                      {transaction.targetAccountName ? ` âž” ${transaction.targetAccountName}` : ''}
                     </Text>
                   </View>
                 </View>
@@ -301,19 +295,19 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
                 <View style={styles.dataRow}>
                   <Text style={[styles.dataLabel, TYPOGRAPHY.labelCaps]}>Momento de Asentamiento</Text>
                   <Text style={[styles.dataValue, TYPOGRAPHY.bodySm]}>
-                    {formattedDate} • {formattedTime}
+                    {formattedDate} â€¢ {formattedTime}
                   </Text>
                 </View>
 
                 {/* Nota */}
                 <View style={styles.dataRow}>
-                  <Text style={[styles.dataLabel, TYPOGRAPHY.labelCaps]}>Nota de Auditoría</Text>
+                  <Text style={[styles.dataLabel, TYPOGRAPHY.labelCaps]}>Nota de AuditorÃ­a</Text>
                   {isEditing ? (
                     <TextInput
                       style={[styles.textInput, { minHeight: 60 }]}
                       value={editNote}
                       onChangeText={setEditNote}
-                      placeholder="Añadir observaciones..."
+                      placeholder="AÃ±adir observaciones..."
                       placeholderTextColor={COLORS.outline}
                       multiline
                     />
@@ -345,16 +339,12 @@ Seguridad Cero Nube • Cifrado Local SQLite AES-256`;
                 </View>
               ) : (
                 <>
-                  <TouchableOpacity
-                    style={styles.shareBtn}
-                    activeOpacity={0.8}
+                  <GlowButton
+                    title="Compartir Comprobante"
+                    variant="secondary"
+                    icon={<MaterialIcons name="share" size={18} color="#FFFFFF" />}
                     onPress={handleShareVoucher}
-                  >
-                    <MaterialIcons name="share" size={18} color="#0B0F10" />
-                    <Text style={[styles.shareBtnText, TYPOGRAPHY.labelCaps]}>
-                      Compartir Comprobante
-                    </Text>
-                  </TouchableOpacity>
+                  />
 
                   <View style={styles.secondaryActionsRow}>
                     <TouchableOpacity
@@ -397,40 +387,19 @@ const styles = StyleSheet.create({
     width: '100%',
     maxHeight: '90%',
     flexShrink: 1,
-    backgroundColor: '#0E1314',
-    borderRadius: 24,
+    backgroundColor: '#101518',
+    borderRadius: 26,
     borderWidth: 1,
-    borderColor: COLORS.borderGlass,
+    borderColor: 'rgba(165, 231, 255, 0.18)',
     overflow: 'hidden',
   },
   scrollArea: {
     flexShrink: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-  },
-  headerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(78, 222, 196, 0.1)',
-  },
-  headerBadgeText: {
-    color: COLORS.secondary,
-    fontSize: 10,
-  },
-  closeBtn: {
-    padding: 6,
+  modalHeader: {
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 6,
   },
   body: {
     padding: 20,
@@ -555,25 +524,6 @@ const styles = StyleSheet.create({
   actionsContainer: {
     gap: 10,
   },
-  shareBtn: {
-    backgroundColor: COLORS.secondary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-    shadowColor: COLORS.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  shareBtnText: {
-    color: '#0B0F10',
-    fontSize: 12,
-    fontWeight: '700',
-  },
   secondaryActionsRow: {
     flexDirection: 'row',
     gap: 10,
@@ -631,5 +581,4 @@ const styles = StyleSheet.create({
 
 // Alias compatibles
 export const TransactionDetailModal = ModalDetalleMovimiento;
-export type TransactionDetailModalProps = PropiedadesModalDetalleMovimiento;
 

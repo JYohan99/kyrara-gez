@@ -17,6 +17,7 @@ import {
   EvolucionTarifaItem,
 } from '../tipos';
 import { emitirCambioBoveda } from '../sincronizacion';
+import { hoyISO as fechaActualISO } from '@/compartido/utilidades/fecha';
 
 export const UNIDADES_VENTA_SUGERIDAS = [
   'Unidad',
@@ -28,12 +29,12 @@ export const UNIDADES_VENTA_SUGERIDAS = [
   'Litro',
   'Mililitro',
   'Metro',
-  'Centímetro',
+  'CentÃ­metro',
 ];
 
 /**
  * Determina si una unidad de venta corresponde a un Servicio / Mano de obra.
- * Los servicios no manejan stock físico ni alertas de agotado.
+ * Los servicios no manejan stock fÃ­sico ni alertas de agotado.
  */
 export function esServicio(saleUnit?: string): boolean {
   return (saleUnit || '').trim().toLowerCase() === 'servicio';
@@ -78,14 +79,6 @@ interface FilaTarifaProducto {
   currency?: string | null;
   created_at: number;
   updated_at: number;
-}
-
-function fechaActualISO(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dia = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dia}`;
 }
 
 /**
@@ -134,7 +127,7 @@ function mapearFilaAProducto(fila: FilaProducto, tariffsCount?: number): Product
         });
       }
     } catch {
-      // Ignorar json inválido
+      // Ignorar json invÃ¡lido
     }
   }
 
@@ -153,7 +146,7 @@ function mapearFilaAProducto(fila: FilaProducto, tariffsCount?: number): Product
         }));
       }
     } catch {
-      // Ignorar json inválido
+      // Ignorar json invÃ¡lido
     }
   }
 
@@ -211,7 +204,7 @@ function mapearFilaATarifa(fila: FilaTarifaProducto): TarifaProducto {
 }
 
 /**
- * Verifica si ya existe un producto con el mismo nombre (ignorando mayúsculas y espacios).
+ * Verifica si ya existe un producto con el mismo nombre (ignorando mayÃºsculas y espacios).
  */
 export function verificarNombreDuplicado(nombre: string, idExcluir?: string): boolean {
   const nombreLimpio = nombre.trim().toLowerCase();
@@ -229,7 +222,7 @@ export function verificarNombreDuplicado(nombre: string, idExcluir?: string): bo
 }
 
 /**
- * Obtiene la lista de productos según los filtros especificados.
+ * Obtiene la lista de productos segÃºn los filtros especificados.
  */
 export function obtenerProductos(filtros?: FiltroProductos): Producto[] {
   asegurarEsquemaBaseDatos();
@@ -258,7 +251,7 @@ export function obtenerProductos(filtros?: FiltroProductos): Producto[] {
     params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
   }
 
-  // Ordenar alfabéticamente por nombre
+  // Ordenar alfabÃ©ticamente por nombre
   query += ' ORDER BY p.name COLLATE NOCASE ASC';
 
   const rows = db.getAllSync<FilaProducto>(query, params);
@@ -266,7 +259,7 @@ export function obtenerProductos(filtros?: FiltroProductos): Producto[] {
 }
 
 /**
- * Obtiene un producto por su identificador único.
+ * Obtiene un producto por su identificador Ãºnico.
  */
 export function obtenerProductoPorId(id: string): Producto | null {
   asegurarEsquemaBaseDatos();
@@ -286,7 +279,7 @@ export function obtenerProductoPorId(id: string): Producto | null {
 }
 
 /**
- * Obtiene todas las tarifas históricas y vigentes de un producto.
+ * Obtiene todas las tarifas histÃ³ricas y vigentes de un producto.
  */
 export function obtenerTarifasProducto(productId: string): TarifaProducto[] {
   const db = obtenerBaseDatos();
@@ -309,7 +302,7 @@ export function obtenerTarifaVigente(productId: string): TarifaProducto | null {
   );
   if (row) return mapearFilaATarifa(row);
 
-  // Fallback: la más reciente
+  // Fallback: la mÃ¡s reciente
   const fallback = db.getFirstSync<FilaTarifaProducto>(
     'SELECT * FROM photo_product_prices WHERE product_id = ? ORDER BY valid_from DESC, created_at DESC LIMIT 1',
     [productId]
@@ -332,8 +325,8 @@ export interface DatosEstablecerTarifa {
 /**
  * Establece una tarifa para un producto.
  * - Valida precios no negativos.
- * - Si es corrección (isCorrection: true), modifica la tarifa vigente conservando el historial previo.
- * - Si es nueva tarifa (isCorrection: false), cierra la tarifa anterior asignándole valid_to y crea la nueva tarifa vigente.
+ * - Si es correcciÃ³n (isCorrection: true), modifica la tarifa vigente conservando el historial previo.
+ * - Si es nueva tarifa (isCorrection: false), cierra la tarifa anterior asignÃ¡ndole valid_to y crea la nueva tarifa vigente.
  */
 export function establecerTarifaProducto(datos: DatosEstablecerTarifa): {
   product: Producto;
@@ -377,7 +370,7 @@ export function establecerTarifaProducto(datos: DatosEstablecerTarifa): {
     const monedaFinal = datos.currency || producto.currency || 'UYU';
 
     if (datos.isCorrection && tarifaVigenteFila) {
-      // Corrección por error de la tarifa actual: preserva el historial previo intacto
+      // CorrecciÃ³n por error de la tarifa actual: preserva el historial previo intacto
       db.runSync(
         `UPDATE photo_product_prices SET
           sale_price = ?,
@@ -475,7 +468,7 @@ export function establecerTarifaProducto(datos: DatosEstablecerTarifa): {
       };
     }
 
-    // Actualizar campos denormalizados en photo_products para acceso rápido
+    // Actualizar campos denormalizados en photo_products para acceso rÃ¡pido
     db.runSync(
       `UPDATE photo_products SET
         base_price = ?,
@@ -519,7 +512,7 @@ export function eliminarTarifaProducto(tariffId: string): void {
   db.withTransactionSync(() => {
     db.runSync('DELETE FROM photo_product_prices WHERE id = ?', [tariffId]);
 
-    // Si eliminó la tarifa vigente, reactivar la más reciente si existe
+    // Si eliminÃ³ la tarifa vigente, reactivar la mÃ¡s reciente si existe
     const latest = db.getFirstSync<FilaTarifaProducto>(
       'SELECT * FROM photo_product_prices WHERE product_id = ? ORDER BY valid_from DESC, created_at DESC LIMIT 1',
       [tarifa.product_id]
@@ -587,7 +580,7 @@ export interface DatosCrearProducto {
 }
 
 /**
- * Registra un nuevo producto comercial/inventariable en el catálogo.
+ * Registra un nuevo producto comercial/inventariable en el catÃ¡logo.
  */
 export function crearProducto(datos: DatosCrearProducto): Producto {
   asegurarEsquemaBaseDatos();
@@ -660,7 +653,7 @@ export function crearProducto(datos: DatosCrearProducto): Producto {
       ]
     );
 
-    // Si se especificó un stock inicial positivo, registrar operación formal en inventory_operations
+    // Si se especificÃ³ un stock inicial positivo, registrar operaciÃ³n formal en inventory_operations
     if (stockInicial > 0) {
       const opId = 'op_inv_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 6);
       db.runSync(
@@ -748,7 +741,7 @@ export function actualizarProducto(
   if (datos.name !== undefined) {
     nombreFinal = datos.name.trim();
     if (!nombreFinal) {
-      throw new Error('El nombre del producto no puede estar vacío.');
+      throw new Error('El nombre del producto no puede estar vacÃ­o.');
     }
     if (verificarNombreDuplicado(nombreFinal, id)) {
       throw new Error(`Ya existe otro producto con el nombre "${nombreFinal}".`);
@@ -759,7 +752,7 @@ export function actualizarProducto(
   if (datos.saleUnit !== undefined) {
     unidadFinal = datos.saleUnit.trim();
     if (!unidadFinal) {
-      throw new Error('La unidad de venta no puede estar vacía.');
+      throw new Error('La unidad de venta no puede estar vacÃ­a.');
     }
   }
 
@@ -882,7 +875,7 @@ export function actualizarProducto(
           `INSERT INTO photo_product_prices (
             id, product_id, sale_price, cost_price, cost_usd, exchange_rate,
             valid_from, valid_to, notes, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 'Actualización de tarifa', ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 'ActualizaciÃ³n de tarifa', ?, ?)`,
           [
             nuevoTarifaId,
             id,
@@ -925,19 +918,7 @@ export function actualizarProducto(
 }
 
 /**
- * Alterna el estado activo/inactivo de un producto.
- */
-export function alternarEstadoProducto(id: string): Producto {
-  const actual = obtenerProductoPorId(id);
-  if (!actual) {
-    throw new Error('El producto no existe.');
-  }
-
-  return actualizarProducto(id, { isActive: !actual.isActive });
-}
-
-/**
- * Elimina físicamente un producto del catálogo.
+ * Elimina fÃ­sicamente un producto del catÃ¡logo.
  */
 export function eliminarProducto(id: string): void {
   const db = obtenerBaseDatos();
@@ -946,17 +927,17 @@ export function eliminarProducto(id: string): void {
 }
 
 /* ==========================================================================
-   Fase 3: Calculadora de Precios y Estimaciones (Cálculos automáticos en memoria)
+   Fase 3: Calculadora de Precios y Estimaciones (CÃ¡lculos automÃ¡ticos en memoria)
    ========================================================================== */
 
 /**
- * Valida que una cantidad para la calculadora sea un número entero positivo mayor a cero.
- * Evita valores negativos, cero, decimales o no numéricos.
+ * Valida que una cantidad para la calculadora sea un nÃºmero entero positivo mayor a cero.
+ * Evita valores negativos, cero, decimales o no numÃ©ricos.
  */
 export function validarCantidadCalculo(cantidad: number | string): number {
   const parsed = typeof cantidad === 'string' ? Number(cantidad.trim()) : cantidad;
   if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error('La cantidad debe ser un número entero positivo mayor a cero.');
+    throw new Error('La cantidad debe ser un nÃºmero entero positivo mayor a cero.');
   }
   return parsed;
 }
@@ -975,10 +956,10 @@ export function verificarRegistroPrecioYCosto(producto: Producto): {
 }
 
 /**
- * Calcula el importe, costo estimado y ganancia estimada para un ítem del cálculo.
- * - Importe = precio unitario × cantidad.
- * - Costo estimado = costo unitario × cantidad.
- * - Ganancia bruta estimada = importe − costo estimado.
+ * Calcula el importe, costo estimado y ganancia estimada para un Ã­tem del cÃ¡lculo.
+ * - Importe = precio unitario Ã— cantidad.
+ * - Costo estimado = costo unitario Ã— cantidad.
+ * - Ganancia bruta estimada = importe âˆ’ costo estimado.
  * Si falta el precio o el costo, no inventa valores ni usa cero silenciosamente: retorna null en los campos no calculables.
  */
 export function calcularLineaProducto(
@@ -1021,8 +1002,8 @@ export function calcularLineaProducto(
 }
 
 /**
- * Agrupa y totaliza los resultados de todas las líneas añadidas a la calculadora.
- * - Separa los totales por moneda (UYU, USD, etc.) sin sumar monedas incompatibles entre sí.
+ * Agrupa y totaliza los resultados de todas las lÃ­neas aÃ±adidas a la calculadora.
+ * - Separa los totales por moneda (UYU, USD, etc.) sin sumar monedas incompatibles entre sÃ­.
  * - No redondea internamente antes de totalizar.
  * - Advierte si faltan precios o costos en los productos seleccionados.
  */
@@ -1074,7 +1055,7 @@ export function calcularTotalesProductos(
   const monedas = Object.keys(totalesPorMoneda);
   for (const mon of monedas) {
     const t = totalesPorMoneda[mon];
-    // El margen general se calcula sobre las líneas completas
+    // El margen general se calcula sobre las lÃ­neas completas
     if (t.totalImporte > 0 && t.esCalculoCompleto) {
       t.margenPorcentual = (t.totalGanancia / t.totalImporte) * 100;
     } else {
@@ -1097,19 +1078,19 @@ export function calcularTotalesProductos(
 }
 
 /* ==========================================================================
-   Fase 4: Historial de Precios, Evolución y Estadísticas del Catálogo
+   Fase 4: Historial de Precios, EvoluciÃ³n y EstadÃ­sticas del CatÃ¡logo
    ========================================================================== */
 
 /**
  * Obtiene el historial detallado de cambios de precios para cada producto,
- * calculando para cada transición:
+ * calculando para cada transiciÃ³n:
  * - Nombre y formato del producto.
  * - Precio de venta anterior y nuevo.
  * - Costo unitario anterior y nuevo.
  * - Ganancia bruta y margen estimado anterior y nuevo.
  * - Diferencias y variaciones porcentuales.
- * - Fecha de aplicación del cambio y moneda.
- * Ordenado estrictamente del cambio más reciente al más antiguo.
+ * - Fecha de aplicaciÃ³n del cambio y moneda.
+ * Ordenado estrictamente del cambio mÃ¡s reciente al mÃ¡s antiguo.
  */
 export function obtenerHistorialCambiosPrecios(
   filtros?: FiltroHistorialPrecios
@@ -1147,7 +1128,7 @@ export function obtenerHistorialCambiosPrecios(
   const cambiosTotales: CambioPrecioHistorial[] = [];
 
   for (const prod of productos) {
-    // Tarifas ordenadas cronológicamente de la más antigua a la más reciente
+    // Tarifas ordenadas cronolÃ³gicamente de la mÃ¡s antigua a la mÃ¡s reciente
     const tarifasFilas = db.getAllSync<FilaTarifaProducto>(
       'SELECT * FROM photo_product_prices WHERE product_id = ? ORDER BY valid_from ASC, created_at ASC',
       [prod.id]
@@ -1235,7 +1216,7 @@ export function obtenerHistorialCambiosPrecios(
     }
   }
 
-  // Ordenar del más reciente al más antiguo
+  // Ordenar del mÃ¡s reciente al mÃ¡s antiguo
   cambiosTotales.sort((a, b) => {
     if (b.validFrom !== a.validFrom) {
       return b.validFrom.localeCompare(a.validFrom);
@@ -1247,8 +1228,8 @@ export function obtenerHistorialCambiosPrecios(
 }
 
 /**
- * Obtiene la evolución histórica de tarifas de un producto específico,
- * ordenadas cronológicamente para visualizar variaciones y líneas de tiempo.
+ * Obtiene la evoluciÃ³n histÃ³rica de tarifas de un producto especÃ­fico,
+ * ordenadas cronolÃ³gicamente para visualizar variaciones y lÃ­neas de tiempo.
  */
 export function obtenerEvolucionTarifasProducto(productId: string): EvolucionTarifaItem[] {
   const db = obtenerBaseDatos();
@@ -1288,7 +1269,7 @@ export function obtenerEvolucionTarifasProducto(productId: string): EvolucionTar
 }
 
 /**
- * Obtiene estadísticas generales del catálogo de productos:
+ * Obtiene estadÃ­sticas generales del catÃ¡logo de productos:
  * - Cantidad de productos activos e inactivos.
  * - Cantidad de productos sin precio o costo registrado.
  * - Promedios de venta, costo, ganancia bruta y margen, desglosados estrictamente por moneda.
@@ -1362,7 +1343,7 @@ export function obtenerEstadisticasCatalogo(): EstadisticasCatalogoProductos {
     }
   }
 
-  // Calcular promedios para productos con datos válidos
+  // Calcular promedios para productos con datos vÃ¡lidos
   for (const mon of Object.keys(porMoneda)) {
     const stat = porMoneda[mon];
     const prodsMon = productosFilas.filter(p => (p.currency || 'UYU') === mon);
@@ -1407,10 +1388,9 @@ export function obtenerEstadisticasCatalogo(): EstadisticasCatalogoProductos {
   };
 }
 
-export const obtenerEstadisticasCatalogoProductos = obtenerEstadisticasCatalogo;
 
 /**
- * Calcula la inversión total en centavos sumando todos los materiales de una artesanía.
+ * Calcula la inversiÃ³n total en centavos sumando todos los materiales de una artesanÃ­a.
  */
 export function calcularInversionMateriales(materiales?: MaterialArtesania[]): number {
   if (!materiales || materiales.length === 0) return 0;
@@ -1433,11 +1413,11 @@ export interface InsumoAfectadoFabricacion {
 }
 
 /**
- * Registra la producción de piezas de una artesanía:
- * - Descuenta las cantidades consumidas del inventario de cada insumo vinculado al catálogo.
- * - Registra una operación 'ADJUSTMENT' con motivo 'USO_INTERNO' por cada insumo consumido.
- * - Incrementa el stock de la artesanía producida y registra una operación 'PRODUCTION'.
- * - Ejecuta todo en una transacción atómica.
+ * Registra la producciÃ³n de piezas de una artesanÃ­a:
+ * - Descuenta las cantidades consumidas del inventario de cada insumo vinculado al catÃ¡logo.
+ * - Registra una operaciÃ³n 'ADJUSTMENT' con motivo 'USO_INTERNO' por cada insumo consumido.
+ * - Incrementa el stock de la artesanÃ­a producida y registra una operaciÃ³n 'PRODUCTION'.
+ * - Ejecuta todo en una transacciÃ³n atÃ³mica.
  */
 export function fabricarArtesania({
   artesaniaId,
@@ -1455,7 +1435,7 @@ export function fabricarArtesania({
   const db = obtenerBaseDatos();
   const artesania = obtenerProductoPorId(artesaniaId);
   if (!artesania) {
-    throw new Error('La artesanía no existe.');
+    throw new Error('La artesanÃ­a no existe.');
   }
 
   const materiales = artesania.materials || [];
@@ -1463,7 +1443,7 @@ export function fabricarArtesania({
   const insumosAfectados: InsumoAfectadoFabricacion[] = [];
 
   db.withTransactionSync(() => {
-    // 1. Descontar stock de cada insumo que esté en el inventario
+    // 1. Descontar stock de cada insumo que estÃ© en el inventario
     for (const mat of materiales) {
       if (mat.productId) {
         const insumo = obtenerProductoPorId(mat.productId);
@@ -1491,7 +1471,7 @@ export function fabricarArtesania({
               nuevoStockInsumo,
               costoUnitarioInsumo,
               costoUnitarioInsumo * cantidadDescontar,
-              `Insumo utilizado en fabricación de ${cantidad} ${artesania.saleUnit || 'un.'} de "${artesania.name}"`,
+              `Insumo utilizado en fabricaciÃ³n de ${cantidad} ${artesania.saleUnit || 'un.'} de "${artesania.name}"`,
               ahora,
               ahora,
             ]
@@ -1505,21 +1485,21 @@ export function fabricarArtesania({
       }
     }
 
-    // 2. Incrementar stock de la artesanía producida
+    // 2. Incrementar stock de la artesanÃ­a producida
     const nuevoStockArtesania = artesania.currentStock + cantidad;
     db.runSync(
       'UPDATE photo_products SET current_stock = ?, updated_at = ? WHERE id = ?',
       [nuevoStockArtesania, ahora, artesania.id]
     );
 
-    // 3. Registrar operación 'PRODUCTION' para la artesanía
+    // 3. Registrar operaciÃ³n 'PRODUCTION' para la artesanÃ­a
     const opArtesaniaId = 'op_inv_' + ahora.toString(36) + '_' + Math.random().toString(36).substring(2, 6);
     const costoUnitarioArtesania = artesania.costPrice || 0;
     db.runSync(
       `INSERT INTO inventory_operations (
         id, product_id, type, quantity, previous_stock, new_stock, unit_cost, total_cost,
         reason, notes, date, created_at
-      ) VALUES (?, ?, 'PRODUCTION', ?, ?, ?, ?, ?, 'Producción artesanal', ?, ?, ?)`,
+      ) VALUES (?, ?, 'PRODUCTION', ?, ?, ?, ?, ?, 'ProducciÃ³n artesanal', ?, ?, ?)`,
       [
         opArtesaniaId,
         artesania.id,
@@ -1528,7 +1508,7 @@ export function fabricarArtesania({
         nuevoStockArtesania,
         costoUnitarioArtesania,
         costoUnitarioArtesania * cantidad,
-        notas?.trim() || `Producción artesanal de ${cantidad} piezas terminadas`,
+        notas?.trim() || `ProducciÃ³n artesanal de ${cantidad} piezas terminadas`,
         ahora,
         ahora,
       ]

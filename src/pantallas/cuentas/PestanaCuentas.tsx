@@ -17,7 +17,6 @@ export interface PropiedadesPestanaCuentas {
   onNewAccount: () => void;
   onEditAccount: (account: Cuenta) => void;
 }
-export type AccountsTabProps = PropiedadesPestanaCuentas;
 
 export const PestanaCuentas: React.FC<PropiedadesPestanaCuentas> = ({
   onNewAccount,
@@ -173,7 +172,6 @@ export const PestanaCuentas: React.FC<PropiedadesPestanaCuentas> = ({
 };
 
 export const PestañaCuentas = PestanaCuentas;
-export const AccountsTab = PestanaCuentas;
 
 const styles = StyleSheet.create({
   container: {

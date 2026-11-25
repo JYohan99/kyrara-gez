@@ -1,15 +1,7 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Modal,
-  Platform,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { COLORES as COLORS } from '@/compartido/tema';
+import { ModalObsidiana, BotonBrillante } from '@/compartido/componentes';
 
 export interface PropiedadesModalVisorRespaldo {
   visible: boolean;
@@ -17,7 +9,6 @@ export interface PropiedadesModalVisorRespaldo {
   content: string;
   onClose: () => void;
 }
-export type BackupViewerModalProps = PropiedadesModalVisorRespaldo;
 
 export const ModalVisorRespaldo: React.FC<PropiedadesModalVisorRespaldo> = ({
   visible,
@@ -25,79 +16,36 @@ export const ModalVisorRespaldo: React.FC<PropiedadesModalVisorRespaldo> = ({
   content,
   onClose,
 }) => {
-  const insets = useSafeAreaInsets();
-
   return (
-    <Modal
+    <ModalObsidiana
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
+      onCerrar={onClose}
+      titulo={title}
+      subtitulo="Vista previa del respaldo local"
+      icono="description"
+      tono="cian"
+      conTeclado={false}
+      maxHeight="80%"
+      footer={<BotonBrillante title="Cerrar" onPress={onClose} />}
     >
-      <View style={styles.modalOverlay}>
-        <TouchableOpacity
-          style={StyleSheet.absoluteFill}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-        <View style={[styles.modalDrawer, { maxHeight: '80%', paddingBottom: Math.max(insets.bottom, 22) }]}>
-          <View style={styles.drawerHandle} />
-          <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>{title}</Text>
-          <ScrollView style={styles.backupTextScroll}>
-            <Text style={styles.backupContentText}>{content}</Text>
-          </ScrollView>
-          <TouchableOpacity
-            style={styles.modalSaveBtn}
-            onPress={onClose}
-          >
-            <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>Cerrar</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
+      <ScrollView style={styles.backupTextScroll}>
+        <Text style={styles.backupContentText}>{content}</Text>
+      </ScrollView>
+    </ModalObsidiana>
   );
 };
 
-export const BackupViewerModal = ModalVisorRespaldo;
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(11, 15, 16, 0.8)',
-    justifyContent: 'flex-end',
-  },
-  modalDrawer: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 22,
-    gap: 14,
-  },
-  drawerHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.surfaceContainerHighest,
-    alignSelf: 'center',
-    marginBottom: 4,
-  },
-  modalTitle: {
-    color: COLORS.onSurface,
-  },
-  modalSaveBtn: {
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.primaryContainer,
-    alignItems: 'center',
-  },
-  modalSaveText: {
-    color: '#FFFFFF',
-  },
   backupTextScroll: {
     maxHeight: 280,
-    backgroundColor: COLORS.surfaceContainerLowest,
+    marginHorizontal: 20,
+    marginBottom: 14,
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.12)',
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
   },
   backupContentText: {
     color: COLORS.onSurfaceVariant,

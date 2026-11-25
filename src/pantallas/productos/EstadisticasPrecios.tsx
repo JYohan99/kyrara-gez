@@ -869,25 +869,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 4,
   },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 12,
-    height: 42,
-    marginBottom: 10,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: COLORS.onSurface,
-    paddingVertical: 0,
-  },
   profitabilityList: {
     gap: 10,
     marginBottom: 20,
@@ -955,11 +936,6 @@ const styles = StyleSheet.create({
   profitNeg: {
     color: COLORS.gasto,
   },
-  rentMetricMargin: {
-    color: COLORS.secondary,
-    fontSize: 11,
-    fontWeight: '700',
-  },
   missingWarning: {
     color: '#E5C07B',
     fontSize: 9,
@@ -967,5 +943,3 @@ const styles = StyleSheet.create({
   },
 });
 
-export const EstadisticasProductos = EstadisticasPrecios;
-export const ProductCatalogStatistics = EstadisticasPrecios;

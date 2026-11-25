@@ -279,5 +279,4 @@ const styles = StyleSheet.create({
 });
 
 // Alias compatible
-export const TransactionsScreen = PantallaMovimientos;
 

@@ -17,11 +17,15 @@ import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import {
   formatearEntradaDinero,
   convertirMontoACentavos,
+  centavosAEntradaDinero,
   formatearMoneda as formatCurrency,
 } from '@/compartido/utilidades/moneda';
+import { fechaAISO } from '@/compartido/utilidades/fecha';
 import { ModalSelectorFecha } from '@/compartido/componentes/ModalSelectorFecha';
 import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
+import { ChipFiltro } from '@/compartido/componentes/ChipFiltro';
 import {
   gatillarExito as triggerSuccess,
   gatillarError as triggerError,
@@ -36,13 +40,6 @@ export interface PropiedadesModalPagoDeuda {
   onClose: () => void;
   deuda: Deuda | null;
   onPagoCompletado?: () => void;
-}
-
-function fechaAISO(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 interface PropiedadesContenidoModalPagoDeuda {
@@ -60,10 +57,9 @@ const ContenidoModalPagoDeuda: React.FC<PropiedadesContenidoModalPagoDeuda> = ({
   const { accounts } = useCuentasBoveda();
   const cuentasActivas = accounts.filter(a => !a.isArchived);
 
-  const [montoTexto, setMontoTexto] = useState(() => {
-    const restanteStr = (deuda.remainingAmount / 100).toFixed(2).replace('.', ',');
-    return formatearEntradaDinero(restanteStr);
-  });
+  const [montoTexto, setMontoTexto] = useState(() =>
+    centavosAEntradaDinero(deuda.remainingAmount, true)
+  );
   const amountInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -150,27 +146,15 @@ const ContenidoModalPagoDeuda: React.FC<PropiedadesContenidoModalPagoDeuda> = ({
           { paddingBottom: Math.max(insets.bottom + 12, 20) },
         ]}
       >
-        {/* Header */}
-        <View style={styles.sheetHeader}>
-          <View style={styles.indicatorBar} />
-          <View style={styles.titleRow}>
-            <View>
-              <Text style={[styles.sheetTitle, TYPOGRAPHY.headlineSm]}>
-                {esCobro ? 'Registrar Cobro' : 'Registrar Pago'}
-              </Text>
-              <Text style={[styles.sheetSubtitle, TYPOGRAPHY.bodySm]}>
-                {deuda.concept} — {deuda.person}
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={onClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.closeBtn}
-            >
-              <MaterialIcons name="close" size={22} color={COLORS.onSurfaceVariant} />
-            </TouchableOpacity>
-          </View>
-        </View>
+        <View style={styles.indicatorBar} />
+        <EncabezadoModal
+          titulo={esCobro ? 'Registrar Cobro' : 'Registrar Pago'}
+          subtitulo={`${deuda.concept} — ${deuda.person}`}
+          icono="payments"
+          tono={esCobro ? 'ingreso' : 'gasto'}
+          onCerrar={onClose}
+          style={styles.modalHeader}
+        />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -221,18 +205,18 @@ const ContenidoModalPagoDeuda: React.FC<PropiedadesContenidoModalPagoDeuda> = ({
               </Text>
               {/* Atajos de importe */}
               <View style={styles.quickAmountRow}>
-                <TouchableOpacity
-                  style={styles.quickAmountChip}
+                <ChipFiltro
+                  etiqueta="50%"
+                  activo={false}
+                  tono="violeta"
                   onPress={handleSeleccionarMitad}
-                >
-                  <Text style={[styles.quickAmountText, TYPOGRAPHY.labelCaps]}>50%</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.quickAmountChip}
+                />
+                <ChipFiltro
+                  etiqueta="Total"
+                  activo
+                  tono="violeta"
                   onPress={handleSeleccionarTotal}
-                >
-                  <Text style={[styles.quickAmountText, TYPOGRAPHY.labelCaps]}>Total Restante</Text>
-                </TouchableOpacity>
+                />
               </View>
             </View>
 
@@ -429,47 +413,29 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
   },
   sheetContainer: {
-    backgroundColor: '#101415',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: COLORS.borderGlassHighlight,
+    backgroundColor: '#101518',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.18)',
+    paddingTop: 10,
     maxHeight: '90%',
     flexShrink: 1,
   },
   scrollArea: {
     flexShrink: 1,
   },
-  sheetHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderGlass,
-  },
   indicatorBar: {
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(165, 231, 255, 0.25)',
     alignSelf: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sheetTitle: {
-    color: COLORS.onSurface,
-  },
-  sheetSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
-  closeBtn: {
-    padding: 4,
+  modalHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 8,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -519,18 +485,6 @@ const styles = StyleSheet.create({
   quickAmountRow: {
     flexDirection: 'row',
     gap: 6,
-  },
-  quickAmountChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    backgroundColor: 'rgba(138, 79, 255, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(138, 79, 255, 0.3)',
-  },
-  quickAmountText: {
-    color: COLORS.primary,
-    fontSize: 9,
   },
   inputBox: {
     flexDirection: 'row',

@@ -2,22 +2,22 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   TextInput,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS } from '@/compartido/tema';
-import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import {
+  ModalObsidiana,
+  BotonBrillante,
+  SelectorSegmentado,
+  ChipFiltro,
+  OpcionSegmento,
+} from '@/compartido/componentes';
 import {
   gatillarExito as triggerSuccess,
   gatillarError as triggerError,
-  gatillarSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
 import { Producto } from '@/datos/tipos';
 import { registrarAjusteInventario } from '@/datos/consultas/inventario';
@@ -33,6 +33,11 @@ const MOTIVOS_AJUSTE_SUGERIDOS = [
   'Otro',
 ];
 
+const OPCIONES_MODO_AJUSTE: OpcionSegmento<'DELTA' | 'COUNT'>[] = [
+  { valor: 'DELTA', etiqueta: 'Variación (+ / -)', icono: 'exposure', tonoActivo: 'cian' },
+  { valor: 'COUNT', etiqueta: 'Recuento Físico', icono: 'pin', tonoActivo: 'violeta' },
+];
+
 export interface PropiedadesSubModalAjuste {
   visible: boolean;
   onClose: () => void;
@@ -46,7 +51,6 @@ export const SubModalAjuste: React.FC<PropiedadesSubModalAjuste> = ({
   producto,
   onSuccess,
 }) => {
-  const insets = useSafeAreaInsets();
   const [ajusteModo, setAjusteModo] = useState<'DELTA' | 'COUNT'>('DELTA');
   const [deltaTexto, setDeltaTexto] = useState('-1');
   const [conteoTexto, setConteoTexto] = useState(() => String(producto.currentStock ?? 0));
@@ -121,38 +125,33 @@ export const SubModalAjuste: React.FC<PropiedadesSubModalAjuste> = ({
     }
   };
 
-  if (!visible) return null;
-
   return (
-    <View style={styles.modalOverlay}>
-      <TouchableOpacity
-        style={StyleSheet.absoluteFill}
-        activeOpacity={1}
-        onPress={onClose}
-      />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardAvoid}
-      >
-        <View
-          style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}
-          onStartShouldSetResponder={() => true}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <View style={[styles.headerIconWrap, { backgroundColor: 'rgba(209, 188, 255, 0.15)' }]}>
-                <MaterialIcons name="tune" size={18} color={COLORS.primario} />
-              </View>
-              <Text style={styles.headerTitle}>Ajustar Stock / Inventario</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <MaterialIcons name="close" size={18} color={COLORS.enSuperficieVariante} />
-            </TouchableOpacity>
+    <ModalObsidiana
+      visible={visible}
+      onCerrar={onClose}
+      titulo="Ajustar Stock"
+      subtitulo={producto.name}
+      icono="tune"
+      tono="violeta"
+      usaModalNativo={false}
+      maxHeight="92%"
+      footer={
+        <View style={styles.footerRow}>
+          <TouchableOpacity onPress={onClose} style={styles.cancelBtn} disabled={procesando}>
+            <Text style={styles.cancelBtnText}>Cancelar</Text>
+          </TouchableOpacity>
+          <View style={styles.submitBtnWrapper}>
+            <BotonBrillante
+              title={procesando ? 'Guardando...' : '✓ Confirmar Ajuste'}
+              onPress={handleGuardarAjuste}
+              disabled={procesando}
+            />
           </View>
-
-          <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
-            <View style={styles.form}>
+        </View>
+      }
+    >
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.form}>
               {/* Product Info Banner */}
               <View style={styles.productBanner}>
                 <Text style={styles.productBannerText} numberOfLines={1}>
@@ -164,41 +163,12 @@ export const SubModalAjuste: React.FC<PropiedadesSubModalAjuste> = ({
               </View>
 
               {/* Modo de Ajuste */}
-              <View style={styles.modeTrack}>
-                <TouchableOpacity
-                  style={[styles.modeBtn, ajusteModo === 'DELTA' && styles.modeBtnActive]}
-                  onPress={() => {
-                    triggerSelection();
-                    setAjusteModo('DELTA');
-                  }}
-                >
-                  <MaterialIcons
-                    name="exposure"
-                    size={15}
-                    color={ajusteModo === 'DELTA' ? COLORS.secundario : COLORS.enSuperficieVariante}
-                  />
-                  <Text style={[styles.modeBtnText, ajusteModo === 'DELTA' && styles.modeBtnTextActive]}>
-                    Por Variación (+ / -)
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.modeBtn, ajusteModo === 'COUNT' && styles.modeBtnActive]}
-                  onPress={() => {
-                    triggerSelection();
-                    setAjusteModo('COUNT');
-                  }}
-                >
-                  <MaterialIcons
-                    name="pin"
-                    size={15}
-                    color={ajusteModo === 'COUNT' ? COLORS.primario : COLORS.enSuperficieVariante}
-                  />
-                  <Text style={[styles.modeBtnText, ajusteModo === 'COUNT' && styles.modeBtnTextActive]}>
-                    Recuento Físico Total
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <SelectorSegmentado
+                opciones={OPCIONES_MODO_AJUSTE}
+                valorSeleccionado={ajusteModo}
+                onSeleccionar={setAjusteModo}
+                compacto
+              />
 
               {/* Cantidad según modo */}
               {ajusteModo === 'DELTA' ? (
@@ -241,23 +211,15 @@ export const SubModalAjuste: React.FC<PropiedadesSubModalAjuste> = ({
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Motivo del Ajuste</Text>
                 <View style={styles.chipsContainer}>
-                  {MOTIVOS_AJUSTE_SUGERIDOS.map(motivo => {
-                    const isSel = motivoSeleccionado === motivo;
-                    return (
-                      <TouchableOpacity
-                        key={motivo}
-                        style={[styles.chipItem, isSel && styles.chipItemActive]}
-                        onPress={() => {
-                          triggerSelection();
-                          setMotivoSeleccionado(motivo);
-                        }}
-                      >
-                        <Text style={[styles.chipText, isSel && styles.chipTextActive]}>
-                          {motivo}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                  {MOTIVOS_AJUSTE_SUGERIDOS.map(motivo => (
+                    <ChipFiltro
+                      key={motivo}
+                      etiqueta={motivo}
+                      activo={motivoSeleccionado === motivo}
+                      tono="violeta"
+                      onPress={() => setMotivoSeleccionado(motivo)}
+                    />
+                  ))}
                 </View>
               </View>
 
@@ -292,22 +254,6 @@ export const SubModalAjuste: React.FC<PropiedadesSubModalAjuste> = ({
               </View>
             </View>
           </ScrollView>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity onPress={onClose} style={styles.cancelBtn} disabled={procesando}>
-              <Text style={styles.cancelBtnText}>Cancelar</Text>
-            </TouchableOpacity>
-            <View style={styles.submitBtnWrapper}>
-              <BotonBrillante
-                title={procesando ? 'Guardando...' : '✓ Confirmar Ajuste'}
-                onPress={handleGuardarAjuste}
-                disabled={procesando}
-              />
-            </View>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </View>
+    </ModalObsidiana>
   );
 };

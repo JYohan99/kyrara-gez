@@ -193,6 +193,3 @@ export function obtenerLineaTiempoLiquidez(startDate: number, endDate: number): 
 
 // Alias compatibles
 export const getCategoryExpenseBreakdown = obtenerDesgloseGastosPorCategoria;
-export const getTopExpenseTransactions = obtenerMayoresGastos;
-export const getHistoricalMonthlySavings = obtenerHistoricoAhorroMensual;
-export const getLiquidityTimeline = obtenerLineaTiempoLiquidez;

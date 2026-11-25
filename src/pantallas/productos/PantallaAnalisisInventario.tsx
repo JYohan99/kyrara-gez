@@ -8,7 +8,14 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import {
+  TarjetaVidrio as GlassCard,
+  OrbeGlossy,
+  ChipFiltro,
+  SelectorSegmentado,
+  BarraProgreso3D,
+  OpcionSegmento,
+} from '@/compartido/componentes';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 import { useAnalisisVentasInventarioBoveda, useProductosBoveda } from '@/datos/hooks';
@@ -27,11 +34,18 @@ const OPCIONES_PERIODO: { key: TipoFiltroPeriodoInventario; label: string }[] = 
   { key: 'TODO', label: 'Histórico' },
 ];
 
+type CriterioRanking = 'VENTAS' | 'GANANCIA';
+
+const OPCIONES_RANKING: OpcionSegmento<CriterioRanking>[] = [
+  { valor: 'VENTAS', etiqueta: 'Más Vendidos', icono: 'trending-up', tonoActivo: 'ingreso' },
+  { valor: 'GANANCIA', etiqueta: 'Mayor Ganancia', icono: 'monetization-on', tonoActivo: 'cian' },
+];
+
 export const PantallaAnalisisInventario: React.FC<PropiedadesPantallaAnalisisInventario> = ({
   onAbrirDetalleProducto,
 }) => {
   const [periodo, setPeriodo] = useState<TipoFiltroPeriodoInventario>('ESTE_MES');
-  const [criterioRanking, setCriterioRanking] = useState<'VENTAS' | 'GANANCIA'>('VENTAS');
+  const [criterioRanking, setCriterioRanking] = useState<CriterioRanking>('VENTAS');
 
   // Bóveda reactiva con datos reales
   const { analysis } = useAnalisisVentasInventarioBoveda(periodo);
@@ -56,209 +70,192 @@ export const PantallaAnalisisInventario: React.FC<PropiedadesPantallaAnalisisInv
   const maxUnitsSold = Math.max(...analysis.topSellingProducts.map(p => p.unitsSold), 1);
   const maxGrossProfit = Math.max(...analysis.topProfitableProducts.map(p => Math.max(p.grossProfit, 0)), 1);
 
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Selector de Período Horizontal */}
-      <View style={styles.periodSelectorWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.periodSelectorTrack}
-        >
-          {OPCIONES_PERIODO.map(item => {
-            const isSel = periodo === item.key;
-            return (
-              <TouchableOpacity
-                key={item.key}
-                style={[styles.periodChip, isSel && styles.periodChipActive]}
-                onPress={() => {
-                  triggerSelection();
-                  setPeriodo(item.key);
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.periodChipText, isSel && styles.periodChipTextActive]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+  const listaRanking =
+    criterioRanking === 'VENTAS' ? analysis.topSellingProducts : analysis.topProfitableProducts;
 
-      {/* Banner de Auditoría: Distinción entre Venta y Cobro */}
-      <GlassCard variant="surface" style={styles.auditCard}>
-        <View style={styles.auditHeader}>
-          <MaterialIcons name="insights" size={18} color={COLORS.secondary} />
-          <Text style={[styles.auditTitle, TYPOGRAPHY.titularPequeno]}>
-            Resumen Comercial ({analysis.labelPeriodo})
+  return (
+    <View style={styles.container}>
+      {/* 1. Selector de Período Horizontal */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.periodSelectorTrack}
+      >
+        {OPCIONES_PERIODO.map(item => (
+          <ChipFiltro
+            key={item.key}
+            etiqueta={item.label}
+            activo={periodo === item.key}
+            tono="cian"
+            onPress={() => setPeriodo(item.key)}
+          />
+        ))}
+      </ScrollView>
+
+      {/* 2. Tarjeta Hero: Resumen Comercial del Período */}
+      <GlassCard variant="high" style={styles.heroAuditCard}>
+        <View style={styles.heroHeaderRow}>
+          <OrbeGlossy tamano={44} tono="violeta" sombra>
+            <MaterialIcons name="insights" size={21} color="#FFFFFF" />
+          </OrbeGlossy>
+          <View style={styles.heroHeaderTextCol}>
+            <Text style={[styles.heroCardLabel, TYPOGRAPHY.etiquetaMayusculas]}>
+              Resumen Comercial
+            </Text>
+            <Text style={styles.heroCardSub} numberOfLines={1}>
+              {analysis.labelPeriodo} • Total comercializado
+            </Text>
+          </View>
+          {analysis.marginPercent !== null && (
+            <BadgeRentabilidad margen={analysis.marginPercent} tamano="pequeno" />
+          )}
+        </View>
+
+        <View style={styles.heroAmountBlock}>
+          <Text style={styles.heroAmountLabel}>Importe Vendido</Text>
+          <Text style={[styles.heroBigAmount, TYPOGRAPHY.titularHero]}>
+            {formatCurrency(analysis.totalSales)}
           </Text>
         </View>
 
-        <View style={styles.financialAuditGrid}>
-          {/* Venta Facturada */}
-          <View style={styles.auditCol}>
-            <Text style={styles.auditLabel}>Importe Vendido</Text>
-            <Text style={[styles.auditValue, { color: '#57F5AB' }]}>
-              {formatCurrency(analysis.totalSales)}
-            </Text>
-            <Text style={styles.auditSub}>Total comercializado</Text>
-          </View>
-
-          <View style={styles.auditDivider} />
-
-          {/* Dinero Cobrado */}
-          <View style={styles.auditCol}>
-            <Text style={styles.auditLabel}>Cobro Efectivo</Text>
-            <Text style={[styles.auditValue, { color: '#00E676' }]}>
+        <View style={styles.heroMetaRow}>
+          <View style={styles.heroMetaCol}>
+            <Text style={styles.heroMetaKey}>Cobro Efectivo</Text>
+            <Text style={[styles.heroMetaVal, { color: '#00E676' }]} numberOfLines={1}>
               {formatCurrency(analysis.totalCollected)}
             </Text>
-            <Text style={styles.auditSub}>
+            <Text style={styles.heroMetaSub} numberOfLines={1}>
               Pendiente: {formatCurrency(analysis.totalPending)}
             </Text>
           </View>
 
-          <View style={styles.auditDivider} />
+          <View style={styles.heroMetaDivider} />
 
-          {/* Ganancia Bruta Real */}
-          <View style={styles.auditCol}>
-            <Text style={styles.auditLabel}>Ganancia Bruta</Text>
+          <View style={styles.heroMetaCol}>
+            <Text style={styles.heroMetaKey}>Ganancia Bruta</Text>
             <Text
               style={[
-                styles.auditValue,
+                styles.heroMetaVal,
                 analysis.grossProfit >= 0 ? styles.profitPositive : styles.profitNegative,
               ]}
+              numberOfLines={1}
             >
               {formatCurrency(analysis.grossProfit)}
             </Text>
-            <Text style={styles.auditSub}>
+            <Text style={styles.heroMetaSub} numberOfLines={1}>
               Costo: {formatCurrency(analysis.totalCostOfGoods)}
             </Text>
           </View>
         </View>
-
-        {analysis.marginPercent !== null && (
-          <View style={styles.marginRow}>
-            <Text style={styles.marginText}>Margen Bruto del Período:</Text>
-            <BadgeRentabilidad margen={analysis.marginPercent} />
-          </View>
-        )}
       </GlassCard>
 
-      {/* EVOLUCIÓN TEMPORAL DE VENTAS Y GANANCIAS */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleRow}>
-          <MaterialIcons name="show-chart" size={18} color={COLORS.secondary} />
+      {/* 3. Evolución Temporal de Ventas y Ganancias */}
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionTitle, TYPOGRAPHY.titularPequeno]}>
             Evolución de Ventas y Ganancias
           </Text>
         </View>
+
+        {analysis.evolution.length === 0 ? (
+          <GlassCard variant="low" style={styles.emptyCard}>
+            <OrbeGlossy tamano={38} tono="obsidiana">
+              <MaterialIcons name="timeline" size={19} color={COLORS.secondary} />
+            </OrbeGlossy>
+            <View style={styles.emptyTextCol}>
+              <Text style={styles.emptyTitle}>Sin ventas en este período</Text>
+              <Text style={styles.emptySub}>
+                No se registraron operaciones de venta en {analysis.labelPeriodo.toLowerCase()}.
+              </Text>
+            </View>
+          </GlassCard>
+        ) : (
+          <GlassCard variant="surface" style={styles.evolutionCard}>
+            <View style={styles.evolutionLegendRow}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#57F5AB' }]} />
+                <Text style={styles.legendText}>Venta</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.secondary }]} />
+                <Text style={styles.legendText}>Ganancia</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#00E676' }]} />
+                <Text style={styles.legendText}>Cobrado</Text>
+              </View>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.evolutionChartTrack}
+            >
+              {analysis.evolution.map(point => {
+                const salesHeightPercent = Math.max(6, Math.min(100, (point.sales / maxBarValue) * 100));
+                const profitHeightPercent = Math.max(
+                  6,
+                  Math.min(100, (Math.max(0, point.grossProfit) / maxBarValue) * 100)
+                );
+                const collectedHeightPercent = Math.max(
+                  6,
+                  Math.min(100, (point.collected / maxBarValue) * 100)
+                );
+
+                return (
+                  <View key={point.dateKey} style={styles.chartBarCol}>
+                    <Text style={styles.chartBarValueTop} numberOfLines={1}>
+                      {formatCurrency(point.sales)}
+                    </Text>
+                    <View style={styles.barsContainer}>
+                      <View style={[styles.singleBar, styles.barSales, { height: `${salesHeightPercent}%` }]} />
+                      <View style={[styles.singleBar, styles.barProfit, { height: `${profitHeightPercent}%` }]} />
+                      <View
+                        style={[styles.singleBar, styles.barCollected, { height: `${collectedHeightPercent}%` }]}
+                      />
+                    </View>
+                    <Text style={styles.chartBarLabel} numberOfLines={1}>
+                      {point.label}
+                    </Text>
+                    <Text style={styles.chartBarSub}>{point.unitsSold}u</Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </GlassCard>
+        )}
       </View>
 
-      {analysis.evolution.length === 0 ? (
-        <View style={styles.emptyStateBox}>
-          <MaterialIcons name="timeline" size={32} color={COLORS.onSurfaceVariant + '60'} />
-          <Text style={styles.emptyStateTitle}>Sin ventas en este período</Text>
-          <Text style={styles.emptyStateSub}>
-            No se han registrado operaciones de venta en {analysis.labelPeriodo.toLowerCase()}.
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.evolutionCard}>
-          <View style={styles.evolutionLegendRow}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#57F5AB' }]} />
-              <Text style={styles.legendText}>Venta</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: COLORS.secondary }]} />
-              <Text style={styles.legendText}>Ganancia Bruta</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#00E676' }]} />
-              <Text style={styles.legendText}>Cobrado</Text>
-            </View>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.evolutionChartTrack}>
-            {analysis.evolution.map(point => {
-              const salesHeightPercent = Math.max(6, Math.min(100, (point.sales / maxBarValue) * 100));
-              const profitHeightPercent = Math.max(6, Math.min(100, (Math.max(0, point.grossProfit) / maxBarValue) * 100));
-              const collectedHeightPercent = Math.max(6, Math.min(100, (point.collected / maxBarValue) * 100));
-
-              return (
-                <View key={point.dateKey} style={styles.chartBarCol}>
-                  <Text style={styles.chartBarValueTop}>{formatCurrency(point.sales)}</Text>
-                  <View style={styles.barsContainer}>
-                    {/* Barra Venta */}
-                    <View style={[styles.singleBar, styles.barSales, { height: `${salesHeightPercent}%` }]} />
-                    {/* Barra Ganancia */}
-                    <View style={[styles.singleBar, styles.barProfit, { height: `${profitHeightPercent}%` }]} />
-                    {/* Barra Cobrado */}
-                    <View style={[styles.singleBar, styles.barCollected, { height: `${collectedHeightPercent}%` }]} />
-                  </View>
-                  <Text style={styles.chartBarLabel}>{point.label}</Text>
-                  <Text style={styles.chartBarSub}>{point.unitsSold}u</Text>
-                </View>
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* SECCIÓN RANKINGS DE PRODUCTOS */}
-      <View style={styles.rankingHeaderRow}>
-        <View style={styles.sectionTitleRow}>
-          <MaterialIcons name="leaderboard" size={18} color={COLORS.secondary} />
+      {/* 4. Ranking de Productos */}
+      <View style={styles.sectionBlock}>
+        <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionTitle, TYPOGRAPHY.titularPequeno]}>
             Ranking de Productos
           </Text>
         </View>
 
-        <View style={styles.rankingCriteriaTrack}>
-          <TouchableOpacity
-            style={[styles.rankingCriteriaBtn, criterioRanking === 'VENTAS' && styles.rankingCriteriaBtnActive]}
-            onPress={() => {
-              triggerSelection();
-              setCriterioRanking('VENTAS');
-            }}
-          >
-            <Text style={[styles.rankingCriteriaText, criterioRanking === 'VENTAS' && styles.rankingCriteriaTextActive]}>
-              Más Vendidos
-            </Text>
-          </TouchableOpacity>
+        <SelectorSegmentado
+          opciones={OPCIONES_RANKING}
+          valorSeleccionado={criterioRanking}
+          onSeleccionar={setCriterioRanking}
+          compacto
+        />
 
-          <TouchableOpacity
-            style={[styles.rankingCriteriaBtn, criterioRanking === 'GANANCIA' && styles.rankingCriteriaBtnActive]}
-            onPress={() => {
-              triggerSelection();
-              setCriterioRanking('GANANCIA');
-            }}
-          >
-            <Text style={[styles.rankingCriteriaText, criterioRanking === 'GANANCIA' && styles.rankingCriteriaTextActive]}>
-              Mayor Ganancia
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Lista del Ranking Seleccionado */}
-      {(criterioRanking === 'VENTAS' ? analysis.topSellingProducts : analysis.topProfitableProducts).length === 0 ? (
-        <View style={styles.emptyStateBox}>
-          <MaterialIcons name="inventory" size={28} color={COLORS.onSurfaceVariant + '60'} />
-          <Text style={styles.emptyStateTitle}>Sin registros en el ranking</Text>
-          <Text style={styles.emptyStateSub}>
-            Las ventas registradas en {analysis.labelPeriodo.toLowerCase()} aparecerán aquí ordenadas.
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.rankingsList}>
-          {(criterioRanking === 'VENTAS' ? analysis.topSellingProducts : analysis.topProfitableProducts).map(
-            (item, index) => {
+        {listaRanking.length === 0 ? (
+          <GlassCard variant="low" style={styles.emptyCard}>
+            <OrbeGlossy tamano={38} tono="obsidiana">
+              <MaterialIcons name="leaderboard" size={19} color={COLORS.secondary} />
+            </OrbeGlossy>
+            <View style={styles.emptyTextCol}>
+              <Text style={styles.emptyTitle}>Sin registros en el ranking</Text>
+              <Text style={styles.emptySub}>
+                Las ventas registradas en {analysis.labelPeriodo.toLowerCase()} aparecerán aquí ordenadas.
+              </Text>
+            </View>
+          </GlassCard>
+        ) : (
+          <View style={styles.rankingsList}>
+            {listaRanking.map((item, index) => {
               const barPercent =
                 criterioRanking === 'VENTAS'
                   ? (item.unitsSold / maxUnitsSold) * 100
@@ -267,188 +264,174 @@ export const PantallaAnalisisInventario: React.FC<PropiedadesPantallaAnalisisInv
               return (
                 <TouchableOpacity
                   key={item.productId}
-                  style={styles.rankingCard}
                   onPress={() => handleSelectProduct(item.productId)}
                   activeOpacity={0.8}
                 >
-                  <View style={styles.rankingPositionCol}>
-                    <View
-                      style={[
-                        styles.positionCircle,
-                        index === 0 && styles.posFirst,
-                        index === 1 && styles.posSecond,
-                        index === 2 && styles.posThird,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.positionText,
-                          index < 3 && styles.positionTextTop,
-                        ]}
-                      >
-                        {index + 1}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.rankingBodyCol}>
-                    <View style={styles.rankingTitleRow}>
-                      <Text style={styles.rankingProductName} numberOfLines={1}>
-                        {item.productName}
-                      </Text>
-                      {item.sizeFormat ? (
-                        <Text style={styles.rankingFormat}>{item.sizeFormat}</Text>
-                      ) : null}
-                    </View>
-
-                    {/* Barra de progreso visual relativa */}
-                    <View style={styles.rankingProgressBarTrack}>
+                  <GlassCard variant="low" style={styles.rankingCard}>
+                    <View style={styles.rankingPositionCol}>
                       <View
                         style={[
-                          styles.rankingProgressBarFill,
-                          {
-                            width: `${Math.max(4, Math.min(100, barPercent))}%`,
-                            backgroundColor:
-                              criterioRanking === 'VENTAS' ? '#57F5AB' : COLORS.secondary,
-                          },
+                          styles.positionCircle,
+                          index === 0 && styles.posFirst,
+                          index === 1 && styles.posSecond,
+                          index === 2 && styles.posThird,
                         ]}
-                      />
-                    </View>
-
-                    <View style={styles.rankingMetricsRow}>
-                      <View style={styles.metricPair}>
-                        <Text style={styles.metricKey}>Vendidas:</Text>
-                        <Text style={styles.metricVal}>
-                          {item.unitsSold} {item.saleUnit}s
-                        </Text>
-                      </View>
-
-                      <View style={styles.metricPair}>
-                        <Text style={styles.metricKey}>Venta:</Text>
-                        <Text style={styles.metricVal}>{formatCurrency(item.totalSales)}</Text>
-                      </View>
-
-                      <View style={styles.metricPair}>
-                        <Text style={styles.metricKey}>Ganancia:</Text>
+                      >
                         <Text
                           style={[
-                            styles.metricVal,
-                            item.grossProfit >= 0 ? styles.profitPositive : styles.profitNegative,
+                            styles.positionText,
+                            index < 3 && styles.positionTextTop,
                           ]}
                         >
-                          {formatCurrency(item.grossProfit)}
+                          {index + 1}
                         </Text>
                       </View>
-
-                      {item.marginPercent !== null && (
-                        <BadgeRentabilidad margen={item.marginPercent} tamano="pequeno" />
-                      )}
                     </View>
-                  </View>
+
+                    <View style={styles.rankingBodyCol}>
+                      <View style={styles.rankingTitleRow}>
+                        <View style={styles.rankingNameGroup}>
+                          <Text style={styles.rankingProductName} numberOfLines={1}>
+                            {item.productName}
+                          </Text>
+                          {item.sizeFormat ? (
+                            <Text style={styles.rankingFormat} numberOfLines={1}>
+                              {item.sizeFormat}
+                            </Text>
+                          ) : null}
+                        </View>
+                        {item.marginPercent !== null && (
+                          <BadgeRentabilidad margen={item.marginPercent} tamano="pequeno" />
+                        )}
+                      </View>
+
+                      <BarraProgreso3D
+                        porcentaje={Math.max(4, barPercent)}
+                        tono={criterioRanking === 'VENTAS' ? 'ingreso' : 'cian'}
+                        altura={7}
+                      />
+
+                      <View style={styles.rankingMetricsRow}>
+                        <View style={styles.metricCol}>
+                          <Text style={styles.metricKey}>Vendidas</Text>
+                          <Text style={styles.metricVal} numberOfLines={1}>
+                            {item.unitsSold} {item.saleUnit}s
+                          </Text>
+                        </View>
+
+                        <View style={styles.metricCol}>
+                          <Text style={styles.metricKey}>Venta</Text>
+                          <Text style={styles.metricVal} numberOfLines={1}>
+                            {formatCurrency(item.totalSales)}
+                          </Text>
+                        </View>
+
+                        <View style={[styles.metricCol, styles.metricColRight]}>
+                          <Text style={styles.metricKey}>Ganancia</Text>
+                          <Text
+                            style={[
+                              styles.metricVal,
+                              item.grossProfit >= 0 ? styles.profitPositive : styles.profitNegative,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {formatCurrency(item.grossProfit)}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </GlassCard>
                 </TouchableOpacity>
               );
-            }
-          )}
-        </View>
-      )}
-    </ScrollView>
+            })}
+          </View>
+        )}
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 40,
     gap: 16,
-  },
-  periodSelectorWrapper: {
-    marginHorizontal: -20,
+    paddingBottom: 24,
   },
   periodSelectorTrack: {
-    paddingHorizontal: 20,
     gap: 8,
+    paddingVertical: 2,
   },
-  periodChip: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  periodChipActive: {
-    backgroundColor: 'rgba(87, 245, 171, 0.12)',
-    borderColor: COLORS.secondary,
-  },
-  periodChipText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  periodChipTextActive: {
-    color: COLORS.secondary,
-    fontWeight: '700',
-  },
-  auditCard: {
-    borderRadius: 20,
+  heroAuditCard: {
+    borderRadius: 22,
     padding: 18,
     gap: 14,
   },
-  auditHeader: {
+  heroHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
-  auditTitle: {
-    color: COLORS.onSurface,
+  heroHeaderTextCol: {
+    flex: 1,
   },
-  financialAuditGrid: {
+  heroCardLabel: {
+    color: COLORS.secundario,
+    fontSize: 10,
+    letterSpacing: 0.9,
+  },
+  heroCardSub: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+  heroAmountBlock: {
+    gap: 2,
+  },
+  heroAmountLabel: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 10.5,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  heroBigAmount: {
+    color: '#FFFFFF',
+    fontSize: 34,
+    fontWeight: '800',
+    lineHeight: 40,
+    letterSpacing: -0.5,
+  },
+  heroMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(165, 231, 255, 0.12)',
   },
-  auditCol: {
+  heroMetaCol: {
     flex: 1,
-    alignItems: 'center',
     gap: 3,
   },
-  auditLabel: {
+  heroMetaKey: {
     color: COLORS.onSurfaceVariant,
     fontSize: 10,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  auditValue: {
+  heroMetaVal: {
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
   },
-  auditSub: {
-    color: COLORS.onSurfaceVariant + '90',
-    fontSize: 10,
-  },
-  auditDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    marginHorizontal: 4,
-  },
-  marginRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  marginText: {
+  heroMetaSub: {
     color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10.5,
+  },
+  heroMetaDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: 'rgba(165, 231, 255, 0.14)',
+    marginHorizontal: 14,
   },
   profitPositive: {
     color: COLORS.secondary,
@@ -456,26 +439,42 @@ const styles = StyleSheet.create({
   profitNegative: {
     color: '#FF6E6E',
   },
-  sectionHeader: {
+  sectionBlock: {
+    gap: 10,
+  },
+  sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   sectionTitle: {
     color: COLORS.onSurface,
   },
+  emptyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 16,
+    padding: 14,
+  },
+  emptyTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  emptyTitle: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  emptySub: {
+    color: COLORS.onSurfaceVariant,
+    fontSize: 11,
+    lineHeight: 15,
+  },
   evolutionCard: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 14,
     gap: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   evolutionLegendRow: {
     flexDirection: 'row',
@@ -508,11 +507,11 @@ const styles = StyleSheet.create({
   chartBarCol: {
     alignItems: 'center',
     gap: 6,
-    width: 64,
+    width: 66,
   },
   chartBarValueTop: {
     color: COLORS.onSurfaceVariant,
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: '700',
   },
   barsContainer: {
@@ -520,9 +519,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    paddingHorizontal: 4,
-    borderRadius: 6,
+    backgroundColor: 'rgba(9, 13, 15, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.08)',
+    paddingHorizontal: 5,
+    paddingTop: 6,
+    borderRadius: 8,
   },
   singleBar: {
     width: 14,
@@ -539,63 +541,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#00E676',
   },
   chartBarLabel: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '600',
   },
   chartBarSub: {
     color: COLORS.onSurfaceVariant,
-    fontSize: 9,
-  },
-  emptyStateBox: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  emptyStateTitle: {
-    color: COLORS.onSurface,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  emptyStateSub: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-    textAlign: 'center',
-    lineHeight: 15,
-  },
-  rankingHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 6,
-  },
-  rankingCriteriaTrack: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 12,
-    padding: 2,
-    gap: 2,
-  },
-  rankingCriteriaBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-  },
-  rankingCriteriaBtnActive: {
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  rankingCriteriaText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  rankingCriteriaTextActive: {
-    color: COLORS.secondary,
-    fontWeight: '700',
+    fontSize: 9.5,
   },
   rankingsList: {
     gap: 10,
@@ -603,95 +555,90 @@ const styles = StyleSheet.create({
   rankingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 18,
+    padding: 13,
     gap: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   rankingPositionCol: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   positionCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(9, 13, 15, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   posFirst: {
     backgroundColor: 'rgba(255, 215, 0, 0.18)',
-    borderWidth: 1,
     borderColor: '#FFD700',
   },
   posSecond: {
     backgroundColor: 'rgba(192, 192, 192, 0.18)',
-    borderWidth: 1,
     borderColor: '#C0C0C0',
   },
   posThird: {
     backgroundColor: 'rgba(205, 127, 50, 0.18)',
-    borderWidth: 1,
     borderColor: '#CD7F32',
   },
   positionText: {
     color: COLORS.onSurfaceVariant,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   positionTextTop: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
   },
   rankingBodyCol: {
     flex: 1,
-    gap: 6,
+    gap: 8,
   },
   rankingTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
+  },
+  rankingNameGroup: {
+    flex: 1,
+    gap: 1,
   },
   rankingProductName: {
-    color: COLORS.onSurface,
-    fontSize: 13,
+    color: '#FFFFFF',
+    fontSize: 13.5,
     fontWeight: '700',
-    flex: 1,
   },
   rankingFormat: {
     color: COLORS.onSurfaceVariant,
-    fontSize: 10,
-  },
-  rankingProgressBarTrack: {
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  rankingProgressBarFill: {
-    height: '100%',
-    borderRadius: 3,
+    fontSize: 10.5,
   },
   rankingMetricsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingTop: 2,
   },
-  metricPair: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  metricCol: {
+    flex: 1,
+    gap: 2,
+  },
+  metricColRight: {
+    alignItems: 'flex-end',
   },
   metricKey: {
     color: COLORS.onSurfaceVariant,
-    fontSize: 10,
+    fontSize: 9.5,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   metricVal: {
-    color: COLORS.onSurface,
-    fontSize: 11,
+    color: '#FFFFFF',
+    fontSize: 11.5,
     fontWeight: '700',
   },
 });

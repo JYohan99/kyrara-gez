@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { OrbeGlossy } from '@/compartido/componentes/OrbeGlossy';
+import { BarraProgreso3D } from '@/compartido/componentes/BarraProgreso3D';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import { Deuda } from '@/datos/tipos';
 
@@ -52,14 +54,14 @@ export const TarjetaDeuda: React.FC<PropiedadesTarjetaDeuda> = ({
       onPress={() => onPress(deuda)}
     >
       <GlassCard variant="low" style={styles.debtCard}>
-        {/* Fila superior: Avatar, Nombre, Concepto y Badge de estado */}
+        {/* Fila superior: Avatar orbe 3D, Nombre, Concepto y Badge de estado */}
         <View style={styles.debtCardTopRow}>
           <View style={styles.debtPersonCol}>
-            <View style={styles.debtAvatarMini}>
+            <OrbeGlossy tamano={42} tono={esCobro ? 'ingreso' : 'gasto'}>
               <Text style={[styles.debtAvatarLetter, TYPOGRAPHY.cuerpoPequeno]}>
                 {deuda.person ? deuda.person[0].toUpperCase() : '?'}
               </Text>
-            </View>
+            </OrbeGlossy>
             <View style={styles.debtInfoTextGroup}>
               <Text style={[styles.debtPersonName, TYPOGRAPHY.cuerpoGrande]} numberOfLines={1}>
                 {deuda.person}
@@ -70,7 +72,6 @@ export const TarjetaDeuda: React.FC<PropiedadesTarjetaDeuda> = ({
             </View>
           </View>
 
-          {/* Badge de estado */}
           <View style={[styles.cardStatusBadge, { borderColor: badgeColor }]}>
             <Text style={[styles.cardStatusText, { color: badgeColor }, TYPOGRAPHY.etiquetaMayusculas]}>
               {badgeText}
@@ -105,18 +106,12 @@ export const TarjetaDeuda: React.FC<PropiedadesTarjetaDeuda> = ({
           </View>
         </View>
 
-        {/* Barra de progreso */}
-        <View style={styles.cardProgressTrack}>
-          <View
-            style={[
-              styles.cardProgressFill,
-              {
-                width: `${deuda.progressPercentage ?? 0}%`,
-                backgroundColor: esCobro ? COLORS.cashflowIncome : COLORS.primary,
-              },
-            ]}
-          />
-        </View>
+        {/* Barra de progreso 3D */}
+        <BarraProgreso3D
+          porcentaje={deuda.progressPercentage ?? 0}
+          tono={esCobro ? 'ingreso' : 'violeta'}
+          altura={6}
+        />
 
         {/* Fila inferior con fechas */}
         <View style={styles.debtCardFooter}>
@@ -178,19 +173,10 @@ const styles = StyleSheet.create({
     gap: 10,
     flex: 1,
   },
-  debtAvatarMini: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(155, 92, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(155, 92, 255, 0.3)',
-  },
   debtAvatarLetter: {
-    color: COLORS.primary,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 15,
   },
   debtInfoTextGroup: {
     flex: 1,
@@ -232,16 +218,6 @@ const styles = StyleSheet.create({
   },
   paidRatioText: {
     color: COLORS.onSurfaceVariant,
-  },
-  cardProgressTrack: {
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  cardProgressFill: {
-    height: '100%',
-    borderRadius: 2,
   },
   debtCardFooter: {
     flexDirection: 'row',

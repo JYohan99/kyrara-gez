@@ -19,6 +19,7 @@ import {
 import { inicializarCanalNotificaciones } from '@/compartido/servicios/notificaciones';
 import { COLORES as COLORS } from '@/compartido/tema';
 import { PantallaBloqueo as LockScreen } from '@/compartido/componentes/PantallaBloqueo';
+import { HostAlertas3D } from '@/compartido/componentes/HostAlertas3D';
 import { ProveedorSincronizacionBoveda as VaultSyncProvider } from '@/datos/sincronizacion';
 
 // Prevenir que la pantalla de inicio se oculte antes de que las fuentes y datos estén listos
@@ -90,6 +91,8 @@ export default function RootLayout() {
             allowBiometrics={security.biometricsEnabled}
           />
         )}
+
+        <HostAlertas3D />
       </View>
     </VaultSyncProvider>
   );

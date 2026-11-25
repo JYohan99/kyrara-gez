@@ -13,6 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { BarraProgreso3D } from '@/compartido/componentes/BarraProgreso3D';
+import { OrbeGlossy } from '@/compartido/componentes/OrbeGlossy';
 import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 import {
   gatillarExito as triggerSuccess,
@@ -228,13 +230,15 @@ export const ModalDetalleDeuda: React.FC<PropiedadesModalDetalleDeuda> = ({
                 </View>
               </View>
 
-              <TouchableOpacity
+              <OrbeGlossy
+                tamano={36}
+                tono="obsidiana"
                 onPress={onClose}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={styles.closeBtn}
+                accessibilityLabel="Cerrar detalle de deuda"
               >
-                <MaterialIcons name="close" size={22} color={COLORS.onSurfaceVariant} />
-              </TouchableOpacity>
+                <MaterialIcons name="close" size={18} color="#DCE6EC" />
+              </OrbeGlossy>
             </View>
           </View>
 
@@ -246,11 +250,11 @@ export const ModalDetalleDeuda: React.FC<PropiedadesModalDetalleDeuda> = ({
             {/* Voucher Card */}
             <GlassCard variant="high" style={styles.voucherCard}>
               <View style={styles.voucherHeader}>
-                <View style={styles.avatarCircle}>
+                <OrbeGlossy tamano={48} tono={esCobro ? 'ingreso' : 'gasto'} sombra>
                   <Text style={[styles.avatarLetter, TYPOGRAPHY.headlineSm]}>
                     {deuda.person ? deuda.person[0].toUpperCase() : '?'}
                   </Text>
-                </View>
+                </OrbeGlossy>
 
                 <View style={styles.voucherHeaderInfo}>
                   <Text style={[styles.personName, TYPOGRAPHY.headlineSm]}>
@@ -290,17 +294,11 @@ export const ModalDetalleDeuda: React.FC<PropiedadesModalDetalleDeuda> = ({
               </View>
 
               {/* Progress Bar */}
-              <View style={styles.progressBarTrack}>
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    {
-                      width: `${deuda.progressPercentage ?? 0}%`,
-                      backgroundColor: esCobro ? COLORS.cashflowIncome : COLORS.primary,
-                    },
-                  ]}
-                />
-              </View>
+              <BarraProgreso3D
+                porcentaje={deuda.progressPercentage ?? 0}
+                tono={esCobro ? 'ingreso' : 'violeta'}
+                altura={8}
+              />
 
               {/* Secondary Figures */}
               <View style={styles.figuresStrip}>
@@ -507,9 +505,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
   },
-  backdrop: {
-    flex: 1,
-  },
   sheetContainer: {
     backgroundColor: '#101415',
     borderTopLeftRadius: 24,
@@ -569,9 +564,6 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     letterSpacing: 0.8,
   },
-  closeBtn: {
-    padding: 4,
-  },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -586,16 +578,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  avatarCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: 'rgba(138, 79, 255, 0.2)',
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   avatarLetter: {
     color: COLORS.primary,
@@ -639,17 +621,6 @@ const styles = StyleSheet.create({
   progressLabel: {
     color: COLORS.onSurfaceVariant,
     fontSize: 9,
-  },
-  progressBarTrack: {
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 3,
   },
   figuresStrip: {
     flexDirection: 'row',

@@ -11,8 +11,17 @@ import {
   Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { COLORES as COLORS } from '@/compartido/tema';
+import {
+  EncabezadoModal,
+  TarjetaVidrio,
+  OrbeGlossy,
+  SelectorSegmentado,
+  ChipFiltro,
+  BotonBrillante,
+  OpcionSegmento,
+} from '@/compartido/componentes';
 import {
   formatearEntradaDinero,
   convertirMontoACentavos,
@@ -24,7 +33,10 @@ import {
   gatillarSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
 import { Producto, Cuenta, FormatoProducto } from '@/datos/tipos';
-import { registrarVentaInventario } from '@/datos/consultas/inventario';
+import {
+  registrarVentaInventario,
+  obtenerUltimaCuentaVentaProducto,
+} from '@/datos/consultas/inventario';
 import { IconoProducto } from '@/compartido/iconosProductos';
 
 export interface PropiedadesSubModalVenta {
@@ -35,6 +47,23 @@ export interface PropiedadesSubModalVenta {
   onSuccess?: () => void;
 }
 
+type ModoCobroUI = 'IMMEDIATE_ACCOUNT' | 'CREDIT_PENDING';
+
+const OPCIONES_MODO_COBRO: OpcionSegmento<ModoCobroUI>[] = [
+  {
+    valor: 'IMMEDIATE_ACCOUNT',
+    etiqueta: 'Cobro Inmediato',
+    icono: 'account-balance',
+    tonoActivo: 'cian',
+  },
+  {
+    valor: 'CREDIT_PENDING',
+    etiqueta: 'A Crédito',
+    icono: 'receipt-long',
+    tonoActivo: 'violeta',
+  },
+];
+
 export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
   visible,
   onClose,
@@ -43,7 +72,9 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
   onSuccess,
 }) => {
   const insets = useSafeAreaInsets();
-  const isService = (producto.saleUnit || '').trim().toLowerCase() === 'servicio' || producto.productType === 'SERVICIO';
+  const isService =
+    (producto.saleUnit || '').trim().toLowerCase() === 'servicio' ||
+    producto.productType === 'SERVICIO';
 
   const [formatoSeleccionado, setFormatoSeleccionado] = useState<FormatoProducto | null>(() => {
     if (isService && producto.formats && producto.formats.length > 0) {
@@ -54,12 +85,28 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
 
   const [cantidad, setCantidad] = useState('1');
   const [precioTexto, setPrecioTexto] = useState(() => {
-    const pBase = isService && producto.formats && producto.formats.length > 0 ? producto.formats[0].salePrice : producto.basePrice;
+    const pBase =
+      isService && producto.formats && producto.formats.length > 0
+        ? producto.formats[0].salePrice
+        : producto.basePrice;
     if (!pBase) return '';
     return formatearEntradaDinero((pBase / 100).toFixed(2).replace('.', ','));
   });
-  const [modoCobro, setModoCobro] = useState<'IMMEDIATE_ACCOUNT' | 'CREDIT_PENDING'>('IMMEDIATE_ACCOUNT');
-  const [cuentaId, setCuentaId] = useState(() => cuentas[0]?.id || '');
+  const [modoCobro, setModoCobro] = useState<ModoCobroUI>('IMMEDIATE_ACCOUNT');
+  const [cuentaId, setCuentaId] = useState(() => {
+    try {
+      const ultima = obtenerUltimaCuentaVentaProducto(producto.id);
+      if (ultima) {
+        if (ultima.paymentMethod === 'NO_ACCOUNT') return '';
+        if (ultima.accountId && cuentas.some(c => c.id === ultima.accountId)) {
+          return ultima.accountId;
+        }
+      }
+    } catch {
+      // fallback a la primera cuenta disponible
+    }
+    return cuentas[0]?.id || '';
+  });
   const [cliente, setCliente] = useState('');
   const [vencimiento, setVencimiento] = useState('');
   const [notas, setNotas] = useState('');
@@ -73,7 +120,8 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
   const totalVentaCentavos = Math.round(cantNum * precioUnitarioCentavos);
   const totalCostoCentavos = Math.round(cantNum * costoUnitarioCentavos);
   const gananciaEstimada = totalVentaCentavos - totalCostoCentavos;
-  const margenEstimado = totalVentaCentavos > 0 ? (gananciaEstimada / totalVentaCentavos) * 100 : null;
+  const margenEstimado =
+    totalVentaCentavos > 0 ? (gananciaEstimada / totalVentaCentavos) * 100 : null;
 
   const currentStock = producto.currentStock ?? 0;
 
@@ -100,12 +148,6 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
       return;
     }
 
-    if (modoCobro === 'IMMEDIATE_ACCOUNT' && !cuentaId) {
-      triggerError();
-      Alert.alert('Cuenta requerida', 'Selecciona la cuenta donde ingresó el dinero cobrado.');
-      return;
-    }
-
     if (modoCobro === 'CREDIT_PENDING' && !cliente.trim()) {
       triggerError();
       Alert.alert(
@@ -115,6 +157,9 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
       return;
     }
 
+    const sinCuenta = modoCobro === 'IMMEDIATE_ACCOUNT' && !cuentaId;
+    const paymentModeFinal = sinCuenta ? 'NO_ACCOUNT' : modoCobro;
+
     setProcesando(true);
     try {
       registrarVentaInventario({
@@ -123,19 +168,26 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
         unitPrice: precioUnitarioCentavos,
         unitCost: costoUnitarioCentavos,
         formatName: formatoSeleccionado?.name,
-        paymentMode: modoCobro,
-        accountId: modoCobro === 'IMMEDIATE_ACCOUNT' ? cuentaId : undefined,
+        paymentMode: paymentModeFinal,
+        accountId: paymentModeFinal === 'IMMEDIATE_ACCOUNT' ? cuentaId : undefined,
         customer: cliente.trim() || undefined,
-        dueDate: modoCobro === 'CREDIT_PENDING' && vencimiento.trim() ? vencimiento.trim() : undefined,
+        dueDate:
+          modoCobro === 'CREDIT_PENDING' && vencimiento.trim()
+            ? vencimiento.trim()
+            : undefined,
         notes: notas.trim() || undefined,
       });
 
       triggerSuccess();
       Alert.alert(
         isService ? 'Trabajo registrado' : 'Venta registrada',
-        `Se registró ${cantNum} ${isService ? 'servicio(s)' : producto.saleUnit + 's'}${formatoSeleccionado ? ` [${formatoSeleccionado.name}]` : ''}.\nImporte: ${formatCurrency(totalVentaCentavos)}\nInversión: ${formatCurrency(totalCostoCentavos)}\nGanancia: ${formatCurrency(gananciaEstimada)}${
-          modoCobro === 'CREDIT_PENDING'
+        `Se registró ${cantNum} ${isService ? 'servicio(s)' : producto.saleUnit + 's'}${
+          formatoSeleccionado ? ` [${formatoSeleccionado.name}]` : ''
+        }.\nImporte: ${formatCurrency(totalVentaCentavos)}${
+          paymentModeFinal === 'CREDIT_PENDING'
             ? '\n\nSe creó la cuenta por cobrar correspondiente en el módulo de Deudas.'
+            : paymentModeFinal === 'NO_ACCOUNT'
+            ? '\n\nRegistrado solo en inventario (sin afectar cuentas ni movimientos).'
             : '\n\nEl importe fue acreditado en la cuenta seleccionada.'
         }`
       );
@@ -163,57 +215,48 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
         style={styles.keyboardAvoid}
       >
         <View
-          style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}
+          style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 16) }]}
           onStartShouldSetResponder={() => true}
         >
-          {/* Handle de arrastre superior */}
           <View style={styles.dragHandleContainer}>
             <View style={styles.dragHandle} />
           </View>
 
-          {/* Encabezado con Ícono Glowing y Punto Cyan pulsante */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <LinearGradient
-                colors={['rgba(138, 79, 255, 0.3)', '#182226', 'rgba(0, 210, 255, 0.18)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.headerIconBox}
-              >
-                <MaterialIcons name="point-of-sale" size={22} color="#00D2FF" />
-              </LinearGradient>
-              <View style={styles.titleWithDot}>
-                <Text style={styles.headerTitle}>Registrar Venta</Text>
-                <View style={styles.cyanPulseDot} />
-              </View>
-            </View>
+          <EncabezadoModal
+            titulo="Registrar Venta"
+            subtitulo={isService ? 'Servicio / Mano de obra' : 'Salida de inventario y cobro'}
+            icono="point-of-sale"
+            tono="cian"
+            onCerrar={onClose}
+            style={styles.modalHeader}
+          />
 
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeBtn}
-              activeOpacity={0.7}
-              accessibilityLabel="Cerrar modal"
-            >
-              <MaterialIcons name="close" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.form}>
-              {/* Tarjeta de Producto con Stock Pill Badge estilo Stitch */}
-              <View style={styles.productCard}>
+              {/* Tarjeta de Producto */}
+              <TarjetaVidrio variant="low" style={styles.productCard}>
                 <View style={styles.productLeft}>
-                  <View style={styles.productIconBox}>
-                    <IconoProducto icono={producto.icon} nombre={producto.name} size={22} color="#00D2FF" />
-                  </View>
+                  <OrbeGlossy tamano={40} tono="obsidiana">
+                    <IconoProducto
+                      icono={producto.icon}
+                      nombre={producto.name}
+                      size={20}
+                      color={COLORS.secondary}
+                    />
+                  </OrbeGlossy>
                   <Text style={styles.productName} numberOfLines={1}>
                     {producto.name}
                   </Text>
                 </View>
+
                 {isService ? (
                   <View style={[styles.stockBadge, styles.stockBadgeService]}>
-                    <MaterialIcons name="design-services" size={13} color="#00D2FF" />
-                    <Text style={[styles.stockText, { color: '#00D2FF' }]}>Servicio</Text>
+                    <MaterialIcons name="design-services" size={13} color={COLORS.secondary} />
+                    <Text style={[styles.stockText, { color: COLORS.secondary }]}>Servicio</Text>
                   </View>
                 ) : (
                   <View style={styles.stockBadge}>
@@ -223,13 +266,17 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
                     </Text>
                   </View>
                 )}
-              </View>
+              </TarjetaVidrio>
 
               {/* Selector de Formato / Medida si es un servicio con tarifas */}
               {isService && producto.formats && producto.formats.length > 0 && (
-                <View style={styles.formatSelectorBox}>
-                  <Text style={styles.formatSelectorTitle}>FORMATO O MEDIDA DEL TRABAJO</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.formatChipsScroll}>
+                <TarjetaVidrio variant="low" style={styles.sectionCard}>
+                  <Text style={styles.sectionLabel}>FORMATO O MEDIDA DEL TRABAJO</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.formatChipsScroll}
+                  >
                     {producto.formats.map(fmt => {
                       const isSelected = formatoSeleccionado?.id === fmt.id;
                       return (
@@ -239,73 +286,81 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
                           onPress={() => {
                             triggerSelection();
                             setFormatoSeleccionado(fmt);
-                            const centavosStr = (fmt.salePrice / 100).toFixed(2).replace('.', ',');
+                            const centavosStr = (fmt.salePrice / 100)
+                              .toFixed(2)
+                              .replace('.', ',');
                             setPrecioTexto(formatearEntradaDinero(centavosStr));
                           }}
-                          activeOpacity={0.7}
+                          activeOpacity={0.75}
                         >
-                          <Text style={[styles.formatChipText, isSelected && styles.formatChipTextSelected]}>
+                          <Text
+                            style={[
+                              styles.formatChipText,
+                              isSelected && styles.formatChipTextSelected,
+                            ]}
+                          >
                             {fmt.name}
                           </Text>
-                          <Text style={[styles.formatChipPrice, isSelected && styles.formatChipPriceSelected]}>
+                          <Text style={styles.formatChipPrice}>
                             {formatCurrency(fmt.salePrice)}
                           </Text>
                         </TouchableOpacity>
                       );
                     })}
                   </ScrollView>
-                </View>
+                </TarjetaVidrio>
               )}
 
               {/* Grid 2 Columnas: Controles (Cantidad y Precio) + Total de la Venta */}
               <View style={styles.gridRow}>
-                {/* Columna Izquierda: Stepper de cantidad y Precio Unitario */}
                 <View style={styles.leftCol}>
                   {/* Stepper de Cantidad */}
                   <View style={styles.stepperBox}>
-                    <TouchableOpacity
-                      style={styles.stepperBtn}
+                    <OrbeGlossy
+                      tamano={32}
+                      tono="obsidiana"
                       onPress={() => handleStepCantidad(-1)}
-                      activeOpacity={0.7}
+                      accessibilityLabel="Disminuir cantidad"
                     >
-                      <Text style={styles.stepperBtnText}>−</Text>
-                    </TouchableOpacity>
+                      <MaterialIcons name="remove" size={16} color="#FFFFFF" />
+                    </OrbeGlossy>
                     <TextInput
                       value={cantidad}
                       onChangeText={val => setCantidad(val.replace(/[^0-9.,]/g, ''))}
                       keyboardType="decimal-pad"
                       style={styles.stepperInput}
                       placeholder="1"
-                      placeholderTextColor="#64748B"
+                      placeholderTextColor={COLORS.outline}
                       selectTextOnFocus
                     />
-                    <TouchableOpacity
-                      style={styles.stepperBtn}
+                    <OrbeGlossy
+                      tamano={32}
+                      tono="cian"
                       onPress={() => handleStepCantidad(1)}
-                      activeOpacity={0.7}
+                      accessibilityLabel="Aumentar cantidad"
                     >
-                      <Text style={styles.stepperBtnText}>+</Text>
-                    </TouchableOpacity>
+                      <MaterialIcons name="add" size={16} color="#FFFFFF" />
+                    </OrbeGlossy>
                   </View>
 
-                  {/* Input de Precio Unitario con sufijo de moneda */}
+                  {/* Input de Precio Unitario */}
                   <View style={styles.priceBox}>
                     <Text style={styles.priceCurrencyPrefix}>$</Text>
                     <TextInput
                       value={precioTexto}
                       onChangeText={val => setPrecioTexto(formatearEntradaDinero(val))}
                       placeholder="0,00"
-                      placeholderTextColor="#64748B"
+                      placeholderTextColor={COLORS.outline}
                       keyboardType="decimal-pad"
                       style={styles.priceInput}
                       selectTextOnFocus
                     />
-                    <Text style={styles.priceCurrencySuffix}>{producto.currency || 'USD'}</Text>
+                    <Text style={styles.priceCurrencySuffix}>{producto.currency || 'UYU'}</Text>
                   </View>
                 </View>
 
-                {/* Columna Derecha: Tarjeta Resumen "TOTAL DE LA VENTA" */}
-                <View style={styles.totalCard}>
+                {/* Tarjeta Resumen TOTAL DE LA VENTA */}
+                <TarjetaVidrio variant="high" style={styles.totalCard}>
                   <View>
                     <Text style={styles.totalCardLabel}>TOTAL DE LA VENTA</Text>
                     <Text style={styles.totalCardAmount} numberOfLines={1}>
@@ -313,8 +368,11 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
                     </Text>
                   </View>
                   <View style={styles.totalCardFooter}>
-                    <Text style={styles.totalCardCostText}>
-                      Costo estimado: <Text style={styles.totalCardCostValue}>{formatCurrency(totalCostoCentavos)}</Text>
+                    <Text style={styles.totalCardCostText} numberOfLines={1}>
+                      Costo:{' '}
+                      <Text style={styles.totalCardCostValue}>
+                        {formatCurrency(totalCostoCentavos)}
+                      </Text>
                     </Text>
                     {gananciaEstimada !== 0 && (
                       <Text
@@ -324,167 +382,108 @@ export const SubModalVenta: React.FC<PropiedadesSubModalVenta> = ({
                         ]}
                         numberOfLines={1}
                       >
-                        {gananciaEstimada >= 0 ? `+${formatCurrency(gananciaEstimada)}` : formatCurrency(gananciaEstimada)}
+                        {gananciaEstimada >= 0
+                          ? `+${formatCurrency(gananciaEstimada)}`
+                          : formatCurrency(gananciaEstimada)}
                         {margenEstimado !== null ? ` (${margenEstimado.toFixed(0)}%)` : ''}
                       </Text>
                     )}
                   </View>
-                </View>
+                </TarjetaVidrio>
               </View>
 
-              {/* Selector Segmentado de Forma de Cobro */}
-              <View style={styles.paymentModeTrack}>
-                <TouchableOpacity
-                  style={[
-                    styles.paymentModeBtn,
-                    modoCobro === 'IMMEDIATE_ACCOUNT' && styles.paymentModeBtnActive,
-                  ]}
-                  onPress={() => {
-                    triggerSelection();
-                    setModoCobro('IMMEDIATE_ACCOUNT');
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <MaterialIcons
-                    name="account-balance"
-                    size={16}
-                    color={modoCobro === 'IMMEDIATE_ACCOUNT' ? '#00D2FF' : '#64748B'}
-                  />
-                  <Text
-                    style={[
-                      styles.paymentModeText,
-                      modoCobro === 'IMMEDIATE_ACCOUNT' && styles.paymentModeTextActive,
-                    ]}
-                  >
-                    Cobro Inmediato
-                  </Text>
-                  {modoCobro === 'IMMEDIATE_ACCOUNT' && <View style={styles.activeModeDot} />}
-                </TouchableOpacity>
+              {/* Selector Segmentado 3D de Forma de Cobro */}
+              <SelectorSegmentado
+                opciones={OPCIONES_MODO_COBRO}
+                valorSeleccionado={modoCobro}
+                onSeleccionar={setModoCobro}
+                compacto
+              />
 
-                <TouchableOpacity
-                  style={[
-                    styles.paymentModeBtn,
-                    modoCobro === 'CREDIT_PENDING' && styles.paymentModeBtnActive,
-                  ]}
-                  onPress={() => {
-                    triggerSelection();
-                    setModoCobro('CREDIT_PENDING');
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <MaterialIcons
-                    name="receipt-long"
-                    size={16}
-                    color={modoCobro === 'CREDIT_PENDING' ? '#00D2FF' : '#64748B'}
-                  />
-                  <Text
-                    style={[
-                      styles.paymentModeText,
-                      modoCobro === 'CREDIT_PENDING' && styles.paymentModeTextActive,
-                    ]}
-                  >
-                    A Crédito / Pendiente
-                  </Text>
-                  {modoCobro === 'CREDIT_PENDING' && <View style={styles.activeModeDot} />}
-                </TouchableOpacity>
-              </View>
-
-              {/* Selector de Cuentas (Cobro Inmediato) o Formulario de Crédito */}
+              {/* Cuenta de Ingreso o Formulario de Crédito */}
               {modoCobro === 'IMMEDIATE_ACCOUNT' ? (
-                <View style={styles.formSection}>
+                <TarjetaVidrio variant="low" style={styles.sectionCard}>
                   <Text style={styles.sectionLabel}>CUENTA DE INGRESO</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.chipsScroll}
-                  >
-                    {cuentas.map(acc => {
-                      const isSel = cuentaId === acc.id;
-                      return (
-                        <TouchableOpacity
-                          key={acc.id}
-                          style={[styles.accountChip, isSel && styles.accountChipActive]}
-                          onPress={() => {
-                            triggerSelection();
-                            setCuentaId(acc.id);
-                          }}
-                          activeOpacity={0.8}
-                        >
-                          {isSel && <View style={styles.accountActiveDot} />}
-                          <Text style={[styles.accountChipText, isSel && styles.accountChipTextActive]}>
-                            {acc.name}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
+                  <View style={styles.chipsWrap}>
+                    <ChipFiltro
+                      etiqueta="Sin cuenta"
+                      icono="block"
+                      activo={cuentaId === ''}
+                      tono="violeta"
+                      onPress={() => setCuentaId('')}
+                    />
+                    {cuentas.map(acc => (
+                      <ChipFiltro
+                        key={acc.id}
+                        etiqueta={acc.name}
+                        activo={cuentaId === acc.id}
+                        tono="cian"
+                        onPress={() => setCuentaId(acc.id)}
+                      />
+                    ))}
+                  </View>
+                  <Text style={styles.accountHelperText}>
+                    {cuentaId
+                      ? 'Suma el importe a esta cuenta y registra el ingreso en Movimientos.'
+                      : 'Solo descuenta stock y registra la venta en inventario, sin tocar cuentas ni Movimientos.'}
+                  </Text>
+                </TarjetaVidrio>
               ) : (
-                <View style={styles.formSection}>
+                <TarjetaVidrio variant="low" style={styles.sectionCard}>
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.sectionLabel}>CLIENTE / COMPRADOR</Text>
+                    <Text style={styles.sectionLabel}>CLIENTE / COMPRADOR *</Text>
                     <View style={styles.textInputBox}>
                       <TextInput
                         value={cliente}
                         onChangeText={setCliente}
                         placeholder="Nombre del cliente o comprador..."
-                        placeholderTextColor="#64748B"
+                        placeholderTextColor={COLORS.outline}
                         style={styles.fieldInput}
                       />
                     </View>
                   </View>
 
-                  <View style={[styles.fieldGroup, { marginTop: 10 }]}>
+                  <View style={styles.fieldGroup}>
                     <Text style={styles.sectionLabel}>FECHA DE VENCIMIENTO (OPCIONAL)</Text>
                     <View style={styles.textInputBox}>
                       <TextInput
                         value={vencimiento}
                         onChangeText={setVencimiento}
                         placeholder="AAAA-MM-DD"
-                        placeholderTextColor="#64748B"
+                        placeholderTextColor={COLORS.outline}
                         style={styles.fieldInput}
                       />
                     </View>
                   </View>
-                </View>
+                </TarjetaVidrio>
               )}
 
-              {/* Campo de Notas */}
-              <View style={styles.formSection}>
+              {/* Notas */}
+              <TarjetaVidrio variant="low" style={styles.sectionCard}>
+                <Text style={styles.sectionLabel}>NOTAS (OPCIONAL)</Text>
                 <View style={styles.notesBox}>
                   <TextInput
                     value={notas}
                     onChangeText={setNotas}
                     placeholder="Detalles de entrega, factura, identificación de cliente..."
-                    placeholderTextColor="#64748B"
+                    placeholderTextColor={COLORS.outline}
                     multiline
                     numberOfLines={2}
                     style={styles.notesInput}
                   />
                 </View>
-              </View>
+              </TarjetaVidrio>
             </View>
           </ScrollView>
 
-          {/* Footer de Acción con Botón Primario Gradiente Stitch */}
+          {/* Footer con Botón 3D Brillante */}
           <View style={styles.footer}>
-            <TouchableOpacity
+            <BotonBrillante
+              title={procesando ? 'Guardando...' : 'Confirmar Venta'}
               onPress={handleGuardarVenta}
+              loading={procesando}
               disabled={procesando}
-              activeOpacity={0.85}
-              style={styles.submitBtnWrapper}
-            >
-              <LinearGradient
-                colors={['#8A4FFF', '#9D68FF']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.submitBtnGradient}
-              >
-                <Text style={styles.submitBtnText}>
-                  {procesando ? 'Guardando...' : 'Confirmar Venta'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -499,7 +498,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(11, 15, 16, 0.85)',
+    backgroundColor: 'rgba(6, 9, 11, 0.84)',
     justifyContent: 'flex-end',
     zIndex: 9999,
     elevation: 30,
@@ -509,99 +508,44 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#131A1D',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    borderWidth: 1,
-    borderColor: '#223037',
-    minHeight: 540,
-    maxHeight: '94%',
+    backgroundColor: '#101518',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.18)',
+    maxHeight: '92%',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 20,
   },
   dragHandleContainer: {
     alignItems: 'center',
     paddingTop: 10,
-    paddingBottom: 4,
+    paddingBottom: 6,
   },
   dragHandle: {
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(165, 231, 255, 0.25)',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 22,
-    paddingTop: 8,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(34, 48, 55, 0.7)',
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  headerIconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(138, 79, 255, 0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleWithDot: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: -0.3,
-  },
-  cyanPulseDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#00D2FF',
-  },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#182226',
-    borderWidth: 1,
-    borderColor: '#223037',
-    alignItems: 'center',
-    justifyContent: 'center',
+  modalHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 8,
   },
   scroll: {
     paddingHorizontal: 20,
   },
   form: {
-    paddingVertical: 16,
-    gap: 14,
+    paddingVertical: 6,
+    paddingBottom: 16,
+    gap: 12,
   },
   productCard: {
-    backgroundColor: '#182226',
-    borderWidth: 1,
-    borderColor: '#223037',
     borderRadius: 18,
-    padding: 14,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
   },
   productLeft: {
     flexDirection: 'row',
@@ -609,18 +553,8 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
-  productIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 210, 255, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.28)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   productName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
     flexShrink: 1,
@@ -629,43 +563,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 9999,
-    backgroundColor: 'rgba(6, 78, 59, 0.5)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(6, 78, 59, 0.45)',
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.35)',
+    borderColor: 'rgba(87, 245, 171, 0.3)',
   },
   stockBadgeService: {
     backgroundColor: 'rgba(0, 210, 255, 0.12)',
-    borderColor: 'rgba(0, 210, 255, 0.3)',
+    borderColor: 'rgba(165, 231, 255, 0.28)',
   },
-  formatSelectorBox: {
-    gap: 6,
+  stockDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#57F5AB',
   },
-  formatSelectorTitle: {
-    color: '#94A3B8',
-    fontSize: 10,
+  stockText: {
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    color: '#57F5AB',
+  },
+  sectionCard: {
+    borderRadius: 18,
+    padding: 14,
+    gap: 10,
+  },
+  sectionLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
   },
   formatChipsScroll: {
     gap: 8,
     paddingVertical: 2,
   },
   formatChip: {
-    backgroundColor: '#182226',
+    backgroundColor: 'rgba(9, 13, 15, 0.7)',
     borderWidth: 1,
-    borderColor: '#223037',
-    borderRadius: 12,
+    borderColor: 'rgba(165, 231, 255, 0.12)',
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 8,
     alignItems: 'center',
     gap: 2,
   },
   formatChipSelected: {
-    backgroundColor: 'rgba(0, 210, 255, 0.12)',
-    borderColor: '#00D2FF',
+    backgroundColor: 'rgba(0, 210, 255, 0.14)',
+    borderColor: COLORS.secondary,
   },
   formatChipText: {
     color: '#FFFFFF',
@@ -673,30 +621,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   formatChipTextSelected: {
-    color: '#00D2FF',
+    color: COLORS.secondary,
   },
   formatChipPrice: {
     color: '#57F5AB',
     fontSize: 11,
     fontWeight: '600',
   },
-  formatChipPriceSelected: {
-    color: '#57F5AB',
-  },
-  stockDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10B981',
-  },
-  stockText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#34D399',
-  },
   gridRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     alignItems: 'stretch',
   },
   leftCol: {
@@ -707,104 +641,85 @@ const styles = StyleSheet.create({
   stepperBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F1619',
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
     borderWidth: 1,
-    borderColor: '#223037',
-    borderRadius: 14,
-    padding: 4,
-    height: 46,
-  },
-  stepperBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: '#182226',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperBtnText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#CBD5E1',
-    lineHeight: 22,
+    borderColor: 'rgba(165, 231, 255, 0.14)',
+    borderRadius: 16,
+    paddingHorizontal: 6,
+    height: 48,
   },
   stepperInput: {
     flex: 1,
     textAlign: 'center',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
     padding: 0,
   },
   priceBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F1619',
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
     borderWidth: 1,
-    borderColor: '#223037',
-    borderRadius: 14,
+    borderColor: 'rgba(165, 231, 255, 0.14)',
+    borderRadius: 16,
     paddingHorizontal: 12,
-    height: 46,
+    height: 48,
   },
   priceCurrencyPrefix: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#94A3B8',
+    color: COLORS.secondary,
     marginRight: 4,
   },
   priceInput: {
     flex: 1,
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
     padding: 0,
   },
   priceCurrencySuffix: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
-    color: '#64748B',
+    color: COLORS.onSurfaceVariant,
     textTransform: 'uppercase',
   },
   totalCard: {
     flex: 1,
-    backgroundColor: '#182226',
-    borderWidth: 1,
-    borderColor: '#223037',
     borderRadius: 18,
-    padding: 14,
+    padding: 13,
     justifyContent: 'space-between',
-    minHeight: 102,
+    minHeight: 106,
   },
   totalCardLabel: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.6,
+    color: COLORS.secondary,
+    letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
   totalCardAmount: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: '900',
     color: '#FFFFFF',
     marginTop: 4,
   },
   totalCardFooter: {
-    marginTop: 8,
+    marginTop: 6,
+    gap: 2,
   },
   totalCardCostText: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: COLORS.onSurfaceVariant,
   },
   totalCardCostValue: {
+    color: '#FFFFFF',
     fontWeight: '700',
-    color: '#CBD5E1',
   },
   totalCardProfit: {
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 3,
+    fontSize: 11.5,
+    fontWeight: '800',
   },
   profitPos: {
     color: '#57F5AB',
@@ -812,103 +727,25 @@ const styles = StyleSheet.create({
   profitNeg: {
     color: '#FF6E6E',
   },
-  paymentModeTrack: {
+  chipsWrap: {
     flexDirection: 'row',
-    backgroundColor: '#0F1619',
-    borderWidth: 1,
-    borderColor: '#223037',
-    borderRadius: 16,
-    padding: 4,
-    gap: 6,
-  },
-  paymentModeBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 12,
-    position: 'relative',
-  },
-  paymentModeBtnActive: {
-    backgroundColor: '#182226',
-    borderWidth: 1,
-    borderColor: '#8A4FFF',
-  },
-  paymentModeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
-  paymentModeTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  activeModeDot: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#00D2FF',
-  },
-  formSection: {
-    gap: 6,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-  },
-  chipsScroll: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     paddingVertical: 2,
   },
-  accountChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginRight: 8,
-    backgroundColor: '#0F1619',
-    borderWidth: 1,
-    borderColor: '#223037',
-  },
-  accountChipActive: {
-    backgroundColor: 'rgba(138, 79, 255, 0.2)',
-    borderColor: '#8A4FFF',
-  },
-  accountChipText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#CBD5E1',
-  },
-  accountChipTextActive: {
-    color: '#00D2FF',
-    fontWeight: '700',
-  },
-  accountActiveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#00D2FF',
+  accountHelperText: {
+    fontSize: 11,
+    color: COLORS.onSurfaceVariant,
+    lineHeight: 15,
   },
   fieldGroup: {
-    gap: 4,
+    gap: 6,
   },
   textInputBox: {
-    backgroundColor: '#0F1619',
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
     borderWidth: 1,
-    borderColor: '#223037',
-    borderRadius: 12,
+    borderColor: 'rgba(165, 231, 255, 0.12)',
+    borderRadius: 14,
     paddingHorizontal: 14,
     height: 44,
     justifyContent: 'center',
@@ -919,49 +756,24 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   notesBox: {
-    backgroundColor: '#0F1619',
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
     borderWidth: 1,
-    borderColor: '#223037',
+    borderColor: 'rgba(165, 231, 255, 0.12)',
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    minHeight: 64,
+    minHeight: 62,
   },
   notesInput: {
-    fontSize: 12,
-    color: '#E2E8F0',
+    fontSize: 12.5,
+    color: '#FFFFFF',
     textAlignVertical: 'top',
     padding: 0,
   },
   footer: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 6,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(34, 48, 55, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitBtnWrapper: {
-    width: '85%',
-    maxWidth: 340,
-    shadowColor: '#8A4FFF',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  submitBtnGradient: {
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: 0.3,
+    borderTopColor: 'rgba(165, 231, 255, 0.1)',
   },
 });

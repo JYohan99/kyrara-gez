@@ -13,7 +13,7 @@ export const NOMBRES_MESES = [
   'Diciembre',
 ];
 
-export const NOMBRES_DIAS_CORTO = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+export const NOMBRES_DIAS_CORTO = ['Lun', 'Mar', 'MiÃ©', 'Jue', 'Vie', 'SÃ¡b', 'Dom'];
 
 export function esMismoDia(d1: Date, d2: Date): boolean {
   return (
@@ -59,7 +59,7 @@ export function obtenerDiasEnMes(anio: number, mes: number): number {
 }
 
 /**
- * Retorna índice 0 para Lunes, 6 para Domingo.
+ * Retorna Ã­ndice 0 para Lunes, 6 para Domingo.
  */
 export function obtenerPrimerDiaMesIndice(anio: number, mes: number): number {
   const diaJs = new Date(anio, mes, 1).getDay();
@@ -74,13 +74,25 @@ export function crearFechaSegura(anio: number, mes: number, dia: number): Date {
   return new Date(anio, mes, dia, 12, 0, 0, 0);
 }
 
+/**
+ * Convierte un objeto Date a formato ISO local 'YYYY-MM-DD'.
+ */
+export function fechaAISO(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Retorna la fecha actual en formato ISO local 'YYYY-MM-DD'.
+ */
+export function hoyISO(): string {
+  return fechaAISO(new Date());
+}
+
 // Alias compatibles
 export const MONTH_NAMES = NOMBRES_MESES;
-export const DAY_NAMES_SHORT = NOMBRES_DIAS_CORTO;
-export const isSameDay = esMismoDia;
 export const isToday = esHoy;
 export const isYesterday = esAyer;
 export const formatFriendlyDate = formatearFechaAmigable;
-export const getDaysInMonth = obtenerDiasEnMes;
-export const getFirstDayOfMonthIndex = obtenerPrimerDiaMesIndice;
-export const createSafeDate = crearFechaSegura;

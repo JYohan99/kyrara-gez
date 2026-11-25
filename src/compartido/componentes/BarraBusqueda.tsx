@@ -4,7 +4,6 @@ import {
   StyleProp,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
@@ -19,8 +18,7 @@ import Svg, {
   RadialGradient,
   Stop,
 } from 'react-native-svg';
-import { COLORES as COLORS } from '../tema';
-import { gatillarSeleccion } from '../utilidades/hapticos';
+import { OrbeGlossy } from './OrbeGlossy';
 
 const IconoLupa3D: React.FC<{ size?: number }> = ({ size = 20 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -144,7 +142,6 @@ export const BarraBusqueda: React.FC<PropiedadesBarraBusqueda> = ({
   const tieneTexto = value.length > 0;
 
   const handlePressOrbe = () => {
-    gatillarSeleccion();
     if (tieneTexto) {
       if (onClear) {
         onClear();
@@ -168,10 +165,7 @@ export const BarraBusqueda: React.FC<PropiedadesBarraBusqueda> = ({
         'rgba(209, 188, 255, 0.22)',
       ];
 
-  const coloresOrbe: [string, string, string] =
-    tieneTexto || colorOrbe === 'violeta'
-      ? ['#B894FF', COLORS.primarioContenedor, COLORS.enPrimario]
-      : ['#6CE5FF', COLORS.secundarioContenedor, COLORS.enSecundarioContenedor];
+  const tonoOrbe = tieneTexto || colorOrbe === 'violeta' ? 'violeta' : 'cian';
 
   return (
     <View style={[styles.container, style]}>
@@ -219,31 +213,15 @@ export const BarraBusqueda: React.FC<PropiedadesBarraBusqueda> = ({
           />
 
           {/* Orbe 3D glossy derecho (lupa 3D para enfocar / X 3D para limpiar) */}
-          <TouchableOpacity
-            style={styles.orbBezel}
+          <OrbeGlossy
+            tamano={36}
+            tono={tonoOrbe}
             onPress={handlePressOrbe}
-            activeOpacity={0.78}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            accessibilityRole="button"
             accessibilityLabel={tieneTexto ? 'Limpiar búsqueda' : 'Buscar'}
           >
-            <LinearGradient
-              colors={coloresOrbe}
-              locations={[0, 0.52, 1]}
-              start={{ x: 0.2, y: 0 }}
-              end={{ x: 0.8, y: 1 }}
-              style={styles.orbSphere}
-            >
-              <LinearGradient
-                colors={['rgba(255, 255, 255, 0.62)', 'rgba(255, 255, 255, 0.06)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                pointerEvents="none"
-                style={styles.orbGloss}
-              />
-              {tieneTexto ? <IconoCerrar3D size={18} /> : <IconoLupa3D size={20} />}
-            </LinearGradient>
-          </TouchableOpacity>
+            {tieneTexto ? <IconoCerrar3D size={18} /> : <IconoLupa3D size={20} />}
+          </OrbeGlossy>
         </LinearGradient>
       </LinearGradient>
     </View>
@@ -294,32 +272,5 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     paddingVertical: 6,
     paddingRight: 8,
-  },
-  orbBezel: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    padding: 2,
-    backgroundColor: 'rgba(5, 8, 10, 0.85)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orbSphere: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  orbGloss: {
-    position: 'absolute',
-    top: 1.5,
-    left: 4,
-    right: 4,
-    height: '48%',
-    borderRadius: 999,
   },
 });

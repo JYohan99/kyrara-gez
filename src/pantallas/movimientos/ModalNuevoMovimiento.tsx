@@ -35,4 +35,3 @@ export const ModalNuevoMovimiento: React.FC<PropiedadesModalNuevoMovimiento> = (
 
 // Alias compatibles
 export const NewTransactionModal = ModalNuevoMovimiento;
-export type NewTransactionModalProps = PropiedadesModalNuevoMovimiento;

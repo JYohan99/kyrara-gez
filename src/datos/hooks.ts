@@ -686,20 +686,9 @@ export function useAlertasStockBoveda() {
 }
 
 // Alias compatibles
-export const useVaultInventoryOperations = useOperacionesInventarioBoveda;
-export const useVaultInventorySummary = useResumenInventarioBoveda;
 export const useVaultAccounts = useCuentasBoveda;
 export const useVaultTransactions = useMovimientosBoveda;
 export const useVaultBudgets = usePresupuestosBoveda;
-export const useVaultAnalytics = useAnaliticasBoveda;
 export const useVaultCategories = useCategoriasBoveda;
 export const useVaultSecurity = useSeguridadBoveda;
-export const useVaultAgenda = useAgendaBoveda;
-export const useVaultDebts = useDeudasBoveda;
-export const useEstadisticasCatalogoProductosBoveda = useEstadisticasCatalogoBoveda;
-export const useVaultProducts = useProductosBoveda;
-export const useVaultProductTariffs = useTarifasProductoBoveda;
-export const useVaultPriceHistory = useHistorialPreciosBoveda;
-export const useVaultCatalogStats = useEstadisticasCatalogoBoveda;
-export const useVaultProductEvolution = useEvolucionTarifasProductoBoveda;
 

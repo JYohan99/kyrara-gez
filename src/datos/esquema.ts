@@ -371,15 +371,9 @@ export function asegurarEsquemaBaseDatos(db: SQLiteDatabase = obtenerBaseDatos()
     }
   } catch { }
 
-  // 7. Migración a iconos 3D estilo emoji para todas las categorías (ejecución única)
+  // 7. Sincronizar categorías predeterminadas (actualiza nombres/iconos y limpia duplicadas viejas)
   try {
-    const migradoIconos3D = db.getFirstSync<{ value: string }>(
-      "SELECT value FROM settings WHERE key = 'categorias_iconos_3d_v1'"
-    );
-    if (!migradoIconos3D) {
-      sembrarCategoriasPredeterminadas(db);
-      db.runSync("INSERT OR REPLACE INTO settings (key, value) VALUES ('categorias_iconos_3d_v1', '1')");
-    }
+    sembrarCategoriasPredeterminadas(db);
   } catch { }
 
   try {

@@ -19,10 +19,14 @@ import {
   formatearMoneda as formatCurrency,
   formatearEntradaDinero,
   convertirMontoACentavos,
+  centavosAEntradaDinero,
 } from '@/compartido/utilidades/moneda';
+import { fechaAISO } from '@/compartido/utilidades/fecha';
 import { ModalSelectorFecha } from '@/compartido/componentes/ModalSelectorFecha';
 import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
+import { SelectorSegmentado, OpcionSegmento } from '@/compartido/componentes/SelectorSegmentado';
 import {
   gatillarExito as triggerSuccess,
   gatillarError as triggerError,
@@ -40,13 +44,6 @@ export interface PropiedadesModalGestionPrecios {
   visible: boolean;
   onClose: () => void;
   producto: Producto | null;
-}
-
-function fechaAISO(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 function parsearISOAFecha(iso: string): Date {
@@ -78,19 +75,13 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
   const { tariffs: historialTarifas, currentTariff: tarifaVigente } = useTarifasProductoBoveda(producto.id);
 
   // Estados del formulario
-  const [precioVentaTexto, setPrecioVentaTexto] = useState(() => {
-    const sale = tarifaVigente?.salePrice ?? producto.basePrice ?? 0;
-    if (sale <= 0) return '';
-    const str = (sale / 100).toFixed(2).replace('.', ',');
-    return formatearEntradaDinero(str);
-  });
+  const [precioVentaTexto, setPrecioVentaTexto] = useState(() =>
+    centavosAEntradaDinero(tarifaVigente?.salePrice ?? producto.basePrice)
+  );
 
-  const [costoTexto, setCostoTexto] = useState(() => {
-    const cost = tarifaVigente?.costPrice ?? producto.costPrice ?? 0;
-    if (cost <= 0) return '';
-    const str = (cost / 100).toFixed(2).replace('.', ',');
-    return formatearEntradaDinero(str);
-  });
+  const [costoTexto, setCostoTexto] = useState(() =>
+    centavosAEntradaDinero(tarifaVigente?.costPrice ?? producto.costPrice)
+  );
 
   const [costoUsdTexto, setCostoUsdTexto] = useState(() => {
     const usd = tarifaVigente?.costUsd ?? producto.costUsd;
@@ -115,7 +106,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
   const [mostrarSelectorFecha, setMostrarSelectorFecha] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
-  // Cálculos reactivos en tiempo real
+  // CÃ¡lculos reactivos en tiempo real
   const precioVentaCentavos = useMemo(() => {
     return convertirMontoACentavos(precioVentaTexto);
   }, [precioVentaTexto]);
@@ -128,7 +119,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
     return calcularGananciaYMargen(precioVentaCentavos, costoCentavos);
   }, [precioVentaCentavos, costoCentavos]);
 
-  // Conversión referencial USD -> UYU (solo si ambos valores están definidos)
+  // ConversiÃ³n referencial USD -> UYU (solo si ambos valores estÃ¡n definidos)
   const conversionUsdCalculada = useMemo(() => {
     const usd = parseFloat(costoUsdTexto.replace(',', '.'));
     const rate = parseFloat(tipoCambioTexto.replace(',', '.'));
@@ -161,14 +152,14 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
     const usdVal = costoUsdTexto.trim() ? parseFloat(costoUsdTexto.replace(',', '.')) : undefined;
     if (usdVal !== undefined && (isNaN(usdVal) || usdVal < 0)) {
       triggerError();
-      Alert.alert('Error', 'El costo en USD debe ser un número válido mayor o igual a cero.');
+      Alert.alert('Error', 'El costo en USD debe ser un nÃºmero vÃ¡lido mayor o igual a cero.');
       return;
     }
 
     const rateVal = tipoCambioTexto.trim() ? parseFloat(tipoCambioTexto.replace(',', '.')) : undefined;
     if (rateVal !== undefined && (isNaN(rateVal) || rateVal <= 0)) {
       triggerError();
-      Alert.alert('Error', 'El tipo de cambio debe ser un número positivo mayor a cero.');
+      Alert.alert('Error', 'El tipo de cambio debe ser un nÃºmero positivo mayor a cero.');
       return;
     }
 
@@ -198,8 +189,8 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
   const handleEliminarTarifa = (tarifa: TarifaProducto) => {
     triggerSelection();
     Alert.alert(
-      'Eliminar tarifa histórica',
-      `¿Deseas eliminar la tarifa del ${formatearFechaEspanol(tarifa.validFrom)}?`,
+      'Eliminar tarifa histÃ³rica',
+      `Â¿Deseas eliminar la tarifa del ${formatearFechaEspanol(tarifa.validFrom)}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -230,82 +221,31 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
         onPress={onClose}
       />
       <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-          {/* Header */}
-          <View style={styles.headerRow}>
-            <View style={styles.headerTitleGroup}>
-              <View style={styles.headerIconBadge}>
-                <MaterialIcons name="trending-up" size={20} color={COLORS.secondary} />
-              </View>
-              <View style={styles.headerTitlesCol}>
-                <Text style={[styles.headerTitle, TYPOGRAPHY.titularPequeno]} numberOfLines={1}>
-                  Precios y Costos
-                </Text>
-                <Text style={[styles.headerSubtitle, TYPOGRAPHY.cuerpoPequeno]} numberOfLines={1}>
-                  {producto.name} {producto.sizeFormat ? `(${producto.sizeFormat})` : ''}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              onPress={() => {
-                triggerSelection();
-                onClose();
-              }}
-              style={styles.closeBtn}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <MaterialIcons name="close" size={20} color={COLORS.onSurfaceVariant} />
-            </TouchableOpacity>
-          </View>
+          <View style={styles.dragHandle} />
 
-          {/* Selector de Pestañas internas: ESTABLECER TARIFA | HISTORIAL */}
+          <EncabezadoModal
+            titulo="Precios y Costos"
+            subtitulo={`${producto.name}${producto.sizeFormat ? ` (${producto.sizeFormat})` : ''}`}
+            icono="trending-up"
+            tono="cian"
+            onCerrar={() => {
+              triggerSelection();
+              onClose();
+            }}
+            style={styles.modalHeader}
+          />
+
+          {/* Selector de PestaÃ±as internas: ESTABLECER TARIFA | HISTORIAL */}
           <View style={styles.tabSwitcherRow}>
-            <TouchableOpacity
-              style={[styles.tabBtn, tabActual === 'NUEVA' && styles.tabBtnActive]}
-              onPress={() => {
-                triggerSelection();
-                setTabActual('NUEVA');
-              }}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="sell"
-                size={16}
-                color={tabActual === 'NUEVA' ? COLORS.secondary : COLORS.onSurfaceVariant}
-              />
-              <Text
-                style={[
-                  styles.tabBtnText,
-                  TYPOGRAPHY.etiquetaMayusculas,
-                  tabActual === 'NUEVA' && styles.tabBtnTextActive,
-                ]}
-              >
-                Tarifa y Costos
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.tabBtn, tabActual === 'HISTORIAL' && styles.tabBtnActive]}
-              onPress={() => {
-                triggerSelection();
-                setTabActual('HISTORIAL');
-              }}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons
-                name="history"
-                size={16}
-                color={tabActual === 'HISTORIAL' ? COLORS.primary : COLORS.onSurfaceVariant}
-              />
-              <Text
-                style={[
-                  styles.tabBtnText,
-                  TYPOGRAPHY.etiquetaMayusculas,
-                  tabActual === 'HISTORIAL' && styles.tabBtnTextActive,
-                ]}
-              >
-                Historial ({historialTarifas.length})
-              </Text>
-            </TouchableOpacity>
+            <SelectorSegmentado
+              opciones={[
+                { valor: 'NUEVA', etiqueta: 'Tarifa y Costos', icono: 'sell', tonoActivo: 'cian' },
+                { valor: 'HISTORIAL', etiqueta: `Historial (${historialTarifas.length})`, icono: 'history', tonoActivo: 'violeta' },
+              ] as OpcionSegmento<'NUEVA' | 'HISTORIAL'>[]}
+              valorSeleccionado={tabActual}
+              onSeleccionar={setTabActual}
+              compacto
+            />
           </View>
 
           <ScrollView
@@ -363,14 +303,14 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                         </View>
                       ) : (
                         <Text style={[styles.marginNA, TYPOGRAPHY.cuerpoPequeno]}>
-                          — Sin precio venta
+                          â€” Sin precio venta
                         </Text>
                       )}
                     </View>
                   </View>
 
                   <Text style={[styles.calcDisclaimer, TYPOGRAPHY.cuerpoPequeno]}>
-                    * Ganancia = Precio − Costo. Margen = (Ganancia / Precio) × 100.
+                    * Ganancia = Precio âˆ’ Costo. Margen = (Ganancia / Precio) Ã— 100.
                   </Text>
                 </GlassCard>
 
@@ -413,17 +353,17 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                   </View>
                 </View>
 
-                {/* Sección de Costo Referencial en USD y Tipo de Cambio */}
+                {/* SecciÃ³n de Costo Referencial en USD y Tipo de Cambio */}
                 <View style={styles.usdRefSection}>
                   <View style={styles.usdHeaderRow}>
                     <MaterialIcons name="monetization-on" size={16} color={COLORS.secondary} />
                     <Text style={[styles.usdSectionTitle, TYPOGRAPHY.etiquetaMayusculas]}>
-                      Referencia en Dólares (USD) — Opcional
+                      Referencia en DÃ³lares (USD) â€” Opcional
                     </Text>
                   </View>
 
                   <Text style={[styles.usdHint, TYPOGRAPHY.cuerpoPequeno]}>
-                    No se convierte automáticamente a UYU sin un tipo de cambio definido.
+                    No se convierte automÃ¡ticamente a UYU sin un tipo de cambio definido.
                   </Text>
 
                   <View style={styles.formRow}>
@@ -458,7 +398,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                     </View>
                   </View>
 
-                  {/* Botón de conversión rápida si ambos valores están provistos */}
+                  {/* BotÃ³n de conversiÃ³n rÃ¡pida si ambos valores estÃ¡n provistos */}
                   {conversionUsdCalculada && (
                     <TouchableOpacity
                       style={styles.convertBtn}
@@ -467,7 +407,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                     >
                       <MaterialIcons name="currency-exchange" size={16} color={COLORS.secondary} />
                       <Text style={styles.convertBtnText}>
-                        US$ {conversionUsdCalculada.usd.toFixed(2)} × $ {conversionUsdCalculada.rate.toFixed(2)} = {conversionUsdCalculada.texto}
+                        US$ {conversionUsdCalculada.usd.toFixed(2)} Ã— $ {conversionUsdCalculada.rate.toFixed(2)} = {conversionUsdCalculada.texto}
                       </Text>
                       <View style={styles.applyPill}>
                         <Text style={styles.applyPillText}>Usar como costo</Text>
@@ -476,10 +416,10 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                   )}
                 </View>
 
-                {/* Fecha de Aplicación / Vigencia */}
+                {/* Fecha de AplicaciÃ³n / Vigencia */}
                 <View style={styles.dateSection}>
                   <Text style={[styles.label, TYPOGRAPHY.etiquetaMayusculas]}>
-                    Fecha de Aplicación de esta Tarifa
+                    Fecha de AplicaciÃ³n de esta Tarifa
                   </Text>
                   <TouchableOpacity
                     style={styles.datePickerBtn}
@@ -499,7 +439,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                   </TouchableOpacity>
                 </View>
 
-                {/* Selector de Modo: Nueva Tarifa vs Corrección */}
+                {/* Selector de Modo: Nueva Tarifa vs CorrecciÃ³n */}
                 {historialTarifas.length > 0 && (
                   <View style={styles.switchRowContainer}>
                     <View style={styles.switchTextCol}>
@@ -508,8 +448,8 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                       </Text>
                       <Text style={[styles.switchDesc, TYPOGRAPHY.cuerpoPequeno]}>
                         {esCorreccion
-                          ? 'Corrige errores de tipeo sin generar un nuevo período histórico.'
-                          : 'Cierra la tarifa previa y crea un nuevo registro histórico con su fecha.'}
+                          ? 'Corrige errores de tipeo sin generar un nuevo perÃ­odo histÃ³rico.'
+                          : 'Cierra la tarifa previa y crea un nuevo registro histÃ³rico con su fecha.'}
                       </Text>
                     </View>
                     <Switch
@@ -543,7 +483,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                   </View>
                 </View>
 
-                {/* Botón de Guardar */}
+                {/* BotÃ³n de Guardar */}
                 <View style={styles.buttonWrapper}>
                   <BotonBrillante
                     title={guardando ? 'Guardando...' : esCorreccion ? 'Actualizar tarifa' : 'Establecer nueva tarifa'}
@@ -563,7 +503,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                       Sin tarifas anteriores
                     </Text>
                     <Text style={[styles.emptyHistorySubtitle, TYPOGRAPHY.cuerpoMedio]}>
-                      Cuando establezcas o modifiques los precios, el historial conservará cada tarifa aplicada junto con sus fechas de vigencia.
+                      Cuando establezcas o modifiques los precios, el historial conservarÃ¡ cada tarifa aplicada junto con sus fechas de vigencia.
                     </Text>
                   </GlassCard>
                 ) : (
@@ -593,7 +533,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                               >
                                 {esVigente
                                   ? `Vigente desde ${formatearFechaEspanol(t.validFrom)}`
-                                  : `${formatearFechaEspanol(t.validFrom)} — ${formatearFechaEspanol(t.validTo)}`}
+                                  : `${formatearFechaEspanol(t.validFrom)} â€” ${formatearFechaEspanol(t.validTo)}`}
                               </Text>
                             </View>
 
@@ -612,7 +552,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                             )}
                           </View>
 
-                          {/* Precios y márgenes de la tarifa */}
+                          {/* Precios y mÃ¡rgenes de la tarifa */}
                           <View style={styles.tariffMetricsRow}>
                             <View style={styles.tariffMetricItem}>
                               <Text style={styles.tariffMetricLabel}>Precio Venta</Text>
@@ -652,7 +592,7 @@ const ContenidoGestionPrecios: React.FC<PropiedadesContenidoGestionPrecios> = ({
                               >
                                 {metrics.grossMarginPercent !== null
                                   ? `${metrics.grossMarginPercent.toFixed(1)}%`
-                                  : '—'}
+                                  : 'â€”'}
                               </Text>
                             </View>
                           </View>
@@ -736,75 +676,22 @@ const styles = StyleSheet.create({
   scrollArea: {
     flexShrink: 1,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(165, 231, 255, 0.25)',
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  modalHeader: {
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  headerTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  headerIconBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: 'rgba(87, 245, 171, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitlesCol: {
-    flex: 1,
-  },
-  headerTitle: {
-    color: COLORS.onSurface,
-  },
-  headerSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 8,
   },
   tabSwitcherRow: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surfaceContainerLowest,
     marginHorizontal: 20,
-    marginTop: 12,
-    borderRadius: 16,
-    padding: 3,
-  },
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 13,
-  },
-  tabBtnActive: {
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  tabBtnText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-  },
-  tabBtnTextActive: {
-    color: COLORS.onSurface,
-    fontWeight: '700',
+    marginBottom: 6,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -1146,6 +1033,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export const ModalGestionPreciosProductos = ModalGestionPrecios;
-export type PropiedadesModalGestionPreciosProductos = PropiedadesModalGestionPrecios;
 

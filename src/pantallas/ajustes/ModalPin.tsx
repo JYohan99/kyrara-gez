@@ -5,16 +5,19 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Modal,
   Alert,
-  KeyboardAvoidingView,
   ScrollView,
-  Platform,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { establecerPinSeguridad as setSecurityPin, eliminarPinSeguridad as removeSecurityPin } from '@/datos/consultas/seguridad';
-import { gatillarExito as triggerSuccess, gatillarError as triggerError } from '@/compartido/utilidades/hapticos';
+import { ModalObsidiana, BotonBrillante } from '@/compartido/componentes';
+import {
+  establecerPinSeguridad as setSecurityPin,
+  eliminarPinSeguridad as removeSecurityPin,
+} from '@/datos/consultas/seguridad';
+import {
+  gatillarExito as triggerSuccess,
+  gatillarError as triggerError,
+} from '@/compartido/utilidades/hapticos';
 
 export interface PropiedadesModalPin {
   visible: boolean;
@@ -22,32 +25,24 @@ export interface PropiedadesModalPin {
   onClose: () => void;
   onPinChanged: (hasPin: boolean) => void;
 }
-export type PinModalProps = PropiedadesModalPin;
 
-interface PropiedadesContenidoModalPin {
-  hasPin: boolean;
-  onClose: () => void;
-  onPinChanged: (hasPin: boolean) => void;
-}
-
-const ContenidoModalPin: React.FC<PropiedadesContenidoModalPin> = ({
+const ContenidoModalPin: React.FC<Omit<PropiedadesModalPin, 'visible'>> = ({
   hasPin,
   onClose,
   onPinChanged,
 }) => {
-  const insets = useSafeAreaInsets();
   const [newPinInput, setNewPinInput] = useState('');
   const [confirmPinInput, setConfirmPinInput] = useState('');
 
   const handleSavePin = () => {
     if (newPinInput.length !== 4) {
       triggerError();
-      Alert.alert('PIN inválido', 'El PIN debe ser exactamente de 4 dígitos numéricos.');
+      Alert.alert('PIN invÃ¡lido', 'El PIN debe ser exactamente de 4 dÃ­gitos numÃ©ricos.');
       return;
     }
     if (newPinInput !== confirmPinInput) {
       triggerError();
-      Alert.alert('PIN no coincide', 'La confirmación del PIN no coincide con el primero.');
+      Alert.alert('PIN no coincide', 'La confirmaciÃ³n del PIN no coincide con el primero.');
       return;
     }
 
@@ -56,7 +51,7 @@ const ContenidoModalPin: React.FC<PropiedadesContenidoModalPin> = ({
       triggerSuccess();
       onPinChanged(true);
       onClose();
-      Alert.alert('PIN Activado', 'Tu Bóveda local ahora está protegida con código PIN.');
+      Alert.alert('PIN Activado', 'Tu BÃ³veda local ahora estÃ¡ protegida con cÃ³digo PIN.');
     } catch (err) {
       console.error('Error setting PIN:', err);
       triggerError();
@@ -70,7 +65,7 @@ const ContenidoModalPin: React.FC<PropiedadesContenidoModalPin> = ({
       triggerSuccess();
       onPinChanged(false);
       onClose();
-      Alert.alert('PIN Desactivado', 'Se ha eliminado la protección por PIN.');
+      Alert.alert('PIN Desactivado', 'Se ha eliminado la protecciÃ³n por PIN.');
     } catch (err) {
       console.error('Error removing PIN:', err);
       triggerError();
@@ -79,76 +74,63 @@ const ContenidoModalPin: React.FC<PropiedadesContenidoModalPin> = ({
   };
 
   return (
-    <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-      <View style={styles.drawerHandle} />
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        style={styles.scrollArea}
-        contentContainerStyle={styles.drawerScrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
-          {hasPin ? 'Cambiar Código PIN' : 'Crear Código PIN'}
-        </Text>
-        <Text style={[styles.modalSubtitle, TYPOGRAPHY.bodySm]}>
-          El PIN protegerá el acceso a tu terminal local.
-        </Text>
+    <ScrollView
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      style={styles.scrollArea}
+      contentContainerStyle={styles.drawerScrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.inputGroup}>
+        <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nuevo PIN (4 dÃ­gitos)</Text>
+        <TextInput
+          style={[styles.textInput, styles.pinInput]}
+          value={newPinInput}
+          onChangeText={setNewPinInput}
+          keyboardType="numeric"
+          maxLength={4}
+          secureTextEntry
+          placeholder="â€¢â€¢â€¢â€¢"
+          placeholderTextColor={COLORS.outline}
+        />
+      </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nuevo PIN (4 dígitos)</Text>
-          <TextInput
-            style={[styles.textInput, styles.pinInput]}
-            value={newPinInput}
-            onChangeText={setNewPinInput}
-            keyboardType="numeric"
-            maxLength={4}
-            secureTextEntry
-            placeholder="••••"
-            placeholderTextColor={COLORS.outline}
-          />
-        </View>
+      <View style={styles.inputGroup}>
+        <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Confirmar PIN</Text>
+        <TextInput
+          style={[styles.textInput, styles.pinInput]}
+          value={confirmPinInput}
+          onChangeText={setConfirmPinInput}
+          keyboardType="numeric"
+          maxLength={4}
+          secureTextEntry
+          placeholder="â€¢â€¢â€¢â€¢"
+          placeholderTextColor={COLORS.outline}
+        />
+      </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Confirmar PIN</Text>
-          <TextInput
-            style={[styles.textInput, styles.pinInput]}
-            value={confirmPinInput}
-            onChangeText={setConfirmPinInput}
-            keyboardType="numeric"
-            maxLength={4}
-            secureTextEntry
-            placeholder="••••"
-            placeholderTextColor={COLORS.outline}
-          />
-        </View>
-
-        <View style={styles.modalActionsRow}>
-          {hasPin && (
-            <TouchableOpacity
-              style={[styles.modalCancelBtn, styles.deactivateBtn]}
-              onPress={handleRemovePin}
+      <View style={styles.modalActionsRow}>
+        {hasPin && (
+          <TouchableOpacity
+            style={[styles.modalCancelBtn, styles.deactivateBtn]}
+            onPress={handleRemovePin}
+          >
+            <Text
+              style={[
+                styles.modalCancelText,
+                TYPOGRAPHY.labelCaps,
+                { color: COLORS.cashflowExpense },
+              ]}
             >
-              <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps, { color: COLORS.cashflowExpense }]}>
-                Desactivar
-              </Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={styles.modalCancelBtn}
-            onPress={onClose}
-          >
-            <Text style={[styles.modalCancelText, TYPOGRAPHY.labelCaps]}>Cancelar</Text>
+              Desactivar
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.modalSaveBtn}
-            onPress={handleSavePin}
-          >
-            <Text style={[styles.modalSaveText, TYPOGRAPHY.labelCaps]}>Guardar PIN</Text>
-          </TouchableOpacity>
+        )}
+        <View style={styles.saveWrap}>
+          <BotonBrillante title="Guardar PIN" onPress={handleSavePin} />
         </View>
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 };
 
@@ -157,72 +139,29 @@ export const ModalPin: React.FC<PropiedadesModalPin> = ({
   hasPin,
   onClose,
   onPinChanged,
-}) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.modalOverlay}
-      >
-        <TouchableOpacity
-          style={StyleSheet.absoluteFill}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-        {visible && (
-          <ContenidoModalPin
-            hasPin={hasPin}
-            onClose={onClose}
-            onPinChanged={onPinChanged}
-          />
-        )}
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-};
+}) => (
+  <ModalObsidiana
+    visible={visible}
+    onCerrar={onClose}
+    titulo={hasPin ? 'Cambiar CÃ³digo PIN' : 'Crear CÃ³digo PIN'}
+    subtitulo="El PIN protegerÃ¡ el acceso a tu terminal local"
+    icono="lock"
+    tono="violeta"
+    maxHeight="85%"
+  >
+    <ContenidoModalPin hasPin={hasPin} onClose={onClose} onPinChanged={onPinChanged} />
+  </ModalObsidiana>
+);
 
-export const PinModal = ModalPin;
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(11, 15, 16, 0.8)',
-    justifyContent: 'flex-end',
-  },
-  modalDrawer: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingTop: 16,
-    paddingHorizontal: 22,
-    maxHeight: '85%',
-    flexShrink: 1,
-  },
   scrollArea: {
     flexShrink: 1,
+    paddingHorizontal: 20,
   },
   drawerScrollContent: {
     gap: 14,
-    paddingBottom: 24,
-  },
-  drawerHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.surfaceContainerHighest,
-    alignSelf: 'center',
-    marginBottom: 4,
-  },
-  modalTitle: {
-    color: COLORS.onSurface,
-  },
-  modalSubtitle: {
-    color: COLORS.onSurfaceVariant,
+    paddingBottom: 18,
   },
   inputGroup: {
     gap: 6,
@@ -231,11 +170,13 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
   },
   textInput: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 12,
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.14)',
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 15,
   },
   pinInput: {
@@ -245,30 +186,27 @@ const styles = StyleSheet.create({
   },
   modalActionsRow: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    gap: 10,
     paddingTop: 8,
   },
   modalCancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.surfaceContainerHigh,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    backgroundColor: 'rgba(9, 13, 15, 0.68)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.14)',
     alignItems: 'center',
   },
   deactivateBtn: {
-    backgroundColor: 'rgba(255, 138, 158, 0.15)',
+    backgroundColor: 'rgba(255, 138, 158, 0.14)',
+    borderColor: 'rgba(255, 138, 158, 0.3)',
   },
   modalCancelText: {
     color: COLORS.onSurface,
   },
-  modalSaveBtn: {
+  saveWrap: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.primaryContainer,
-    alignItems: 'center',
-  },
-  modalSaveText: {
-    color: '#FFFFFF',
   },
 });

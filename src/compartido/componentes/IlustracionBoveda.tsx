@@ -92,7 +92,6 @@ export const IlustracionBoveda: React.FC<PropiedadesIlustracionBoveda> = ({
 };
 
 // Alias compatible
-export const VaultIllustration = IlustracionBoveda;
 
 const estilos = StyleSheet.create({
   contenedor: {

@@ -71,10 +71,7 @@ export function fijarRequerirPinAlIniciar(requerir: boolean): void {
 }
 
 // Alias compatibles
-export const getSetting = obtenerAjuste;
-export const setSetting = fijarAjuste;
 export const hasCompletedOnboarding = haCompletadoOnboarding;
-export const completeOnboarding = completarOnboarding;
 export const resetDatabase = restablecerBaseDatos;
 export const getSecuritySettings = obtenerAjustesSeguridad;
 export const setSecurityPin = fijarPinSeguridad;

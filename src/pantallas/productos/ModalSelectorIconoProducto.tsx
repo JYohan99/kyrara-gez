@@ -12,8 +12,9 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { BarraBusqueda } from '@/compartido/componentes/BarraBusqueda';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
+import { ChipFiltro } from '@/compartido/componentes/ChipFiltro';
 import {
   obtenerGruposIconos,
   IconoProducto,
@@ -107,31 +108,21 @@ export const ModalSelectorIconoProducto: React.FC<PropiedadesModalSelectorIconoP
           {/* Header Drag Handle */}
           <View style={styles.dragHandle} />
 
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View style={styles.previewBox}>
-                <IconoProducto icono={iconoActual} nombre={nombreProducto} size={24} color="#00D2FF" />
-              </View>
-              <View>
-                <Text style={[styles.headerTitle, TYPOGRAPHY.titularPequeno]}>Icono del Producto</Text>
-                <Text style={styles.headerSubtitle}>
-                  {esEmoji(iconoActual) ? `Emoji: ${iconoActual}` : `MaterialIcon: ${iconoActual}`}
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <MaterialIcons name="close" size={20} color="#94A3B8" />
-            </TouchableOpacity>
-          </View>
+          <EncabezadoModal
+            titulo="Icono del Producto"
+            subtitulo={esEmoji(iconoActual) ? `Emoji: ${iconoActual}` : `Icono: ${iconoActual}`}
+            icono="apps"
+            tono="cian"
+            onCerrar={onClose}
+            style={styles.modalHeader}
+          />
 
           {/* Campo de búsqueda */}
           <BarraBusqueda
             value={busqueda}
             onChangeText={setBusqueda}
             placeholder="Buscar icono por nombre (ej: cafe, camera, box)..."
-            style={{ marginBottom: 12 }}
+            style={{ marginHorizontal: 20, marginBottom: 10 }}
           />
 
           {/* Chips de Categorías (solo visibles si no hay búsqueda activa) */}
@@ -141,31 +132,21 @@ export const ModalSelectorIconoProducto: React.FC<PropiedadesModalSelectorIconoP
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoryChips}
             >
-              <TouchableOpacity
-                style={[styles.chip, grupoActivo === 'todos' && styles.chipActive]}
-                onPress={() => {
-                  triggerSelection();
-                  setGrupoActivo('todos');
-                }}
-              >
-                <Text style={[styles.chipText, grupoActivo === 'todos' && styles.chipTextActive]}>
-                  Todos
-                </Text>
-              </TouchableOpacity>
+              <ChipFiltro
+                etiqueta="Todos"
+                activo={grupoActivo === 'todos'}
+                tono="cian"
+                onPress={() => setGrupoActivo('todos')}
+              />
 
               {grupos.map(g => (
-                <TouchableOpacity
+                <ChipFiltro
                   key={g.id}
-                  style={[styles.chip, grupoActivo === g.id && styles.chipActive]}
-                  onPress={() => {
-                    triggerSelection();
-                    setGrupoActivo(g.id);
-                  }}
-                >
-                  <Text style={[styles.chipText, grupoActivo === g.id && styles.chipTextActive]}>
-                    {g.titulo}
-                  </Text>
-                </TouchableOpacity>
+                  etiqueta={g.titulo}
+                  activo={grupoActivo === g.id}
+                  tono="cian"
+                  onPress={() => setGrupoActivo(g.id)}
+                />
               ))}
             </ScrollView>
           )}
@@ -224,111 +205,34 @@ export const ModalSelectorIconoProducto: React.FC<PropiedadesModalSelectorIconoP
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(6, 9, 11, 0.82)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#131A1D',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: '#101518',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     maxHeight: '88%',
-    borderWidth: 1,
-    borderColor: '#223037',
+    borderTopWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.18)',
   },
   dragHandle: {
-    width: 36,
+    width: 40,
     height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(165, 231, 255, 0.25)',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  modalHeader: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1F2937',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  previewBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 210, 255, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.28)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#F8FAFC',
-  },
-  headerSubtitle: {
-    fontSize: 11,
-    color: '#94A3B8',
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1A2328',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#1A2328',
-    marginHorizontal: 20,
-    marginTop: 12,
-    paddingHorizontal: 12,
-    height: 42,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#2E3D46',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 13,
-    color: '#F8FAFC',
-    paddingVertical: 0,
+    marginBottom: 10,
   },
   categoryChips: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingBottom: 10,
     gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#1A2328',
-    borderWidth: 1,
-    borderColor: '#2E3D46',
-  },
-  chipActive: {
-    backgroundColor: 'rgba(87, 245, 171, 0.15)',
-    borderColor: '#57F5AB',
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
-  chipTextActive: {
-    color: '#57F5AB',
   },
   scrollGrid: {
     paddingHorizontal: 20,

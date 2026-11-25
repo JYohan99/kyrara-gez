@@ -269,7 +269,7 @@ export const BarraNavegacionCurva: React.FC<PropiedadesBarraNavegacionCurva> = (
               {activeDescriptor.options.tabBarIcon?.({
                 focused: true,
                 color: '#FFFFFF',
-                size: 23,
+                size: 30,
               })}
             </LinearGradient>
           </Animated.View>
@@ -328,7 +328,7 @@ export const BarraNavegacionCurva: React.FC<PropiedadesBarraNavegacionCurva> = (
                       {options.tabBarIcon?.({
                         focused: false,
                         color: '#95A3AD',
-                        size: 21,
+                        size: 30,
                       })}
                     </View>
                     <Text style={styles.inactiveLabel} numberOfLines={1}>
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   inactiveIconWrap: {
-    height: 24,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },

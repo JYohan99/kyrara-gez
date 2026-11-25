@@ -107,11 +107,7 @@ export const CATEGORIAS_PREDETERMINADAS: CategoriaDefinicion[] = [
 ];
 
 export function sembrarCategoriasPredeterminadas(db: SQLite.SQLiteDatabase = obtenerBaseDatos()): void {
-  // Limpiar categorías del sistema viejas con IDs aleatorios
-  try {
-    db.runSync("DELETE FROM categories WHERE is_system = 1 AND id NOT LIKE 'cat_%'");
-  } catch { }
-
+  // 1. Insertar o actualizar primero las categorías oficiales con IDs estables
   for (const cat of CATEGORIAS_PREDETERMINADAS) {
     db.runSync(
       `INSERT INTO categories (id, name, flow_type, icon, color, is_system)
@@ -123,6 +119,32 @@ export function sembrarCategoriasPredeterminadas(db: SQLite.SQLiteDatabase = obt
       [cat.id, cat.name, cat.flowType, cat.icon, cat.color]
     );
   }
+
+  // 2. Eliminar categorías del sistema antiguas/duplicadas (incluyendo IDs aleatorios 'cat_xxxx')
+  try {
+    const idsValidos = CATEGORIAS_PREDETERMINADAS.map(c => c.id);
+    const placeholders = idsValidos.map(() => '?').join(',');
+    const viejas = db.getAllSync<{ id: string; name: string; flow_type: string }>(
+      `SELECT id, name, flow_type FROM categories WHERE is_system = 1 AND id NOT IN (${placeholders})`,
+      idsValidos
+    );
+
+    for (const vieja of viejas) {
+      const nueva = CATEGORIAS_PREDETERMINADAS.find(
+        c => c.name.toLowerCase() === vieja.name.toLowerCase() && c.flowType === vieja.flow_type
+      );
+      if (nueva) {
+        try {
+          db.runSync('UPDATE transactions SET category_id = ? WHERE category_id = ?', [nueva.id, vieja.id]);
+          db.runSync('UPDATE OR IGNORE budgets SET category_id = ? WHERE category_id = ?', [nueva.id, vieja.id]);
+          db.runSync('DELETE FROM budgets WHERE category_id = ?', [vieja.id]);
+        } catch { }
+      }
+      try {
+        db.runSync('DELETE FROM categories WHERE id = ?', [vieja.id]);
+      } catch { }
+    }
+  } catch { }
 }
 
 export function sembrarCuentasPredeterminadas(db: SQLite.SQLiteDatabase = obtenerBaseDatos()): void {
@@ -135,5 +157,3 @@ export function sembrarCuentasPredeterminadas(db: SQLite.SQLiteDatabase = obtene
 }
 
 // Alias compatibles
-export const seedDefaultCategories = sembrarCategoriasPredeterminadas;
-export const seedDefaultAccounts = sembrarCuentasPredeterminadas;

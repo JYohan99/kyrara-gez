@@ -130,9 +130,7 @@ export function eliminarCuenta(id: string): void {
 }
 
 // Alias compatibles
-export const getAccounts = obtenerCuentas;
 export const createAccount = crearCuenta;
 export const updateAccountBalance = actualizarSaldoCuenta;
 export const updateAccount = actualizarCuenta;
-export const getTotalAvailableBalance = obtenerSaldoTotalDisponible;
 export const deleteAccount = eliminarCuenta;

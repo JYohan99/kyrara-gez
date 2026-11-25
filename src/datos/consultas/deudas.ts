@@ -707,13 +707,3 @@ export function obtenerResumenDeudas(): ResumenDeudas {
 }
 
 // Alias compatibles
-export const createDebt = crearDeuda;
-export const updateDebt = actualizarDeuda;
-export const cancelDebt = cancelarDeuda;
-export const deleteDebt = eliminarDeuda;
-export const getDebts = obtenerDeudas;
-export const getDebtById = obtenerDeudaPorId;
-export const getDebtPayments = obtenerPagosDeuda;
-export const recordDebtPayment = registrarPagoDeuda;
-export const deleteDebtPayment = eliminarPagoDeuda;
-export const getDebtsSummary = obtenerResumenDeudas;

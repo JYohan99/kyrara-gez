@@ -58,16 +58,11 @@ export async function vibracionSeleccion(): Promise<void> {
 
 // Alias compatibles
 export const triggerImpactLight = vibracionLigera;
-export const triggerImpactMedium = vibracionMedia;
-export const triggerImpactHeavy = vibracionFuerte;
 export const triggerSuccess = vibracionExito;
 export const triggerWarning = vibracionAdvertencia;
 export const triggerError = vibracionError;
 export const triggerSelection = vibracionSeleccion;
 
-export const gatillarImpactoLigero = vibracionLigera;
-export const gatillarImpactoMedio = vibracionMedia;
-export const gatillarImpactoFuerte = vibracionFuerte;
 export const gatillarExito = vibracionExito;
 export const gatillarAdvertencia = vibracionAdvertencia;
 export const gatillarError = vibracionError;

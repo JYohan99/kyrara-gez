@@ -71,8 +71,4 @@ export function useSincronizacionBoveda(): ValorContextoSincronizacion {
 }
 
 // Alias compatibles
-export const subscribeToVaultChanges = suscribirCambiosBoveda;
-export const getVaultVersion = obtenerVersionBoveda;
-export const emitVaultChange = emitirCambioBoveda;
 export const VaultSyncProvider = ProveedorSincronizacionBoveda;
-export const useVaultSync = useSincronizacionBoveda;

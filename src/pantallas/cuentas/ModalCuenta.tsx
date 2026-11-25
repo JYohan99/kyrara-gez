@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import {
   crearCuenta as createAccount,
@@ -32,6 +33,9 @@ import {
   gatillarSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
 import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
+import { OrbeGlossy, TonoOrbeGlossy } from '@/compartido/componentes/OrbeGlossy';
+import { TarjetaVidrio } from '@/compartido/componentes/TarjetaVidrio';
 
 export interface PropiedadesModalCuenta {
   visible: boolean;
@@ -39,7 +43,6 @@ export interface PropiedadesModalCuenta {
   onClose: () => void;
   onSaved?: () => void;
 }
-export type AccountModalProps = PropiedadesModalCuenta;
 
 // ==========================================
 // CONFIGURACIÓN DE TIPOS DE CUENTA
@@ -185,6 +188,7 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
   const [accountType, setAccountType] = useState<TipoCuenta>(editingAccount?.type ?? 'BANK');
   const [amountStr, setAmountStr] = useState(() => formatInitialBalance(editingAccount?.currentBalance));
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isNameFocused, setIsNameFocused] = useState(false);
   const amountInputRef = useRef<TextInput>(null);
 
   // Auto-enfoque al abrir modal para desplegar el teclado inmediatamente
@@ -274,46 +278,37 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
 
   return (
     <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-      {/* Drawer Handle */}
-      <View style={styles.drawerHandle} />
-
-      {/* Top Bar: Cerrar (X) + Cápsula Título + Eliminar (Trash) */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.circularCloseBtn}
-          onPress={onClose}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Cerrar"
-        >
-          <MaterialIcons name="close" size={20} color={COLORS.onSurface} />
-        </TouchableOpacity>
-
-        <View style={styles.topBarCapsule}>
-          <MaterialIcons
-            name={isEditing ? 'tune' : 'account-balance-wallet'}
-            size={15}
-            color={COLORS.primary}
-          />
-          <Text style={[styles.topBarCapsuleTitle, TYPOGRAPHY.labelCaps]}>
-            {isEditing ? 'Ajustar Cuenta' : 'Nueva Cuenta'}
-          </Text>
-        </View>
-
-        {isEditing ? (
-          <TouchableOpacity
-            style={styles.circularDeleteBtn}
-            onPress={handleDelete}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Eliminar cuenta"
-          >
-            <MaterialIcons name="delete-outline" size={20} color={COLORS.cashflowExpense} />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.topBarSpacer} />
-        )}
-      </View>
+      {/* Encabezado unificado glossy 3D */}
+      <EncabezadoModal
+        titulo={isEditing ? 'Editar Cuenta' : 'Nueva Cuenta'}
+        subtitulo={
+          isEditing
+            ? 'Actualiza el nombre, tipo o saldo de tu cuenta'
+            : 'Crea una cuenta para registrar tus saldos'
+        }
+        icono={selectedTypeConfig.icono}
+        tono={
+          accountType === 'CASH'
+            ? 'ingreso'
+            : accountType === 'BANK'
+              ? 'cian'
+              : 'violeta'
+        }
+        onCerrar={onClose}
+        accionDerecha={
+          isEditing ? (
+            <OrbeGlossy
+              tamano={36}
+              tono="gasto"
+              onPress={handleDelete}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Eliminar cuenta"
+            >
+              <MaterialIcons name="delete-outline" size={18} color="#FFFFFF" />
+            </OrbeGlossy>
+          ) : undefined
+        }
+      />
 
       {/* Scroll Area */}
       <ScrollView
@@ -324,8 +319,8 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
         bounces={false}
         contentContainerStyle={styles.drawerScrollContent}
       >
-        {/* Hero Amount Display con Input Invisible */}
-        <View style={styles.heroAmountContainer}>
+        {/* Hero Amount Display con Input Invisible en TarjetaVidrio */}
+        <TarjetaVidrio variant="surface" style={styles.heroAmountContainer}>
           <Text style={[styles.heroAmountLabel, TYPOGRAPHY.labelCaps]}>
             {isEditing ? 'Saldo Actual' : 'Saldo Inicial'}
           </Text>
@@ -363,33 +358,64 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
             onBlur={() => setIsInputFocused(false)}
             caretHidden
           />
-        </View>
+        </TarjetaVidrio>
 
-        {/* Input: Nombre de la Cuenta */}
+        {/* Input: Nombre de la Cuenta (cápsula glossy 3D) */}
         <View style={styles.inputContainer}>
-          <View style={styles.modernInputBox}>
-            <MaterialIcons
-              name="badge"
-              size={18}
-              color={COLORS.outline}
-              style={styles.inputIconPrefix}
-            />
-            <TextInput
-              style={styles.modernTextInput}
-              value={name}
-              onChangeText={setName}
-              placeholder="Nombre de la cuenta"
-              placeholderTextColor={COLORS.outline}
-            />
-          </View>
+          <LinearGradient
+            colors={
+              isNameFocused
+                ? ['rgba(0, 210, 255, 0.78)', 'rgba(165, 231, 255, 0.42)', 'rgba(138, 79, 255, 0.4)']
+                : ['rgba(165, 231, 255, 0.4)', 'rgba(74, 84, 92, 0.38)', 'rgba(209, 188, 255, 0.2)']
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.inputCapsuleRim}
+          >
+            <LinearGradient
+              colors={['#1F2A2F', '#11181B', '#090D0F', '#141D20']}
+              locations={[0, 0.46, 0.55, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.inputCapsuleBody}
+            >
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.2)', 'rgba(165, 231, 255, 0.05)', 'rgba(255, 255, 255, 0)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                pointerEvents="none"
+                style={styles.inputCapsuleGloss}
+              />
+              <OrbeGlossy tamano={32} tono="obsidiana" style={styles.inputOrbPrefix}>
+                <MaterialIcons name="badge" size={16} color={COLORS.secondary} />
+              </OrbeGlossy>
+              <TextInput
+                style={styles.modernTextInput}
+                value={name}
+                onChangeText={setName}
+                placeholder="Nombre de la cuenta"
+                placeholderTextColor="rgba(204, 195, 216, 0.52)"
+                onFocus={() => setIsNameFocused(true)}
+                onBlur={() => setIsNameFocused(false)}
+              />
+            </LinearGradient>
+          </LinearGradient>
         </View>
 
-        {/* Selector de Tipo de Cuenta */}
+        {/* Selector de Tipo de Cuenta con OrbeGlossy */}
         <View style={styles.typeSelectorContainer}>
           <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Tipo de cuenta</Text>
           <View style={styles.typeGrid}>
             {TIPOS_CUENTA.map(t => {
               const active = accountType === t.tipo;
+              const tonoOrbe: TonoOrbeGlossy = !active
+                ? 'obsidiana'
+                : t.tipo === 'CASH'
+                  ? 'ingreso'
+                  : t.tipo === 'BANK'
+                    ? 'cian'
+                    : 'violeta';
+
               return (
                 <TouchableOpacity
                   key={t.tipo}
@@ -404,13 +430,15 @@ const ContenidoModalCuenta: React.FC<PropiedadesContenidoModalCuenta> = ({
                     triggerSelection();
                     setAccountType(t.tipo);
                   }}
-                  activeOpacity={0.75}
+                  activeOpacity={0.78}
                 >
-                  <MaterialIcons
-                    name={t.icono}
-                    size={20}
-                    color={active ? t.color : COLORS.outline}
-                  />
+                  <OrbeGlossy tamano={38} tono={tonoOrbe} sombra={active}>
+                    <MaterialIcons
+                      name={t.icono}
+                      size={18}
+                      color={active ? '#FFFFFF' : t.color}
+                    />
+                  </OrbeGlossy>
                   <Text
                     style={[
                       styles.typeOptionLabel,
@@ -492,58 +520,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  drawerHandle: {
-    width: 38,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.16)',
-    alignSelf: 'center',
-    marginBottom: 12,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  circularCloseBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topBarCapsule: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#181C1E',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  topBarCapsuleTitle: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  circularDeleteBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255, 138, 158, 0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 138, 158, 0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topBarSpacer: {
-    width: 38,
-  },
   scrollArea: {
     flexShrink: 1,
   },
@@ -554,13 +530,10 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 10,
     position: 'relative',
-    backgroundColor: '#14181A',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
     marginBottom: 16,
   },
   heroAmountLabel: {
@@ -608,27 +581,40 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 2,
   },
-  modernInputBox: {
+  inputCapsuleRim: {
+    borderRadius: 999,
+    padding: 1.5,
+  },
+  inputCapsuleBody: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161A1C',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === 'ios' ? 14 : 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 999,
+    paddingLeft: 8,
+    paddingRight: 16,
+    paddingVertical: 6,
+    minHeight: 48,
+    overflow: 'hidden',
   },
-  inputIconPrefix: {
+  inputCapsuleGloss: {
+    position: 'absolute',
+    top: 1,
+    left: 12,
+    right: 12,
+    height: '46%',
+    borderRadius: 999,
+  },
+  inputOrbPrefix: {
     marginRight: 10,
   },
   modernTextInput: {
     flex: 1,
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '500',
+    paddingVertical: 4,
   },
   typeSelectorContainer: {
-    gap: 6,
+    gap: 8,
     marginBottom: 18,
   },
   typeGrid: {
@@ -640,13 +626,13 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 11,
     paddingHorizontal: 4,
-    borderRadius: 14,
-    backgroundColor: '#161A1C',
+    borderRadius: 16,
+    backgroundColor: 'rgba(13, 18, 20, 0.72)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    gap: 6,
+    borderColor: 'rgba(165, 231, 255, 0.14)',
+    gap: 7,
   },
   typeOptionLabel: {
     fontSize: 10,
@@ -655,30 +641,10 @@ const styles = StyleSheet.create({
   },
   typeOptionLabelActive: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   bottomBar: {
     marginTop: 4,
     marginBottom: 4,
-  },
-  guardarButton: {
-    height: 52,
-    borderRadius: 26,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: COLORS.primaryContainer,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  guardarButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.3,
   },
 });

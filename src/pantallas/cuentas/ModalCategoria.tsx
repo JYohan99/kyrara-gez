@@ -5,18 +5,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Modal,
   Alert,
-  KeyboardAvoidingView,
   ScrollView,
-  Platform,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { crearCategoria as createCategory } from '@/datos/consultas/categorias';
-import { gatillarExito as triggerSuccess, gatillarError as triggerError, gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
-import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import {
+  gatillarExito as triggerSuccess,
+  gatillarError as triggerError,
+  gatillarSeleccion as triggerSelection,
+} from '@/compartido/utilidades/hapticos';
+import { ModalObsidiana, BotonBrillante } from '@/compartido/componentes';
 
 export interface PropiedadesModalCategoria {
   visible: boolean;
@@ -24,7 +24,6 @@ export interface PropiedadesModalCategoria {
   onClose: () => void;
   onSaved?: () => void;
 }
-export type CategoryModalProps = PropiedadesModalCategoria;
 
 const AVAILABLE_ICONS = [
   'restaurant',
@@ -55,14 +54,11 @@ export const ModalCategoria: React.FC<PropiedadesModalCategoria> = ({
   onClose,
   onSaved,
 }) => {
-  const insets = useSafeAreaInsets();
   const nameInputRef = useRef<TextInput>(null);
-
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('shopping-bag');
   const [color, setColor] = useState('#8A4FFF');
 
-  // Auto-enfoque al abrir modal para desplegar el teclado inmediatamente
   useEffect(() => {
     if (visible) {
       const timer = setTimeout(() => {
@@ -72,12 +68,10 @@ export const ModalCategoria: React.FC<PropiedadesModalCategoria> = ({
     }
   }, [visible]);
 
-  if (!visible) return null;
-
   const handleSave = () => {
     if (!name.trim()) {
       triggerError();
-      Alert.alert('Nombre requerido', 'Ingresa un nombre para la categoría.');
+      Alert.alert('Nombre requerido', 'Ingresa un nombre para la categorÃ­a.');
       return;
     }
 
@@ -96,141 +90,97 @@ export const ModalCategoria: React.FC<PropiedadesModalCategoria> = ({
     } catch (err) {
       console.error('Error creating category:', err);
       triggerError();
-      Alert.alert('Error', 'No se pudo crear la categoría.');
+      Alert.alert('Error', 'No se pudo crear la categorÃ­a.');
     }
   };
 
   return (
-    <Modal
+    <ModalObsidiana
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
+      onCerrar={onClose}
+      titulo={`Nueva CategorÃ­a de ${flowType === 'EXPENSE' ? 'Gasto' : 'Ingreso'}`}
+      subtitulo="Personaliza nombre, icono y color"
+      icono="category"
+      tono={flowType === 'EXPENSE' ? 'gasto' : 'ingreso'}
+      maxHeight="85%"
+      footer={<BotonBrillante title="Guardar" onPress={handleSave} />}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.modalOverlay}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={styles.scrollArea}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        bounces={false}
+        contentContainerStyle={styles.drawerScrollContent}
       >
-        <TouchableOpacity
-          style={StyleSheet.absoluteFill}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-        <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          <View style={styles.drawerHandle} />
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            style={styles.scrollArea}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            bounces={false}
-            contentContainerStyle={styles.drawerScrollContent}
-          >
-            <Text style={[styles.modalTitle, TYPOGRAPHY.headlineSm]}>
-              Nueva Categoría de {flowType === 'EXPENSE' ? 'Gasto' : 'Ingreso'}
-            </Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nombre</Text>
-              <TextInput
-                ref={nameInputRef}
-                style={styles.textInput}
-                value={name}
-                onChangeText={setName}
-                placeholder="Ej. Gimnasio, Mascotas, Cursos"
-                placeholderTextColor={COLORS.outline}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Icono sugerido</Text>
-              <View style={styles.iconChipsRow}>
-                {AVAILABLE_ICONS.map(ic => (
-                  <TouchableOpacity
-                    key={ic}
-                    style={[styles.iconChip, icon === ic && styles.iconChipActive]}
-                    onPress={() => {
-                      triggerSelection();
-                      setIcon(ic);
-                    }}
-                  >
-                    <MaterialIcons
-                      name={ic as any}
-                      size={20}
-                      color={icon === ic ? '#FFFFFF' : COLORS.onSurfaceVariant}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Color</Text>
-              <View style={styles.colorChipsRow}>
-                {AVAILABLE_COLORS.map(col => (
-                  <TouchableOpacity
-                    key={col}
-                    style={[
-                      styles.colorDot,
-                      { backgroundColor: col },
-                      color === col && styles.colorDotActive,
-                    ]}
-                    onPress={() => {
-                      triggerSelection();
-                      setColor(col);
-                    }}
-                  />
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.modalActionsRow}>
-              <BotonBrillante
-                title="Guardar"
-                onPress={handleSave}
-              />
-            </View>
-          </ScrollView>
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Nombre</Text>
+          <TextInput
+            ref={nameInputRef}
+            style={styles.textInput}
+            value={name}
+            onChangeText={setName}
+            placeholder="Ej. Gimnasio, Mascotas, Cursos"
+            placeholderTextColor={COLORS.outline}
+          />
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Icono sugerido</Text>
+          <View style={styles.iconChipsRow}>
+            {AVAILABLE_ICONS.map(ic => (
+              <TouchableOpacity
+                key={ic}
+                style={[styles.iconChip, icon === ic && styles.iconChipActive]}
+                onPress={() => {
+                  triggerSelection();
+                  setIcon(ic);
+                }}
+              >
+                <MaterialIcons
+                  name={ic as any}
+                  size={20}
+                  color={icon === ic ? '#FFFFFF' : COLORS.onSurfaceVariant}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, TYPOGRAPHY.labelCaps]}>Color</Text>
+          <View style={styles.colorChipsRow}>
+            {AVAILABLE_COLORS.map(col => (
+              <TouchableOpacity
+                key={col}
+                style={[
+                  styles.colorDot,
+                  { backgroundColor: col },
+                  color === col && styles.colorDotActive,
+                ]}
+                onPress={() => {
+                  triggerSelection();
+                  setColor(col);
+                }}
+              />
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    </ModalObsidiana>
   );
 };
 
 export const CategoryModal = ModalCategoria;
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(11, 15, 16, 0.8)',
-    justifyContent: 'flex-end',
-  },
-  modalDrawer: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingTop: 16,
-    paddingHorizontal: 22,
-    maxHeight: '85%',
-    flexShrink: 1,
-  },
   scrollArea: {
     flexShrink: 1,
+    paddingHorizontal: 20,
   },
   drawerScrollContent: {
     gap: 14,
-    paddingBottom: 24,
-  },
-  drawerHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.surfaceContainerHighest,
-    alignSelf: 'center',
-    marginBottom: 8,
-  },
-  modalTitle: {
-    color: COLORS.onSurface,
+    paddingBottom: 16,
   },
   inputGroup: {
     gap: 6,
@@ -239,11 +189,13 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
   },
   textInput: {
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderRadius: 12,
+    backgroundColor: 'rgba(9, 13, 15, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.14)',
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
     fontSize: 15,
   },
   iconChipsRow: {
@@ -252,15 +204,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconChip: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: COLORS.surfaceContainerHigh,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: 'rgba(9, 13, 15, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconChipActive: {
     backgroundColor: COLORS.primaryContainer,
+    borderColor: 'rgba(209, 188, 255, 0.5)',
   },
   colorChipsRow: {
     flexDirection: 'row',
@@ -274,8 +229,5 @@ const styles = StyleSheet.create({
   colorDotActive: {
     borderWidth: 3,
     borderColor: '#FFFFFF',
-  },
-  modalActionsRow: {
-    marginTop: 10,
   },
 });

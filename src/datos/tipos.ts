@@ -380,10 +380,6 @@ export interface AnalisisVentasInventario {
   evolution: PuntoEvolucionVentas[];
 }
 
-export type InventoryOperationType = TipoOperacionInventario;
-export type InventoryAdjustmentReason = MotivoAjusteInventario;
-export type InventoryOperation = OperacionInventario;
-export type InventorySummary = ResumenInventario;
 
 export type FiltroEstadoProducto = 'TODOS' | 'ACTIVOS' | 'INACTIVOS';
 
@@ -393,34 +389,13 @@ export interface FiltroProductos {
 }
 
 // Alias compatibles
-export type AccountType = TipoCuenta;
 export type Account = Cuenta;
 export type FlowType = TipoFlujo;
 export type Category = Categoria;
 export type Transaction = Movimiento;
 export type EnrichedTransaction = MovimientoEnriquecido;
 export type Budget = Presupuesto;
-export type EnrichedBudget = PresupuestoEnriquecido;
-export type UserSettings = AjustesUsuario;
-export type CategorySpendBreakdown = DesgloseGastoCategoria;
-export type MonthlySavingsStat = EstadisticaAhorroMensual;
-export type TimelineDataPoint = PuntoLineaTiempo;
-export type CommitmentRecurrenceType = TipoProgramacionCompromiso;
-export type CommitmentStatus = EstadoCompromiso;
-export type Commitment = Compromiso;
-export type CommitmentReminder = Recordatorio;
-export type RecurrenceException = ExcepcionRecurrencia;
-export type CommitmentOccurrence = OcurrenciaCompromiso;
-export type DebtType = TipoDeuda;
-export type DebtStatus = EstadoDeuda;
-export type Debt = Deuda;
-export type DebtPayment = PagoDeuda;
-export type DebtSummary = ResumenDeudas;
-export type DebtStatusFilter = FiltroEstadoDeuda;
 export type Product = Producto;
-export type ProductTariff = TarifaProducto;
-export type ProductStatusFilter = FiltroEstadoProducto;
-export type ProductFilter = FiltroProductos;
 
 // Calculadora de Precios de Productos
 export interface LineaCalculoProducto {
@@ -459,9 +434,6 @@ export interface ResultadoCalculadoraProductos {
   tieneFaltantes: boolean;
 }
 
-export type ProductCalculatorLine = LineaCalculoProducto;
-export type ProductCalculatorCurrencyTotals = TotalesMonedaCalculoProducto;
-export type ProductCalculatorResult = ResultadoCalculadoraProductos;
 
 // Historial y Estadísticas de Precios y Rentabilidad de Productos
 export interface CambioPrecioHistorial {
@@ -542,7 +514,4 @@ export interface EvolucionTarifaItem {
   isCurrent: boolean;
 }
 
-export type PriceHistoryChange = CambioPrecioHistorial;
-export type PriceHistoryFilter = FiltroHistorialPrecios;
-export type CatalogStatistics = EstadisticasCatalogoProductos;
 

@@ -104,6 +104,16 @@ export function convertirMontoACentavos(entrada: string): number {
   return unidades * 100;
 }
 
+/**
+ * Convierte centavos enteros a texto formateado para un campo de entrada de dinero.
+ * Ejemplo: 150000 -> "1.500,00" (retorna '' si es <= 0 cuando permitirCero es false).
+ */
+export function centavosAEntradaDinero(centavos?: number | null, permitirCero = false): string {
+  if (centavos === undefined || centavos === null) return '';
+  if (!permitirCero && centavos <= 0) return '';
+  return formatearEntradaDinero((centavos / 100).toFixed(2).replace('.', ','));
+}
+
 // Alias compatibles para no romper nada
 export const formatCurrency = (
   cents: number,

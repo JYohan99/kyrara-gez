@@ -13,6 +13,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { OrbeGlossy } from '@/compartido/componentes/OrbeGlossy';
 import { useSeguridadBoveda as useVaultSecurity, useCategoriasBoveda } from '@/datos/hooks';
 import {
   exportarBaseDatosAJson as exportDatabaseToJson,
@@ -31,7 +32,6 @@ export interface PropiedadesPestanaAjustes {
   onShowBackupContent: (title: string, content: string) => void;
   onOpenCategoriesModal?: () => void;
 }
-export type SettingsTabProps = PropiedadesPestanaAjustes;
 
 export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
   onOpenPinModal,
@@ -219,9 +219,9 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
         <GlassCard style={styles.settingsGroup}>
           <View style={styles.settingItemRow}>
             <View style={styles.settingItemLeft}>
-              <View style={styles.settingIconBox}>
+              <OrbeGlossy tamano={38} tono="obsidiana">
                 <MaterialIcons name="visibility-off" size={18} color={COLORS.cashflowIncome} />
-              </View>
+              </OrbeGlossy>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.settingItemTitle, TYPOGRAPHY.bodyMd]}>
                   Bloqueo de Bóveda al Iniciar
@@ -241,9 +241,9 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
 
           <View style={styles.settingItemRow}>
             <View style={styles.settingItemLeft}>
-              <View style={styles.settingIconBox}>
+              <OrbeGlossy tamano={38} tono="obsidiana">
                 <MaterialIcons name="pin-drop" size={18} color={COLORS.onSurface} />
-              </View>
+              </OrbeGlossy>
               <View>
                 <Text style={[styles.settingItemTitle, TYPOGRAPHY.bodyMd]}>Código PIN Local</Text>
                 <Text style={[styles.settingItemSubtitle, TYPOGRAPHY.bodySm]}>
@@ -266,9 +266,9 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
 
           <View style={styles.settingItemRow}>
             <View style={styles.settingItemLeft}>
-              <View style={styles.settingIconBox}>
+              <OrbeGlossy tamano={38} tono="obsidiana">
                 <MaterialIcons name="fingerprint" size={18} color={COLORS.primary} />
-              </View>
+              </OrbeGlossy>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.settingItemTitle, TYPOGRAPHY.bodyMd]}>
                   Face ID / Huella
@@ -292,9 +292,9 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
       <View style={styles.settingsSection}>
         <GlassCard style={styles.backupCard}>
           <View style={styles.backupCardTop}>
-            <View style={styles.backupIconBox}>
-              <MaterialIcons name="folder-zip" size={24} color={COLORS.tertiary} />
-            </View>
+            <OrbeGlossy tamano={44} tono="cian">
+              <MaterialIcons name="folder-zip" size={22} color="#FFFFFF" />
+            </OrbeGlossy>
             <View style={styles.backupTitles}>
               <Text style={[styles.backupMainTitle, TYPOGRAPHY.bodyLg]}>
                 Copias de Seguridad
@@ -338,9 +338,9 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
             activeOpacity={0.8}
           >
             <View style={styles.excelBtnLeft}>
-              <View style={styles.excelIconBox}>
-                <MaterialIcons name="table-view" size={22} color={COLORS.cashflowIncome} />
-              </View>
+              <OrbeGlossy tamano={40} tono="ingreso">
+                <MaterialIcons name="table-view" size={20} color="#FFFFFF" />
+              </OrbeGlossy>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.excelBtnTitle, TYPOGRAPHY.bodyMd]}>
                   Exportar archivo Excel
@@ -376,96 +376,10 @@ export const PestanaAjustes: React.FC<PropiedadesPestanaAjustes> = ({
 };
 
 export const PestañaAjustes = PestanaAjustes;
-export const SettingsTab = PestanaAjustes;
 
 const styles = StyleSheet.create({
   container: {
     gap: 18,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  mainSectionTitle: {
-    color: COLORS.onSurface,
-  },
-  mainSectionSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
-  offlineBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  offlineText: {
-    color: COLORS.tertiary,
-  },
-  vaultBanner: {
-    padding: 18,
-    borderRadius: 20,
-    gap: 12,
-  },
-  vaultBannerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  vaultShieldIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  vaultBannerTitles: {
-    flex: 1,
-  },
-  vaultCaps: {
-    color: COLORS.secondary,
-    letterSpacing: 1.2,
-  },
-  vaultHeadline: {
-    color: COLORS.onSurface,
-    marginTop: 2,
-  },
-  vaultDescription: {
-    color: COLORS.onSurfaceVariant,
-    lineHeight: 18,
-  },
-  vaultBadgesRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  safePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  safePillText: {
-    color: COLORS.cashflowIncome,
-  },
-  cipherPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  cipherPillText: {
-    color: COLORS.onSurfaceVariant,
   },
   settingsSection: {
     gap: 10,
@@ -541,15 +455,6 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     marginTop: 2,
   },
-  settingValuePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: COLORS.surfaceContainerHigh,
-  },
-  settingValueText: {
-    color: COLORS.onSurface,
-  },
   smallOutlineBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -569,23 +474,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  backupIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   backupTitles: {
     flex: 1,
   },
   backupMainTitle: {
     color: COLORS.onSurface,
-  },
-  backupSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
   },
   backupGridBtns: {
     flexDirection: 'row',
@@ -603,10 +496,6 @@ const styles = StyleSheet.create({
   backupBtnTitle: {
     color: COLORS.onSurface,
   },
-  backupBtnSub: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
   excelExportCardBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -623,14 +512,6 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
-  excelIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   excelBtnTitle: {
     color: COLORS.onSurface,
     fontWeight: '600',
@@ -638,15 +519,6 @@ const styles = StyleSheet.create({
   excelBtnSubtitle: {
     color: COLORS.onSurfaceVariant,
     marginTop: 2,
-  },
-  backupInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  backupInfoText: {
-    color: COLORS.onSurfaceVariant,
-    flex: 1,
   },
   dangerZone: {
     gap: 6,

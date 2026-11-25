@@ -8,8 +8,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { EstadoVacio, BotonBrillante, BarraBusqueda } from '@/compartido/componentes';
+import { COLORES as COLORS } from '@/compartido/tema';
+import { EstadoVacio, BotonBrillante, BarraBusqueda, SelectorSegmentado, ChipFiltro } from '@/compartido/componentes';
 import { useProductosBoveda, useResumenInventarioBoveda } from '@/datos/hooks';
 import {
   eliminarProducto,
@@ -180,98 +180,18 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
 
   return (
     <View style={styles.container}>
-      {/* Selector de sub-módulo con estilo Stitch Glass Pill */}
-      <View style={styles.moduleSwitcherTrack}>
-        <TouchableOpacity
-          style={[
-            styles.moduleSwitcherBtn,
-            seccionModulo === 'RESUMEN' && styles.moduleSwitcherBtnActive,
-          ]}
-          onPress={() => {
-            triggerSelection();
-            setSeccionModulo('RESUMEN');
-          }}
-          activeOpacity={0.8}
-          accessibilityRole="tab"
-          accessibilityLabel="Ver Resumen de Inventario"
-        >
-          <MaterialIcons
-            name="dashboard"
-            size={15}
-            color={seccionModulo === 'RESUMEN' ? COLORS.primario : COLORS.enSuperficieVariante}
-          />
-          <Text
-            style={[
-              styles.moduleSwitcherText,
-              TYPOGRAPHY.etiquetaMayusculas,
-              seccionModulo === 'RESUMEN' && styles.moduleSwitcherTextActive,
-            ]}
-            numberOfLines={1}
-          >
-            Resumen
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.moduleSwitcherBtn,
-            seccionModulo === 'CATALOGO' && styles.moduleSwitcherBtnActive,
-          ]}
-          onPress={() => {
-            triggerSelection();
-            setSeccionModulo('CATALOGO');
-          }}
-          activeOpacity={0.8}
-          accessibilityRole="tab"
-          accessibilityLabel="Ver Catálogo de Productos"
-        >
-          <MaterialIcons
-            name="inventory-2"
-            size={15}
-            color={seccionModulo === 'CATALOGO' ? COLORS.primario : COLORS.enSuperficieVariante}
-          />
-          <Text
-            style={[
-              styles.moduleSwitcherText,
-              TYPOGRAPHY.etiquetaMayusculas,
-              seccionModulo === 'CATALOGO' && styles.moduleSwitcherTextActive,
-            ]}
-            numberOfLines={1}
-          >
-            Productos ({totalCount})
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.moduleSwitcherBtn,
-            seccionModulo === 'ANALISIS' && styles.moduleSwitcherBtnActive,
-          ]}
-          onPress={() => {
-            triggerSelection();
-            setSeccionModulo('ANALISIS');
-          }}
-          activeOpacity={0.8}
-          accessibilityRole="tab"
-          accessibilityLabel="Ver Análisis de Ventas"
-        >
-          <MaterialIcons
-            name="insights"
-            size={15}
-            color={seccionModulo === 'ANALISIS' ? COLORS.primario : COLORS.enSuperficieVariante}
-          />
-          <Text
-            style={[
-              styles.moduleSwitcherText,
-              TYPOGRAPHY.etiquetaMayusculas,
-              seccionModulo === 'ANALISIS' && styles.moduleSwitcherTextActive,
-            ]}
-            numberOfLines={1}
-          >
-            Análisis
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Selector de sub-módulo estilo cápsula glossy 3D */}
+      <SelectorSegmentado<SeccionModuloProductos>
+        opciones={[
+          { valor: 'RESUMEN', etiqueta: 'Resumen', icono: 'dashboard' },
+          { valor: 'CATALOGO', etiqueta: `Productos (${totalCount})`, icono: 'inventory-2' },
+          { valor: 'ANALISIS', etiqueta: 'Análisis', icono: 'insights' },
+        ]}
+        valorSeleccionado={seccionModulo}
+        onSeleccionar={setSeccionModulo}
+        tonoPorDefecto="cian"
+        style={{ marginBottom: 14 }}
+      />
 
       {/* Contenido según el sub-módulo activo */}
       {seccionModulo === 'RESUMEN' ? (
@@ -386,87 +306,44 @@ export const PestanaProductos: React.FC<PropiedadesPestanaProductos> = ({ onNewP
             style={{ marginBottom: 12 }}
           />
 
-          {/* CHIPS SEGMENTADOS DE FILTROS HORIZONTALES*/}
+          {/* CHIPS SEGMENTADOS DE FILTROS HORIZONTALES */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterChipsRow}
           >
-            {/* Chip: Todos */}
-            <TouchableOpacity
-              style={[
-                styles.chipItem,
-                statusFilter === 'TODOS' && !soloAlertasStock && !soloAgotados && styles.chipItemActive,
-              ]}
+            <ChipFiltro
+              etiqueta={`Todos (${totalCount})`}
+              activo={statusFilter === 'TODOS' && !soloAlertasStock && !soloAgotados}
+              tono="cian"
               onPress={() => {
-                triggerSelection();
                 setStatusFilter('TODOS');
                 setSoloAlertasStock(false);
                 setSoloAgotados(false);
               }}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  statusFilter === 'TODOS' && !soloAlertasStock && !soloAgotados && styles.chipTextActive,
-                ]}
-              >
-                Todos ({totalCount})
-              </Text>
-            </TouchableOpacity>
+            />
 
-
-
-            {/* Chip: Stock Bajo */}
-            <TouchableOpacity
-              style={[
-                styles.chipItem,
-                soloAlertasStock && !soloAgotados && styles.chipItemAlertActive,
-              ]}
+            <ChipFiltro
+              etiqueta={`Stock Bajo (${inventorySummary.lowStockCount})`}
+              activo={soloAlertasStock && !soloAgotados}
+              tono="gasto"
+              colorPunto={COLORS.gasto}
               onPress={() => {
-                triggerSelection();
                 setSoloAgotados(false);
                 setSoloAlertasStock(prev => !prev);
               }}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.chipDot, { backgroundColor: COLORS.gasto }]} />
-              <Text
-                style={[
-                  styles.chipText,
-                  { color: COLORS.gasto },
-                  soloAlertasStock && !soloAgotados && styles.chipTextAlertActive,
-                ]}
-              >
-                Stock Bajo ({inventorySummary.lowStockCount})
-              </Text>
-            </TouchableOpacity>
+            />
 
-            {/* Chip: Agotados */}
-            <TouchableOpacity
-              style={[
-                styles.chipItem,
-                soloAgotados && styles.chipItemAgotadoActive,
-              ]}
+            <ChipFiltro
+              etiqueta={`Agotados (${inventorySummary.outOfStockCount})`}
+              activo={soloAgotados}
+              tono="neutral"
+              colorPunto={COLORS.bordeContorno}
               onPress={() => {
-                triggerSelection();
                 setSoloAlertasStock(false);
                 setSoloAgotados(prev => !prev);
               }}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.chipDot, { backgroundColor: COLORS.bordeContorno }]} />
-              <Text
-                style={[
-                  styles.chipText,
-                  { color: COLORS.bordeContorno },
-                  soloAgotados && styles.chipTextAgotadoActive,
-                ]}
-              >
-                Agotados ({inventorySummary.outOfStockCount})
-              </Text>
-            </TouchableOpacity>
+            />
           </ScrollView>
 
           {/* LISTA DEL CATÁLOGO DE PRODUCTOS */}
@@ -573,99 +450,7 @@ const styles = StyleSheet.create({
   container: {
     gap: 14,
   },
-  moduleSwitcherTrack: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.superficieContenedorBajo, // #181c1d
-    borderRadius: 9999,
-    padding: 3,
-    gap: 3,
-    borderWidth: 1,
-    borderColor: COLORS.bordeCristal,
-  },
-  moduleSwitcherBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 8,
-    borderRadius: 9999,
-  },
-  moduleSwitcherBtnActive: {
-    backgroundColor: COLORS.superficieContenedorAlto, // #272b2c
-    borderWidth: 1,
-    borderColor: 'rgba(209, 188, 255, 0.25)',
-    shadowColor: COLORS.primarioContenedor,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  moduleSwitcherText: {
-    color: COLORS.enSuperficieVariante,
-    fontSize: 10,
-    letterSpacing: 0.4,
-  },
-  moduleSwitcherTextActive: {
-    color: COLORS.primario,
-    fontWeight: '700',
-  },
-  titleBarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 2,
-    paddingBottom: 2,
-  },
-  titleWithBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  screenTitleText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.enSuperficie, // #e0e3e4
-    letterSpacing: -0.3,
-  },
-  itemsBadgePill: {
-    backgroundColor: COLORS.superficieContenedorAlto, // #272b2c
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
-    borderRadius: 9999,
-  },
-  itemsBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.primario, // #d1bcff
-    letterSpacing: 0.3,
-  },
-  titleActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
 
-  btnNuevoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    height: 34,
-    paddingHorizontal: 14,
-    borderRadius: 9999,
-    backgroundColor: COLORS.primarioContenedor, // #8a4fff
-    shadowColor: COLORS.primarioContenedor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  btnNuevoHeaderText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-  },
   metricsDeckRow: {
     flexDirection: 'row',
     gap: 8,
@@ -725,110 +510,16 @@ const styles = StyleSheet.create({
     color: COLORS.secundario,
     fontWeight: '600',
   },
-  searchBarWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.superficieContenedorBajo, // #181c1d
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    height: 44,
-    borderWidth: 1,
-    borderColor: COLORS.bordeCristal,
-  },
-  searchIconLeft: {
-    marginRight: 8,
-  },
-  searchTextInput: {
-    flex: 1,
-    fontSize: 13,
-    color: COLORS.enSuperficie,
-    paddingVertical: 8,
-  },
-  searchActionBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: COLORS.superficieContenedorAlto,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   filterChipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingVertical: 2,
   },
-  chipItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 9999,
-    backgroundColor: COLORS.superficieContenedor, // #1c2021
-    borderWidth: 1,
-    borderColor: COLORS.bordeCristal,
-  },
-  chipItemActive: {
-    backgroundColor: COLORS.primario, // #d1bcff
-    borderColor: COLORS.primario,
-  },
-  chipItemAlertActive: {
-    backgroundColor: 'rgba(255, 138, 158, 0.18)',
-    borderColor: COLORS.gasto,
-  },
-  chipItemAgotadoActive: {
-    backgroundColor: COLORS.superficieContenedorMasAlto,
-    borderColor: COLORS.bordeContorno,
-  },
-  chipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  chipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.enSuperficieVariante,
-    letterSpacing: 0.2,
-  },
-  chipTextActive: {
-    color: COLORS.enPrimario, // #3d008f
-    fontWeight: '700',
-  },
-  chipTextAlertActive: {
-    color: COLORS.gasto,
-    fontWeight: '700',
-  },
-  chipTextAgotadoActive: {
-    color: COLORS.enSuperficie,
-    fontWeight: '700',
-  },
   productsListContainer: {
     gap: 4,
   },
   emptyBtnWrapper: {
     marginTop: 8,
-  },
-  bottomDockContainer: {
-    paddingTop: 4,
-    paddingBottom: 16,
-  },
-  bottomDockBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: COLORS.superficieContenedorBajo,
-    borderWidth: 1,
-    borderColor: COLORS.bordeCristal,
-  },
-  bottomDockBtnText: {
-    color: COLORS.secundario,
-    fontSize: 11.5,
-    fontWeight: '700',
-    letterSpacing: 0.3,
   },
 });

@@ -127,6 +127,5 @@ export const TIPOGRAFIA = {
 };
 
 // Alias compatibles para transición transparente
-export const FONTS = FUENTES;
 export const TYPOGRAPHY = TIPOGRAFIA;
 

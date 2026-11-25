@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   TextInput,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS } from '@/compartido/tema';
-import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import {
+  ModalObsidiana,
+  BotonBrillante,
+  SelectorSegmentado,
+  ChipFiltro,
+  OpcionSegmento,
+} from '@/compartido/componentes';
 import {
   formatearEntradaDinero,
   convertirMontoACentavos,
@@ -56,7 +57,6 @@ export const SubModalDevolucionCliente: React.FC<PropiedadesSubModalDevolucionCl
   operacionVentaInicial,
   onSuccess,
 }) => {
-  const insets = useSafeAreaInsets();
   const [opVentaSeleccionada, setOpVentaSeleccionada] = useState<OperacionInventario | null>(
     () => operacionVentaInicial || (operacionesVenta.length > 0 ? operacionesVenta[0] : null)
   );
@@ -175,38 +175,33 @@ export const SubModalDevolucionCliente: React.FC<PropiedadesSubModalDevolucionCl
     }
   };
 
-  if (!visible) return null;
-
   return (
-    <View style={styles.modalOverlay}>
-      <TouchableOpacity
-        style={StyleSheet.absoluteFill}
-        activeOpacity={1}
-        onPress={onClose}
-      />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardAvoid}
-      >
-        <View
-          style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}
-          onStartShouldSetResponder={() => true}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <View style={[styles.headerIconWrap, { backgroundColor: 'rgba(0, 210, 255, 0.15)' }]}>
-                <MaterialIcons name="replay" size={18} color="#00D2FF" />
-              </View>
-              <Text style={styles.headerTitle}>Devolución de Cliente</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <MaterialIcons name="close" size={18} color={COLORS.enSuperficieVariante} />
-            </TouchableOpacity>
+    <ModalObsidiana
+      visible={visible}
+      onCerrar={onClose}
+      titulo="Devolución de Cliente"
+      subtitulo={producto.name}
+      icono="replay"
+      tono="cian"
+      usaModalNativo={false}
+      maxHeight="92%"
+      footer={
+        <View style={styles.footerRow}>
+          <TouchableOpacity onPress={onClose} style={styles.cancelBtn} disabled={procesando}>
+            <Text style={styles.cancelBtnText}>Cancelar</Text>
+          </TouchableOpacity>
+          <View style={styles.submitBtnWrapper}>
+            <BotonBrillante
+              title={procesando ? 'Guardando...' : '✓ Confirmar Devolución'}
+              onPress={handleGuardarDevolucion}
+              disabled={procesando}
+            />
           </View>
-
-          <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
-            <View style={styles.form}>
+        </View>
+      }
+    >
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.form}>
               {/* Product Info Banner */}
               <View style={styles.productBanner}>
                 <Text style={styles.productBannerText} numberOfLines={1}>
@@ -285,60 +280,18 @@ export const SubModalDevolucionCliente: React.FC<PropiedadesSubModalDevolucionCl
               {/* Modo de Reembolso */}
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Modo de Reembolso Financiero</Text>
-                <View style={styles.modeTrack}>
-                  <TouchableOpacity
-                    style={[styles.modeBtn, modoReembolso === 'ACCOUNT' && styles.modeBtnActive]}
-                    onPress={() => {
-                      triggerSelection();
-                      setModoReembolso('ACCOUNT');
-                    }}
-                  >
-                    <MaterialIcons
-                      name="account-balance"
-                      size={15}
-                      color={modoReembolso === 'ACCOUNT' ? COLORS.gasto : COLORS.enSuperficieVariante}
-                    />
-                    <Text style={[styles.modeBtnText, modoReembolso === 'ACCOUNT' && styles.modeBtnTextActive]}>
-                      Devolver Dinero
-                    </Text>
-                  </TouchableOpacity>
-
-                  {opVentaSeleccionada?.debtId && (
-                    <TouchableOpacity
-                      style={[styles.modeBtn, modoReembolso === 'DEBT_CREDIT' && styles.modeBtnActive]}
-                      onPress={() => {
-                        triggerSelection();
-                        setModoReembolso('DEBT_CREDIT');
-                      }}
-                    >
-                      <MaterialIcons
-                        name="credit-card-off"
-                        size={15}
-                        color={modoReembolso === 'DEBT_CREDIT' ? COLORS.secundario : COLORS.enSuperficieVariante}
-                      />
-                      <Text style={[styles.modeBtnText, modoReembolso === 'DEBT_CREDIT' && styles.modeBtnTextActive]}>
-                        Restar Deuda
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  <TouchableOpacity
-                    style={[styles.modeBtn, modoReembolso === 'NONE' && styles.modeBtnActive]}
-                    onPress={() => {
-                      triggerSelection();
-                      setModoReembolso('NONE');
-                    }}
-                  >
-                    <MaterialIcons
-                      name="do-not-disturb"
-                      size={15}
-                      color={modoReembolso === 'NONE' ? COLORS.primario : COLORS.enSuperficieVariante}
-                    />
-                    <Text style={[styles.modeBtnText, modoReembolso === 'NONE' && styles.modeBtnTextActive]}>
-                      Solo Stock
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                <SelectorSegmentado
+                  opciones={([
+                    { valor: 'ACCOUNT', etiqueta: 'Devolver $', icono: 'account-balance', tonoActivo: 'gasto' },
+                    ...(opVentaSeleccionada?.debtId
+                      ? [{ valor: 'DEBT_CREDIT' as const, etiqueta: 'Restar Deuda', icono: 'credit-card-off' as const, tonoActivo: 'cian' as const }]
+                      : []),
+                    { valor: 'NONE', etiqueta: 'Solo Stock', icono: 'do-not-disturb', tonoActivo: 'violeta' },
+                  ]) as OpcionSegmento<'ACCOUNT' | 'DEBT_CREDIT' | 'NONE'>[]}
+                  valorSeleccionado={modoReembolso}
+                  onSeleccionar={setModoReembolso}
+                  compacto
+                />
               </View>
 
               {/* Cuenta de egreso del dinero */}
@@ -346,23 +299,15 @@ export const SubModalDevolucionCliente: React.FC<PropiedadesSubModalDevolucionCl
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Cuenta desde donde se devuelve el dinero</Text>
                   <View style={styles.chipsContainer}>
-                    {cuentas.map(acc => {
-                      const isSel = cuentaId === acc.id;
-                      return (
-                        <TouchableOpacity
-                          key={acc.id}
-                          style={[styles.chipItem, isSel && styles.chipItemActive]}
-                          onPress={() => {
-                            triggerSelection();
-                            setCuentaId(acc.id);
-                          }}
-                        >
-                          <Text style={[styles.chipText, isSel && styles.chipTextActive]}>
-                            {acc.name}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                    {cuentas.map(acc => (
+                      <ChipFiltro
+                        key={acc.id}
+                        etiqueta={acc.name}
+                        activo={cuentaId === acc.id}
+                        tono="cian"
+                        onPress={() => setCuentaId(acc.id)}
+                      />
+                    ))}
                   </View>
                 </View>
               )}
@@ -385,23 +330,15 @@ export const SubModalDevolucionCliente: React.FC<PropiedadesSubModalDevolucionCl
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Motivo de la Devolución</Text>
                 <View style={styles.chipsContainer}>
-                  {MOTIVOS_DEV_CLIENTE_SUGERIDOS.map(motivo => {
-                    const isSel = motivoSeleccionado === motivo;
-                    return (
-                      <TouchableOpacity
-                        key={motivo}
-                        style={[styles.chipItem, isSel && styles.chipItemActive]}
-                        onPress={() => {
-                          triggerSelection();
-                          setMotivoSeleccionado(motivo);
-                        }}
-                      >
-                        <Text style={[styles.chipText, isSel && styles.chipTextActive]}>
-                          {motivo}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                  {MOTIVOS_DEV_CLIENTE_SUGERIDOS.map(motivo => (
+                    <ChipFiltro
+                      key={motivo}
+                      etiqueta={motivo}
+                      activo={motivoSeleccionado === motivo}
+                      tono="violeta"
+                      onPress={() => setMotivoSeleccionado(motivo)}
+                    />
+                  ))}
                 </View>
               </View>
 
@@ -436,22 +373,6 @@ export const SubModalDevolucionCliente: React.FC<PropiedadesSubModalDevolucionCl
               </View>
             </View>
           </ScrollView>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity onPress={onClose} style={styles.cancelBtn} disabled={procesando}>
-              <Text style={styles.cancelBtnText}>Cancelar</Text>
-            </TouchableOpacity>
-            <View style={styles.submitBtnWrapper}>
-              <BotonBrillante
-                title={procesando ? 'Guardando...' : '✓ Confirmar Devolución'}
-                onPress={handleGuardarDevolucion}
-                disabled={procesando}
-              />
-            </View>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </View>
+    </ModalObsidiana>
   );
 };

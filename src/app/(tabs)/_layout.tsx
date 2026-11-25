@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
 import { BarraNavegacionCurva } from '@/compartido/componentes/BarraNavegacionCurva';
+import { IconoNav3D } from '@/compartido/componentes/IconosNavegacion3D';
 
 export default function TabLayout() {
   return (
@@ -15,8 +15,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Inicio',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="dashboard" size={size ?? 23} color={color} />
+          tabBarIcon: ({ focused, size }) => (
+            <IconoNav3D nombre="inicio" focused={focused} size={size ?? 23} />
           ),
         }}
       />
@@ -30,8 +30,8 @@ export default function TabLayout() {
         name="deudas"
         options={{
           title: 'Deudas',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="handshake" size={size ?? 23} color={color} />
+          tabBarIcon: ({ focused, size }) => (
+            <IconoNav3D nombre="deudas" focused={focused} size={size ?? 23} />
           ),
         }}
       />
@@ -39,8 +39,8 @@ export default function TabLayout() {
         name="agenda"
         options={{
           title: 'Agenda',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="event" size={size ?? 23} color={color} />
+          tabBarIcon: ({ focused, size }) => (
+            <IconoNav3D nombre="agenda" focused={focused} size={size ?? 23} />
           ),
         }}
       />
@@ -48,8 +48,8 @@ export default function TabLayout() {
         name="presupuestos"
         options={{
           title: 'Presupuestos',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="donut-large" size={size ?? 22} color={color} />
+          tabBarIcon: ({ focused, size }) => (
+            <IconoNav3D nombre="presupuestos" focused={focused} size={size ?? 23} />
           ),
         }}
       />
@@ -69,8 +69,8 @@ export default function TabLayout() {
         name="productos"
         options={{
           title: 'Productos',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="inventory-2" size={size ?? 22} color={color} />
+          tabBarIcon: ({ focused, size }) => (
+            <IconoNav3D nombre="productos" focused={focused} size={size ?? 23} />
           ),
         }}
       />

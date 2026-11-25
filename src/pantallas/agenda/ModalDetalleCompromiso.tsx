@@ -11,7 +11,12 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import {
+  TarjetaVidrio as GlassCard,
+  EncabezadoModal,
+  OrbeGlossy,
+  BotonBrillante,
+} from '@/compartido/componentes';
 import { OcurrenciaCompromiso, Compromiso } from '@/datos/tipos';
 import {
   completarOcurrenciaCompromiso,
@@ -24,6 +29,7 @@ import {
   vibracionExito as triggerSuccess,
   vibracionSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
+import { NOMBRES_MESES as MESES } from '@/compartido/utilidades/fecha';
 
 export interface PropiedadesModalDetalleCompromiso {
   visible: boolean;
@@ -31,11 +37,6 @@ export interface PropiedadesModalDetalleCompromiso {
   onClose: () => void;
   onEdit: (comp: OcurrenciaCompromiso | Compromiso) => void;
 }
-
-const MESES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
 
 export const ModalDetalleCompromiso: React.FC<PropiedadesModalDetalleCompromiso> = ({
   visible,
@@ -167,92 +168,43 @@ export const ModalDetalleCompromiso: React.FC<PropiedadesModalDetalleCompromiso>
         <View style={[styles.modalDrawer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <View style={styles.drawerHandle} />
 
+          <EncabezadoModal
+            titulo={commitment.title}
+            subtitulo={esCompletado ? 'Completado' : esCancelado ? 'Cancelado' : 'Pendiente'}
+            icono={esCompletado ? 'check-circle' : esCancelado ? 'cancel' : 'event'}
+            tono={esCompletado ? 'ingreso' : esCancelado ? 'gasto' : 'violeta'}
+            onCerrar={onClose}
+            accionDerecha={
+              <View style={styles.headerActionBtns}>
+                <OrbeGlossy
+                  tamano={34}
+                  tono="obsidiana"
+                  onPress={() => {
+                    onClose();
+                    onEdit(commitment);
+                  }}
+                  accessibilityLabel="Editar compromiso"
+                >
+                  <MaterialIcons name="edit" size={16} color={COLORS.secondary} />
+                </OrbeGlossy>
+                <OrbeGlossy
+                  tamano={34}
+                  tono="gasto"
+                  onPress={handleDelete}
+                  accessibilityLabel="Eliminar compromiso"
+                >
+                  <MaterialIcons name="delete-outline" size={16} color="#FFFFFF" />
+                </OrbeGlossy>
+              </View>
+            }
+            style={styles.modalHeader}
+          />
+
           <ScrollView
             showsVerticalScrollIndicator={false}
             style={styles.scrollArea}
             contentContainerStyle={styles.drawerScrollContent}
           >
-            {/* Header del modal */}
-            <View style={styles.modalHeaderRow}>
-              <View
-                style={[
-                  styles.statusBadge,
-                  esCompletado
-                    ? styles.statusBadgeCompleted
-                    : esCancelado
-                      ? styles.statusBadgeCancelled
-                      : styles.statusBadgePending,
-                ]}
-              >
-                <MaterialIcons
-                  name={
-                    esCompletado
-                      ? 'check-circle'
-                      : esCancelado
-                        ? 'cancel'
-                        : 'schedule'
-                  }
-                  size={14}
-                  color={
-                    esCompletado
-                      ? COLORS.cashflowIncome
-                      : esCancelado
-                        ? COLORS.cashflowExpense
-                        : COLORS.primary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.statusBadgeText,
-                    TYPOGRAPHY.labelCaps,
-                    {
-                      color: esCompletado
-                        ? COLORS.cashflowIncome
-                        : esCancelado
-                          ? COLORS.cashflowExpense
-                          : COLORS.primary,
-                    },
-                  ]}
-                >
-                  {esCompletado ? 'Completado' : esCancelado ? 'Cancelado' : 'Pendiente'}
-                </Text>
-              </View>
-
-              <View style={styles.headerActionBtns}>
-                <TouchableOpacity
-                  onPress={() => {
-                    onClose();
-                    onEdit(commitment);
-                  }}
-                  style={styles.iconBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <MaterialIcons name="edit" size={18} color={COLORS.primary} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={handleDelete}
-                  style={styles.iconBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <MaterialIcons name="delete-outline" size={18} color={COLORS.cashflowExpense} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={onClose}
-                  style={styles.iconBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <MaterialIcons name="close" size={20} color={COLORS.onSurfaceVariant} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Título Principal */}
-            <Text style={[styles.commitmentTitle, TYPOGRAPHY.headlineSm]}>
-              {commitment.title}
-            </Text>
-
             {/* Tarjeta de Datos Clave */}
             <GlassCard variant="surface" style={styles.infoCard}>
               {/* Fecha y Hora */}
@@ -343,23 +295,18 @@ export const ModalDetalleCompromiso: React.FC<PropiedadesModalDetalleCompromiso>
 
             {/* Botones de Acción Primaria */}
             <View style={styles.primaryActionsRow}>
-              <TouchableOpacity
-                style={[
-                  styles.toggleCompleteBtn,
-                  esCompletado ? styles.toggleCompleteBtnReopen : styles.toggleCompleteBtnDone,
-                ]}
+              <BotonBrillante
+                title={esCompletado ? 'Reabrir como pendiente' : 'Marcar como completado'}
+                variant={esCompletado ? 'primary' : 'secondary'}
+                icon={
+                  <MaterialIcons
+                    name={esCompletado ? 'restart-alt' : 'check'}
+                    size={18}
+                    color="#FFFFFF"
+                  />
+                }
                 onPress={handleToggleCompleted}
-                activeOpacity={0.8}
-              >
-                <MaterialIcons
-                  name={esCompletado ? 'restart-alt' : 'check'}
-                  size={18}
-                  color="#FFFFFF"
-                />
-                <Text style={[styles.toggleCompleteBtnText, TYPOGRAPHY.labelCaps]}>
-                  {esCompletado ? 'Reabrir como pendiente' : 'Marcar como completado'}
-                </Text>
-              </TouchableOpacity>
+              />
 
               {!esCancelado && !esCompletado && (
                 <TouchableOpacity
@@ -388,11 +335,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalDrawer: {
-    backgroundColor: '#121719',
+    backgroundColor: '#101518',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlassHighlight,
+    borderTopWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.18)',
     maxHeight: '88%',
     flexShrink: 1,
   },
@@ -400,62 +347,28 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   drawerHandle: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: COLORS.outline,
+    backgroundColor: 'rgba(165, 231, 255, 0.25)',
     alignSelf: 'center',
     marginTop: 10,
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  modalHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 8,
   },
   drawerScrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: 24,
-    gap: 16,
-  },
-  modalHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  statusBadgePending: {
-    backgroundColor: 'rgba(138, 79, 255, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(138, 79, 255, 0.35)',
-  },
-  statusBadgeCompleted: {
-    backgroundColor: 'rgba(87, 245, 171, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(87, 245, 171, 0.35)',
-  },
-  statusBadgeCancelled: {
-    backgroundColor: 'rgba(255, 138, 158, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 138, 158, 0.35)',
-  },
-  statusBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+    gap: 14,
   },
   headerActionBtns: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-  },
-  iconBtn: {
-    padding: 4,
-  },
-  commitmentTitle: {
-    color: COLORS.onSurface,
+    gap: 8,
   },
   infoCard: {
     padding: 14,
@@ -526,29 +439,6 @@ const styles = StyleSheet.create({
   primaryActionsRow: {
     gap: 10,
     paddingTop: 8,
-  },
-  toggleCompleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 20,
-  },
-  toggleCompleteBtnDone: {
-    backgroundColor: COLORS.cashflowIncome,
-  },
-  toggleCompleteBtnReopen: {
-    backgroundColor: COLORS.surfaceContainerHigh,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlass,
-  },
-  toggleCompleteBtnText: {
-    color: '#0B0F10',
-    fontWeight: '700',
-  },
-  toggleCompleteBtnTextReopen: {
-    color: COLORS.onSurface,
   },
   cancelActionBtn: {
     flexDirection: 'row',

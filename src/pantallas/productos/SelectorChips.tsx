@@ -3,11 +3,10 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   TextInput,
 } from 'react-native';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
+import { ChipFiltro } from '@/compartido/componentes/ChipFiltro';
 
 export interface PropiedadesSelectorChips {
   titulo: string;
@@ -41,7 +40,6 @@ export const SelectorChips: React.FC<PropiedadesSelectorChips> = ({
   placeholderPersonalizado = 'Ingresa una opción personalizada...',
 }) => {
   const handleSeleccionarOpcion = (opcion: string) => {
-    triggerSelection();
     onSeleccionar(opcion);
     if (onToggleMostrarPersonalizado) {
       onToggleMostrarPersonalizado(false);
@@ -49,7 +47,6 @@ export const SelectorChips: React.FC<PropiedadesSelectorChips> = ({
   };
 
   const handleSeleccionarPersonalizado = () => {
-    triggerSelection();
     if (onToggleMostrarPersonalizado) {
       onToggleMostrarPersonalizado(true);
     }
@@ -63,41 +60,23 @@ export const SelectorChips: React.FC<PropiedadesSelectorChips> = ({
         {opciones.map(opcion => {
           const estaActivo = !mostrarPersonalizado && seleccionada === opcion;
           return (
-            <TouchableOpacity
+            <ChipFiltro
               key={opcion}
-              style={[styles.chip, estaActivo && styles.chipActivo]}
+              etiqueta={opcion}
+              activo={estaActivo}
+              tono="cian"
               onPress={() => handleSeleccionarOpcion(opcion)}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.chipTexto,
-                  TYPOGRAPHY.cuerpoPequeno,
-                  estaActivo && styles.chipTextoActivo,
-                ]}
-              >
-                {opcion}
-              </Text>
-            </TouchableOpacity>
+            />
           );
         })}
 
         {permitePersonalizado && (
-          <TouchableOpacity
-            style={[styles.chip, mostrarPersonalizado && styles.chipActivo]}
+          <ChipFiltro
+            etiqueta={etiquetaPersonalizado}
+            activo={mostrarPersonalizado}
+            tono="violeta"
             onPress={handleSeleccionarPersonalizado}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.chipTexto,
-                TYPOGRAPHY.cuerpoPequeno,
-                mostrarPersonalizado && styles.chipTextoActivo,
-              ]}
-            >
-              {etiquetaPersonalizado}
-            </Text>
-          </TouchableOpacity>
+          />
         )}
       </View>
 
@@ -129,25 +108,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: COLORS.surfaceContainerLowest,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  chipActivo: {
-    backgroundColor: 'rgba(87, 245, 171, 0.15)',
-    borderColor: COLORS.secondary,
-  },
-  chipTexto: {
-    color: COLORS.onSurfaceVariant,
-  },
-  chipTextoActivo: {
-    color: COLORS.secondary,
-    fontWeight: '700',
   },
   inputPersonalizado: {
     backgroundColor: COLORS.surfaceContainerLowest,

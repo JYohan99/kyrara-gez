@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
 import { BarraBusqueda } from '@/compartido/componentes/BarraBusqueda';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
+import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import {
   gatillarSeleccion as triggerSelection,
@@ -45,7 +47,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
   // Mapa local de cantidades a agregar antes de pulsar confirmar
   const [cantidadesLocales, setCantidadesLocales] = useState<Record<string, number>>({});
 
-  // Filtrado de productos por búsqueda
+  // Filtrado de productos por bÃºsqueda
   const productosFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     return productos.filter(p => {
@@ -115,28 +117,17 @@ export const ModalSelectorProductosCalculadora: React.FC<
             {/* Tirador visual */}
             <View style={styles.handleBar} />
 
-            {/* Encabezado */}
-            <View style={styles.headerRow}>
-              <View style={styles.headerTitleCol}>
-                <Text style={[styles.headerTitle, TYPOGRAPHY.titularPequeno]}>
-                  Seleccionar Productos
-                </Text>
-                <Text style={[styles.headerSubtitle, TYPOGRAPHY.cuerpoPequeno]}>
-                  Elige productos e indica la cantidad deseada
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.closeBtn}
-                onPress={() => {
-                  triggerSelection();
-                  onClose();
-                }}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <MaterialIcons name="close" size={24} color={COLORS.onSurface} />
-              </TouchableOpacity>
-            </View>
+            <EncabezadoModal
+              titulo="Seleccionar Productos"
+              subtitulo="Elige productos e indica la cantidad deseada"
+              icono="calculate"
+              tono="cian"
+              onCerrar={() => {
+                triggerSelection();
+                onClose();
+              }}
+              style={styles.modalHeader}
+            />
 
             {/* Buscador */}
             <BarraBusqueda
@@ -183,7 +174,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
                         yaAgregado && styles.productCardSelected,
                       ]}
                     >
-                      {/* Cabecera del ítem */}
+                      {/* Cabecera del Ã­tem */}
                       <View style={styles.cardHeader}>
                         <View style={styles.cardTitleBox}>
                           <Text
@@ -216,7 +207,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
                               color={COLORS.secondary}
                             />
                             <Text style={styles.badgeAddedText}>
-                              En cálculo (x{cantidadesSeleccionadas[producto.id]})
+                              En cÃ¡lculo (x{cantidadesSeleccionadas[producto.id]})
                             </Text>
                           </View>
                         )}
@@ -237,7 +228,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
                           ) : (
                             <View style={styles.warningTag}>
                               <Text style={styles.warningTagText}>
-                                ⚠️ Sin precio
+                                âš ï¸ Sin precio
                               </Text>
                             </View>
                           )}
@@ -256,7 +247,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
                           ) : (
                             <View style={styles.warningTag}>
                               <Text style={styles.warningTagText}>
-                                ⚠️ Sin costo
+                                âš ï¸ Sin costo
                               </Text>
                             </View>
                           )}
@@ -274,15 +265,15 @@ export const ModalSelectorProductosCalculadora: React.FC<
                           />
                           <Text style={styles.noticeText}>
                             {!tienePrecio && !tieneCosto
-                              ? 'Producto sin precio ni costo registrado en catálogo.'
+                              ? 'Producto sin precio ni costo registrado en catÃ¡logo.'
                               : !tienePrecio
-                              ? 'Producto sin precio registrado en catálogo.'
-                              : 'Producto sin costo registrado en catálogo.'}
+                              ? 'Producto sin precio registrado en catÃ¡logo.'
+                              : 'Producto sin costo registrado en catÃ¡logo.'}
                           </Text>
                         </View>
                       )}
 
-                      {/* Controles de cantidad y botón agregar */}
+                      {/* Controles de cantidad y botÃ³n agregar */}
                       <View style={styles.actionRow}>
                         <View style={styles.stepperContainer}>
                           <TouchableOpacity
@@ -343,7 +334,7 @@ export const ModalSelectorProductosCalculadora: React.FC<
                               yaAgregado && styles.addBtnUpdateText,
                             ]}
                           >
-                            {yaAgregado ? 'Actualizar' : 'Añadir'}
+                            {yaAgregado ? 'Actualizar' : 'AÃ±adir'}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -353,20 +344,15 @@ export const ModalSelectorProductosCalculadora: React.FC<
               )}
             </ScrollView>
 
-            {/* Botón inferior Listo / Cerrar */}
+            {/* BotÃ³n inferior Listo / Cerrar */}
             <View style={styles.footerRow}>
-              <TouchableOpacity
-                style={styles.doneBtn}
+              <BotonBrillante
+                title="Listo"
                 onPress={() => {
                   triggerSelection();
                   onClose();
                 }}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.doneBtnText, TYPOGRAPHY.etiquetaMayusculas]}>
-                  Listo
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -377,71 +363,30 @@ export const ModalSelectorProductosCalculadora: React.FC<
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(6, 9, 11, 0.82)',
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#101415',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlass,
+    backgroundColor: '#101518',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.18)',
     paddingTop: 12,
     paddingHorizontal: 20,
     maxHeight: '90%',
     flexShrink: 1,
   },
   handleBar: {
-    width: 44,
+    width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(165, 231, 255, 0.25)',
     alignSelf: 'center',
+    marginBottom: 10,
+  },
+  modalHeader: {
     marginBottom: 12,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  headerTitleCol: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  headerTitle: {
-    color: COLORS.onSurface,
-  },
-  headerSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 12,
-    height: 46,
-    marginBottom: 14,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: COLORS.onSurface,
-    paddingVertical: 0,
   },
   scrollList: {
     maxHeight: 460,
@@ -641,19 +586,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.borderGlass,
   },
-  doneBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  doneBtnText: {
-    color: COLORS.onSurface,
-    fontWeight: '700',
-  },
 });
 
-export const ModalSelectorProductos = ModalSelectorProductosCalculadora;
-export type PropiedadesModalSelectorProductos = PropiedadesModalSelectorProductosCalculadora;
 

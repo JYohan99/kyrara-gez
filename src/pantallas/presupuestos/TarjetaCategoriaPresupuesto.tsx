@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
+import { TarjetaVidrio } from '@/compartido/componentes/TarjetaVidrio';
+import { OrbeGlossy } from '@/compartido/componentes/OrbeGlossy';
+import { BarraProgreso3D } from '@/compartido/componentes/BarraProgreso3D';
 import { PresupuestoEnriquecido } from '@/datos/tipos';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 
@@ -10,7 +13,6 @@ export interface PropiedadesTarjetaCategoriaPresupuesto {
   budget: PresupuestoEnriquecido;
   onPress: () => void;
 }
-export type BudgetCategoryCardProps = PropiedadesTarjetaCategoriaPresupuesto;
 
 export const TarjetaCategoriaPresupuesto: React.FC<PropiedadesTarjetaCategoriaPresupuesto> = ({
   budget,
@@ -18,37 +20,32 @@ export const TarjetaCategoriaPresupuesto: React.FC<PropiedadesTarjetaCategoriaPr
 }) => {
   const isOver = budget.isOverBudget;
   const isNear = budget.isNearLimit;
-  const progressColor = isOver
-    ? COLORS.cashflowExpense
+  const tonoProgreso = isOver
+    ? 'gasto'
     : isNear
-    ? '#FF8A9E'
+    ? 'alerta'
     : budget.percent === 100
-    ? COLORS.primary
-    : COLORS.secondaryContainer;
+    ? 'violeta'
+    : 'cian';
 
   return (
     <TouchableOpacity
-      style={styles.categoryCard}
       onPress={onPress}
       activeOpacity={0.85}
     >
-      <View style={styles.categoryCardTop}>
-        <View style={styles.categoryLeftCol}>
-          <View
-            style={[
-              styles.catIconBox,
-              { backgroundColor: `${budget.categoryColor}25` },
-            ]}
-          >
-            <IconoCategoria
-              icon={budget.categoryIcon}
-              size={22}
-              color={budget.categoryColor || COLORS.primary}
-            />
-          </View>
+      <TarjetaVidrio variant="surface" style={styles.categoryCard}>
+        <View style={styles.categoryCardTop}>
+          <View style={styles.categoryLeftCol}>
+            <OrbeGlossy tamano={44} tono="obsidiana">
+              <IconoCategoria
+                icon={budget.categoryIcon}
+                size={22}
+                color={budget.categoryColor || COLORS.primary}
+              />
+            </OrbeGlossy>
           <View style={styles.catTitleCol}>
             <View style={styles.catNameRow}>
-              <Text style={[styles.catName, TYPOGRAPHY.headlineSm]}>
+              <Text style={[styles.catName, TYPOGRAPHY.headlineSm]} numberOfLines={1}>
                 {budget.categoryName}
               </Text>
               {isOver && (
@@ -80,7 +77,7 @@ export const TarjetaCategoriaPresupuesto: React.FC<PropiedadesTarjetaCategoriaPr
         </View>
 
         <MaterialIcons
-          name="more-vert"
+          name="chevron-right"
           size={20}
           color={COLORS.onSurfaceVariant}
         />
@@ -138,17 +135,12 @@ export const TarjetaCategoriaPresupuesto: React.FC<PropiedadesTarjetaCategoriaPr
       </View>
 
       {/* Progress Bar Track */}
-      <View style={styles.catProgressBarTrack}>
-        <View
-          style={[
-            styles.catProgressBarFill,
-            {
-              width: `${Math.min(100, budget.percent)}%`,
-              backgroundColor: progressColor,
-            },
-          ]}
-        />
-      </View>
+      <BarraProgreso3D
+        porcentaje={budget.percent}
+        tono={tonoProgreso}
+        altura={8}
+      />
+      </TarjetaVidrio>
     </TouchableOpacity>
   );
 };
@@ -157,7 +149,6 @@ const styles = StyleSheet.create({
   categoryCard: {
     padding: 16,
     borderRadius: 18,
-    backgroundColor: COLORS.surfaceContainer,
     gap: 14,
   },
   categoryCardTop: {
@@ -171,13 +162,6 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
-  catIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   catTitleCol: {
     flex: 1,
   },
@@ -187,7 +171,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   catName: {
-    color: COLORS.onSurface,
+    color: '#FFFFFF',
+    flexShrink: 1,
   },
   statusPillExpense: {
     paddingHorizontal: 6,
@@ -227,7 +212,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    borderRadius: 12,
+    backgroundColor: 'rgba(9, 13, 15, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.08)',
   },
   statColLeft: {
     alignItems: 'flex-start',
@@ -245,16 +235,6 @@ const styles = StyleSheet.create({
   },
   statValue: {
     color: COLORS.onSurface,
-  },
-  catProgressBarTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.surfaceContainerHighest,
-    overflow: 'hidden',
-  },
-  catProgressBarFill: {
-    height: '100%',
-    borderRadius: 3,
   },
 });
 

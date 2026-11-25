@@ -2,22 +2,20 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   TextInput,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS } from '@/compartido/tema';
-import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import {
+  ModalObsidiana,
+  BotonBrillante,
+  ChipFiltro,
+} from '@/compartido/componentes';
 import {
   gatillarExito as triggerSuccess,
   gatillarError as triggerError,
-  gatillarSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
 import { Producto } from '@/datos/tipos';
 import { registrarDevolucionProveedor } from '@/datos/consultas/inventario';
@@ -45,7 +43,6 @@ export const SubModalDevolucionProveedor: React.FC<PropiedadesSubModalDevolucion
   producto,
   onSuccess,
 }) => {
-  const insets = useSafeAreaInsets();
   const [cantidad, setCantidad] = useState('1');
   const [motivoSeleccionado, setMotivoSeleccionado] = useState(MOTIVOS_DEV_PROVEEDOR_SUGERIDOS[0]);
   const [motivoPersonalizado, setMotivoPersonalizado] = useState('');
@@ -102,38 +99,33 @@ export const SubModalDevolucionProveedor: React.FC<PropiedadesSubModalDevolucion
     }
   };
 
-  if (!visible) return null;
-
   return (
-    <View style={styles.modalOverlay}>
-      <TouchableOpacity
-        style={StyleSheet.absoluteFill}
-        activeOpacity={1}
-        onPress={onClose}
-      />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardAvoid}
-      >
-        <View
-          style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}
-          onStartShouldSetResponder={() => true}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <View style={[styles.headerIconWrap, { backgroundColor: 'rgba(255, 145, 0, 0.15)' }]}>
-                <MaterialIcons name="undo" size={18} color="#FF9100" />
-              </View>
-              <Text style={styles.headerTitle}>Devolución al Proveedor</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <MaterialIcons name="close" size={18} color={COLORS.enSuperficieVariante} />
-            </TouchableOpacity>
+    <ModalObsidiana
+      visible={visible}
+      onCerrar={onClose}
+      titulo="Devolución al Proveedor"
+      subtitulo={producto.name}
+      icono="undo"
+      tono="gasto"
+      usaModalNativo={false}
+      maxHeight="92%"
+      footer={
+        <View style={styles.footerRow}>
+          <TouchableOpacity onPress={onClose} style={styles.cancelBtn} disabled={procesando}>
+            <Text style={styles.cancelBtnText}>Cancelar</Text>
+          </TouchableOpacity>
+          <View style={styles.submitBtnWrapper}>
+            <BotonBrillante
+              title={procesando ? 'Guardando...' : 'Confirmar devolución'}
+              onPress={handleGuardarDevolucion}
+              disabled={procesando}
+            />
           </View>
-
-          <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
-            <View style={styles.form}>
+        </View>
+      }
+    >
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.form}>
               {/* Product Info Banner */}
               <View style={styles.productBanner}>
                 <Text style={styles.productBannerText} numberOfLines={1}>
@@ -163,23 +155,15 @@ export const SubModalDevolucionProveedor: React.FC<PropiedadesSubModalDevolucion
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Motivo de la Devolución</Text>
                 <View style={styles.chipsContainer}>
-                  {MOTIVOS_DEV_PROVEEDOR_SUGERIDOS.map(motivo => {
-                    const isSel = motivoSeleccionado === motivo;
-                    return (
-                      <TouchableOpacity
-                        key={motivo}
-                        style={[styles.chipItem, isSel && styles.chipItemActive]}
-                        onPress={() => {
-                          triggerSelection();
-                          setMotivoSeleccionado(motivo);
-                        }}
-                      >
-                        <Text style={[styles.chipText, isSel && styles.chipTextActive]}>
-                          {motivo}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                  {MOTIVOS_DEV_PROVEEDOR_SUGERIDOS.map(motivo => (
+                    <ChipFiltro
+                      key={motivo}
+                      etiqueta={motivo}
+                      activo={motivoSeleccionado === motivo}
+                      tono="violeta"
+                      onPress={() => setMotivoSeleccionado(motivo)}
+                    />
+                  ))}
                 </View>
               </View>
 
@@ -229,22 +213,6 @@ export const SubModalDevolucionProveedor: React.FC<PropiedadesSubModalDevolucion
               </View>
             </View>
           </ScrollView>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity onPress={onClose} style={styles.cancelBtn} disabled={procesando}>
-              <Text style={styles.cancelBtnText}>Cancelar</Text>
-            </TouchableOpacity>
-            <View style={styles.submitBtnWrapper}>
-              <BotonBrillante
-                title={procesando ? 'Guardando...' : 'Confirmar devolución'}
-                onPress={handleGuardarDevolucion}
-                disabled={procesando}
-              />
-            </View>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </View>
+    </ModalObsidiana>
   );
 };

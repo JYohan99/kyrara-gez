@@ -19,6 +19,8 @@ import { ModalSelectorFecha as DatePickerModal } from '@/compartido/componentes/
 import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
 import { ModalSelectorCategorias } from '@/compartido/componentes/ModalSelectorCategorias';
 import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
+import { SelectorSegmentado } from '@/compartido/componentes/SelectorSegmentado';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
 import {
   TipoFlujo as FlowType,
   TipoCuenta,
@@ -244,66 +246,34 @@ interface PropiedadesSegmentedType {
 const ControlSegmentadoTipo: React.FC<PropiedadesSegmentedType> = React.memo(
   ({ type, onChangeType }) => {
     return (
-      <View style={styles.segmentedCapsule}>
-        {/* Ingreso */}
-        <TouchableOpacity
-          style={[
-            styles.segmentedItem,
-            type === 'INCOME' ? styles.segmentedItemActiveIncome : styles.segmentedItemInactive,
-          ]}
-          onPress={() => onChangeType('INCOME')}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons
-            name="arrow-downward"
-            size={16}
-            color={type === 'INCOME' ? COLORS.cashflowIncome : COLORS.onSurfaceVariant}
-          />
-          {type === 'INCOME' && (
-            <Text style={[styles.segmentedLabel, { color: COLORS.cashflowIncome }]}>Ingreso</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Gasto */}
-        <TouchableOpacity
-          style={[
-            styles.segmentedItem,
-            type === 'EXPENSE' ? styles.segmentedItemActiveExpense : styles.segmentedItemInactive,
-          ]}
-          onPress={() => onChangeType('EXPENSE')}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons
-            name="arrow-upward"
-            size={16}
-            color={type === 'EXPENSE' ? COLORS.cashflowExpense : COLORS.onSurfaceVariant}
-          />
-          {type === 'EXPENSE' && (
-            <Text style={[styles.segmentedLabel, { color: COLORS.cashflowExpense }]}>Gasto</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Traspaso */}
-        <TouchableOpacity
-          style={[
-            styles.segmentedItem,
-            type === 'TRANSFER' ? styles.segmentedItemActiveTransfer : styles.segmentedItemInactive,
-          ]}
-          onPress={() => onChangeType('TRANSFER')}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons
-            name="swap-horiz"
-            size={18}
-            color={type === 'TRANSFER' ? COLORS.cashflowTransfer : COLORS.onSurfaceVariant}
-          />
-          {type === 'TRANSFER' && (
-            <Text style={[styles.segmentedLabel, { color: COLORS.cashflowTransfer }]}>
-              Traspaso
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      <SelectorSegmentado<FlowType>
+        opciones={[
+          {
+            valor: 'INCOME',
+            etiqueta: 'Ingreso',
+            icono: 'arrow-downward',
+            tonoActivo: 'ingreso',
+            colorIconoInactivo: COLORS.cashflowIncome,
+          },
+          {
+            valor: 'EXPENSE',
+            etiqueta: 'Gasto',
+            icono: 'arrow-upward',
+            tonoActivo: 'gasto',
+            colorIconoInactivo: COLORS.cashflowExpense,
+          },
+          {
+            valor: 'TRANSFER',
+            etiqueta: 'Traspaso',
+            icono: 'swap-horiz',
+            tonoActivo: 'violeta',
+            colorIconoInactivo: COLORS.cashflowTransfer,
+          },
+        ]}
+        valorSeleccionado={type}
+        onSeleccionar={onChangeType}
+        compacto
+      />
     );
   }
 );
@@ -507,53 +477,28 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
             : [styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) }]
         }
       >
-        {/* Manija de Arrastre Superior */}
-        {!isScreen && <View style={styles.drawerHandle} />}
-
-        {/* Encabezado Estándar del Modal */}
-        <View style={styles.header}>
-          <View style={styles.headerTitleCol}>
-            <View style={styles.titleWithIcon}>
-              <View style={[styles.headerIconCircle, { backgroundColor: `${actionColor}15` }]}>
-                <MaterialIcons
-                  name={
-                    type === 'EXPENSE'
-                      ? 'trending-down'
-                      : type === 'INCOME'
-                        ? 'trending-up'
-                        : 'swap-horiz'
-                  }
-                  size={20}
-                  color={actionColor}
-                />
-              </View>
-              <View>
-                <Text style={[styles.headerTitle, TYPOGRAPHY.titularPequeno]}>
-                  Nuevo Movimiento
-                </Text>
-                <Text style={styles.headerSubtitle}>
-                  {type === 'EXPENSE'
-                    ? 'Registra un gasto o salida de dinero'
-                    : type === 'INCOME'
-                      ? 'Registra un cobro o ingreso a tu cuenta'
-                      : 'Transfiere dinero entre tus cuentas'}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {onCancel && (
-            <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={onCancel}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Cerrar modal"
-            >
-              <MaterialIcons name="close" size={20} color={COLORS.onSurfaceVariant} />
-            </TouchableOpacity>
-          )}
-        </View>
+        {/* Encabezado Estándar del Modal con estilo glossy 3D */}
+        <EncabezadoModal
+          titulo="Nuevo Movimiento"
+          subtitulo={
+            type === 'EXPENSE'
+              ? 'Registra un gasto o salida de dinero'
+              : type === 'INCOME'
+                ? 'Registra un cobro o ingreso a tu cuenta'
+                : 'Transfiere dinero entre tus cuentas'
+          }
+          icono={
+            type === 'EXPENSE'
+              ? 'trending-down'
+              : type === 'INCOME'
+                ? 'trending-up'
+                : 'swap-horiz'
+          }
+          tono={type === 'EXPENSE' ? 'gasto' : type === 'INCOME' ? 'ingreso' : 'violeta'}
+          onCerrar={onCancel}
+          mostrarManija={!isScreen}
+          style={{ paddingHorizontal: 20, marginBottom: 8 }}
+        />
 
         {/* Selector de Tipo (Gasto / Ingreso / Traspaso) */}
         <View style={styles.typeSelectorRow}>
@@ -926,5 +871,3 @@ export const FormularioMovimiento: React.FC<PropiedadesFormularioMovimiento> = (
 
 
 // Alias compatibles
-export const TransactionForm = FormularioMovimiento;
-export type TransactionFormProps = PropiedadesFormularioMovimiento;

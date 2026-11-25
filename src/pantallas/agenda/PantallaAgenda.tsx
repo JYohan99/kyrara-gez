@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
-import { TarjetaVidrio as GlassCard, EncabezadoSuperior, BotonFlotanteAccion } from '@/compartido/componentes';
+import { TarjetaVidrio as GlassCard, EncabezadoSuperior, BotonFlotanteAccion, OrbeGlossy, ChipFiltro } from '@/compartido/componentes';
 import { useAgendaBoveda } from '@/datos/hooks';
 import { OcurrenciaCompromiso, Compromiso } from '@/datos/tipos';
 import {
@@ -20,14 +20,10 @@ import {
   vibracionExito as triggerSuccess,
   vibracionSeleccion as triggerSelection,
 } from '@/compartido/utilidades/hapticos';
+import { NOMBRES_MESES as MESES } from '@/compartido/utilidades/fecha';
 
 import { ModalCompromiso } from './ModalCompromiso';
 import { ModalDetalleCompromiso } from './ModalDetalleCompromiso';
-
-const MESES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-];
 
 const DIAS_SEMANA = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -198,45 +194,32 @@ export function PantallaAgenda() {
           </View>
 
           <View style={styles.monthNavActions}>
-            <TouchableOpacity
+            <ChipFiltro
+              etiqueta="Hoy"
+              activo={selectedDate === hoyStr}
+              tono="violeta"
+              icono="today"
+              mayusculas
               onPress={handleGoToday}
-              style={[
-                styles.todayBtn,
-                selectedDate === hoyStr && styles.todayBtnActive,
-              ]}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons
-                name="today"
-                size={14}
-                color={selectedDate === hoyStr ? COLORS.primary : COLORS.onSurfaceVariant}
-              />
-              <Text
-                style={[
-                  styles.todayBtnText,
-                  selectedDate === hoyStr && styles.todayBtnTextActive,
-                  TYPOGRAPHY.labelCaps,
-                ]}
-              >
-                Hoy
-              </Text>
-            </TouchableOpacity>
+            />
 
-            <TouchableOpacity
+            <OrbeGlossy
+              tamano={34}
+              tono="obsidiana"
               onPress={handlePrevMonth}
-              style={styles.navArrowBtn}
-              activeOpacity={0.7}
+              accessibilityLabel="Mes anterior"
             >
-              <MaterialIcons name="chevron-left" size={22} color={COLORS.onSurface} />
-            </TouchableOpacity>
+              <MaterialIcons name="chevron-left" size={20} color={COLORS.onSurface} />
+            </OrbeGlossy>
 
-            <TouchableOpacity
+            <OrbeGlossy
+              tamano={34}
+              tono="obsidiana"
               onPress={handleNextMonth}
-              style={styles.navArrowBtn}
-              activeOpacity={0.7}
+              accessibilityLabel="Mes siguiente"
             >
-              <MaterialIcons name="chevron-right" size={22} color={COLORS.onSurface} />
-            </TouchableOpacity>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurface} />
+            </OrbeGlossy>
           </View>
         </View>
 
@@ -269,7 +252,6 @@ export function PantallaAgenda() {
                   key={idx}
                   style={[
                     styles.dayCell,
-                    isSelected && styles.dayCellSelected,
                     isToday && !isSelected && styles.dayCellToday,
                   ]}
                   onPress={() => {
@@ -278,16 +260,23 @@ export function PantallaAgenda() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.dayNumberText,
-                      TYPOGRAPHY.numericTable,
-                      isSelected && styles.dayNumberTextSelected,
-                      isToday && !isSelected && styles.dayNumberTextToday,
-                    ]}
-                  >
-                    {cell.dayNumber}
-                  </Text>
+                  {isSelected ? (
+                    <OrbeGlossy tamano={36} tono="cian" sombra>
+                      <Text style={[styles.dayNumberTextSelected, TYPOGRAPHY.numericTable]}>
+                        {cell.dayNumber}
+                      </Text>
+                    </OrbeGlossy>
+                  ) : (
+                    <Text
+                      style={[
+                        styles.dayNumberText,
+                        TYPOGRAPHY.numericTable,
+                        isToday && styles.dayNumberTextToday,
+                      ]}
+                    >
+                      {cell.dayNumber}
+                    </Text>
+                  )}
 
                   {/* Indicador de compromiso */}
                   {tieneCompromisos && (
@@ -326,15 +315,12 @@ export function PantallaAgenda() {
         {/* Lista de Compromisos del Día */}
         {selectedDayOccurrences.length === 0 ? (
           <GlassCard variant="low" style={styles.emptyDayCard}>
-            <MaterialIcons name="event-available" size={32} color={COLORS.outline} />
+            <OrbeGlossy tamano={52} tono="obsidiana" sombra>
+              <MaterialIcons name="event-available" size={26} color={COLORS.secondary} />
+            </OrbeGlossy>
             <Text style={[styles.emptyDayTitle, TYPOGRAPHY.bodySm]}>
               No hay compromisos agendados para este día.
             </Text>
-            <TouchableOpacity onPress={handleOpenNew} style={styles.emptyDayActionLink}>
-              <Text style={[styles.emptyDayActionText, TYPOGRAPHY.labelCaps]}>
-                Añadir un compromiso
-              </Text>
-            </TouchableOpacity>
           </GlassCard>
         ) : (
           <View style={styles.commitmentsList}>
@@ -345,73 +331,74 @@ export function PantallaAgenda() {
               return (
                 <TouchableOpacity
                   key={occ.id}
-                  style={[
-                    styles.commitmentCard,
-                    esCompletado && styles.commitmentCardCompleted,
-                    esCancelado && styles.commitmentCardCancelled,
-                  ]}
                   onPress={() => handleOpenDetail(occ)}
-                  activeOpacity={0.7}
+                  activeOpacity={0.78}
                 >
-                  {/* Checkbox circular de completado rápido */}
-                  <TouchableOpacity
+                  <GlassCard
+                    variant="surface"
                     style={[
-                      styles.checkboxCircle,
-                      esCompletado && styles.checkboxCircleCompleted,
-                      esCancelado && styles.checkboxCircleCancelled,
+                      styles.commitmentCard,
+                      esCompletado && styles.commitmentCardCompleted,
+                      esCancelado && styles.commitmentCardCancelled,
                     ]}
-                    onPress={() => handleToggleCompleted(occ)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    {esCompletado && (
-                      <MaterialIcons name="check" size={14} color="#0B0F10" />
-                    )}
-                    {esCancelado && (
-                      <MaterialIcons name="close" size={12} color={COLORS.cashflowExpense} />
-                    )}
-                  </TouchableOpacity>
-
-                  {/* Información central */}
-                  <View style={styles.commitmentCardContent}>
-                    <Text
-                      style={[
-                        styles.commitmentCardTitle,
-                        TYPOGRAPHY.bodySm,
-                        esCompletado && styles.textStrikethrough,
-                        esCancelado && styles.textStrikethrough,
-                      ]}
-                      numberOfLines={1}
+                    {/* Orbe circular de completado rápido */}
+                    <OrbeGlossy
+                      tamano={28}
+                      tono={esCompletado ? 'ingreso' : esCancelado ? 'gasto' : 'obsidiana'}
+                      onPress={() => handleToggleCompleted(occ)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      accessibilityLabel="Alternar estado del compromiso"
                     >
-                      {occ.title}
-                    </Text>
+                      {esCompletado ? (
+                        <MaterialIcons name="check" size={14} color="#FFFFFF" />
+                      ) : esCancelado ? (
+                        <MaterialIcons name="close" size={12} color="#FFFFFF" />
+                      ) : null}
+                    </OrbeGlossy>
 
-                    <View style={styles.badgesRow}>
-                      {Boolean(occ.time) && (
-                        <View style={styles.chipPill}>
-                          <MaterialIcons name="schedule" size={11} color={COLORS.secondary} />
-                          <Text style={[styles.chipPillText, TYPOGRAPHY.numericTable]}>{occ.time}</Text>
-                        </View>
-                      )}
+                    {/* Información central */}
+                    <View style={styles.commitmentCardContent}>
+                      <Text
+                        style={[
+                          styles.commitmentCardTitle,
+                          TYPOGRAPHY.bodySm,
+                          esCompletado && styles.textStrikethrough,
+                          esCancelado && styles.textStrikethrough,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {occ.title}
+                      </Text>
 
-                      {Boolean(occ.relatedPerson) && (
-                        <View style={styles.chipPill}>
-                          <MaterialIcons name="person" size={11} color={COLORS.primary} />
-                          <Text style={[styles.chipPillText, TYPOGRAPHY.bodySm]} numberOfLines={1}>
-                            {occ.relatedPerson}
-                          </Text>
-                        </View>
-                      )}
+                      <View style={styles.badgesRow}>
+                        {Boolean(occ.time) && (
+                          <View style={styles.chipPill}>
+                            <MaterialIcons name="schedule" size={11} color={COLORS.secondary} />
+                            <Text style={[styles.chipPillText, TYPOGRAPHY.numericTable]}>{occ.time}</Text>
+                          </View>
+                        )}
 
-                      {occ.recurrenceType === 'MONTHLY' && (
-                        <View style={styles.chipPillMonthly}>
-                          <MaterialIcons name="update" size={11} color={COLORS.tertiary} />
-                          <Text style={[styles.chipPillMonthlyText, TYPOGRAPHY.labelCaps]}>Mensual</Text>
-                        </View>
-                      )}
+                        {Boolean(occ.relatedPerson) && (
+                          <View style={styles.chipPill}>
+                            <MaterialIcons name="person" size={11} color={COLORS.primary} />
+                            <Text style={[styles.chipPillText, TYPOGRAPHY.bodySm]} numberOfLines={1}>
+                              {occ.relatedPerson}
+                            </Text>
+                          </View>
+                        )}
+
+                        {occ.recurrenceType === 'MONTHLY' && (
+                          <View style={styles.chipPillMonthly}>
+                            <MaterialIcons name="update" size={11} color={COLORS.tertiary} />
+                            <Text style={[styles.chipPillMonthlyText, TYPOGRAPHY.labelCaps]}>Mensual</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                  </View>
 
-                  <MaterialIcons name="chevron-right" size={18} color={COLORS.onSurfaceVariant} />
+                    <MaterialIcons name="chevron-right" size={18} color={COLORS.onSurfaceVariant} />
+                  </GlassCard>
                 </TouchableOpacity>
               );
             })}
@@ -526,39 +513,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  todayBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: COLORS.surfaceContainerHigh,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlass,
-  },
-  todayBtnActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: 'rgba(138, 79, 255, 0.16)',
-  },
-  todayBtnText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 10,
-  },
-  todayBtnTextActive: {
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
-  navArrowBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.surfaceContainer,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.borderGlass,
-  },
   calendarCard: {
     padding: 12,
     borderRadius: 20,
@@ -596,14 +550,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: COLORS.primary,
     backgroundColor: 'rgba(138, 79, 255, 0.08)',
-  },
-  dayCellSelected: {
-    backgroundColor: COLORS.primaryContainer,
-    shadowColor: COLORS.primaryContainer,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 4,
   },
   dayNumberText: {
     color: COLORS.onSurface,
@@ -650,18 +596,6 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     fontSize: 10,
   },
-  mainTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  mainSectionTitle: {
-    color: COLORS.onSurface,
-  },
-  mainSectionSubtitle: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
-  },
   emptyDayCard: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -670,16 +604,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   emptyDayTitle: {
-    color: COLORS.outline,
+    color: COLORS.onSurfaceVariant,
     textAlign: 'center',
-  },
-  emptyDayActionLink: {
-    paddingVertical: 4,
-  },
-  emptyDayActionText: {
-    color: COLORS.primary,
-    fontSize: 11,
-    fontWeight: '600',
   },
   commitmentsList: {
     gap: 10,
@@ -702,23 +628,6 @@ const styles = StyleSheet.create({
   commitmentCardCancelled: {
     opacity: 0.5,
     backgroundColor: COLORS.surfaceContainerLow,
-  },
-  checkboxCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    borderColor: COLORS.bordeContornoVariante,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxCircleCompleted: {
-    backgroundColor: COLORS.cashflowIncome,
-    borderColor: COLORS.cashflowIncome,
-  },
-  checkboxCircleCancelled: {
-    borderColor: COLORS.cashflowExpense,
-    backgroundColor: 'rgba(255, 138, 158, 0.15)',
   },
   commitmentCardContent: {
     flex: 1,

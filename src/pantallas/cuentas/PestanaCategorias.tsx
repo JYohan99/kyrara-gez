@@ -10,19 +10,20 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
 import { IconoCategoria } from '@/compartido/componentes/IconoCategoria';
 import { TarjetaVidrio as GlassCard } from '@/compartido/componentes/TarjetaVidrio';
+import { OrbeGlossy } from '@/compartido/componentes/OrbeGlossy';
+import { SelectorSegmentado } from '@/compartido/componentes/SelectorSegmentado';
 import { useCategoriasBoveda as useVaultCategories } from '@/datos/hooks';
 import { eliminarCategoria as deleteCategory } from '@/datos/consultas/categorias';
 import { obtenerDesgloseGastosPorCategoria as getCategoryExpenseBreakdown } from '@/datos/consultas/analiticas';
 import { Categoria } from '@/datos/tipos';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
-import { triggerSelection, triggerError, triggerSuccess } from '@/compartido/utilidades/hapticos';
+import { triggerError, triggerSuccess } from '@/compartido/utilidades/hapticos';
 
 export interface PropiedadesPestanaCategorias {
   onNewCategory: (flowType: 'EXPENSE' | 'INCOME') => void;
 }
-export type CategoriesTabProps = PropiedadesPestanaCategorias;
 
-export const PestanaCategorias: React.FC<PropiedadesPestanaCategorias> = ({ onNewCategory }) => {
+export const PestanaCategorias: React.FC<PropiedadesPestanaCategorias> = () => {
   const [filterType, setFilterType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
 
   // Categorías reactivas
@@ -91,62 +92,40 @@ export const PestanaCategorias: React.FC<PropiedadesPestanaCategorias> = ({ onNe
 
   return (
     <View style={styles.container}>
-      {/* Sub-header and Filter Chips */}
-      <View style={styles.filterSectionRow}>
-        <View style={styles.filterPills}>
-          <TouchableOpacity
-            style={[styles.filterPill, filterType === 'EXPENSE' && styles.filterPillActive]}
-            onPress={() => {
-              triggerSelection();
-              setFilterType('EXPENSE');
-            }}
-          >
-            <Text
-              style={[
-                styles.filterPillText,
-                TYPOGRAPHY.labelCaps,
-                filterType === 'EXPENSE' && styles.filterPillTextActive,
-              ]}
-            >
-              Gastos
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterPill, filterType === 'INCOME' && styles.filterPillActive]}
-            onPress={() => {
-              triggerSelection();
-              setFilterType('INCOME');
-            }}
-          >
-            <Text
-              style={[
-                styles.filterPillText,
-                TYPOGRAPHY.labelCaps,
-                filterType === 'INCOME' && styles.filterPillTextActive,
-              ]}
-            >
-              Ingresos
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Selector segmentado Gastos / Ingresos */}
+      <SelectorSegmentado<'EXPENSE' | 'INCOME'>
+        opciones={[
+          {
+            valor: 'EXPENSE',
+            etiqueta: 'Gastos',
+            icono: 'trending-down',
+            tonoActivo: 'gasto',
+            colorIconoInactivo: COLORS.cashflowExpense,
+          },
+          {
+            valor: 'INCOME',
+            etiqueta: 'Ingresos',
+            icono: 'trending-up',
+            tonoActivo: 'ingreso',
+            colorIconoInactivo: COLORS.cashflowIncome,
+          },
+        ]}
+        valorSeleccionado={filterType}
+        onSeleccionar={setFilterType}
+        compacto
+      />
 
       {/* Hero: Categoría más activa este mes (si estamos en Gastos) */}
       {filterType === 'EXPENSE' && mostFrequentCat && (
         <GlassCard style={styles.frequentCard}>
           <View style={styles.frequentHeaderRow}>
-            <View
-              style={[
-                styles.frequentIconBox,
-                { backgroundColor: `${mostFrequentCat.color}25` },
-              ]}
-            >
+            <OrbeGlossy tamano={46} tono="obsidiana">
               <IconoCategoria
                 icon={mostFrequentCat.icon}
                 size={22}
                 color={mostFrequentCat.color}
               />
-            </View>
+            </OrbeGlossy>
             <View style={styles.frequentTextCol}>
               <View style={styles.frequentTopRow}>
                 <Text style={[styles.frequentCaps, TYPOGRAPHY.labelCaps]}>
@@ -169,20 +148,15 @@ export const PestanaCategorias: React.FC<PropiedadesPestanaCategorias> = ({ onNe
         {filteredCategories.map(cat => {
           const spentThisMonth = categoryBreakdown[cat.id] || 0;
           return (
-            <View key={cat.id} style={styles.categoryGridCard}>
+            <GlassCard key={cat.id} variant="surface" style={styles.categoryGridCard}>
               <View style={styles.catCardTop}>
-                <View
-                  style={[
-                    styles.catGridIconBox,
-                    { backgroundColor: `${cat.color}22` },
-                  ]}
-                >
+                <OrbeGlossy tamano={40} tono="obsidiana">
                   <IconoCategoria
                     icon={cat.icon}
                     size={20}
                     color={cat.color}
                   />
-                </View>
+                </OrbeGlossy>
                 {!cat.isSystem && (
                   <TouchableOpacity
                     onPress={() => handleDelete(cat)}
@@ -203,7 +177,7 @@ export const PestanaCategorias: React.FC<PropiedadesPestanaCategorias> = ({ onNe
                     : 'Activa'}
                 </Text>
               </View>
-            </View>
+            </GlassCard>
           );
         })}
       </View>
@@ -218,34 +192,6 @@ const styles = StyleSheet.create({
   container: {
     gap: 14,
   },
-  filterSectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  filterPills: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: 20,
-    padding: 3,
-    gap: 4,
-  },
-  filterPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  filterPillActive: {
-    backgroundColor: COLORS.primaryContainer,
-  },
-  filterPillText: {
-    color: COLORS.onSurfaceVariant,
-  },
-  filterPillTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
   frequentCard: {
     padding: 16,
   },
@@ -253,13 +199,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  frequentIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   frequentTextCol: {
     flex: 1,
@@ -288,20 +227,12 @@ const styles = StyleSheet.create({
     width: '48%',
     padding: 12,
     borderRadius: 16,
-    backgroundColor: COLORS.surfaceContainer,
     gap: 10,
   },
   catCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  catGridIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   moreOptionsBtn: {
     padding: 4,

@@ -30,6 +30,7 @@ import { SubModalDevolucionProveedor } from './detalle/SubModalDevolucionProveed
 import { SubModalDevolucionCliente } from './detalle/SubModalDevolucionCliente';
 import { SubModalFabricacion } from './detalle/SubModalFabricacion';
 import { IconoProducto } from '@/compartido/iconosProductos';
+import { OrbeGlossy } from '@/compartido/componentes/OrbeGlossy';
 
 export interface PropiedadesModalDetalleProducto {
   visible: boolean;
@@ -281,11 +282,11 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
           <View style={styles.dragHandle} />
         </View>
 
-        {/* Header con icono cian Stitch, Nombre, Badges y Acciones */}
+        {/* Header con orbe 3D glossy, Nombre, Badges y Acciones */}
         <View style={styles.headerRow}>
-          <View style={styles.productIconBox}>
-            <IconoProducto icono={productoActual.icon} nombre={productoActual.name} size={22} color="#00D2FF" />
-          </View>
+          <OrbeGlossy tamano={46} tono="obsidiana" sombra>
+            <IconoProducto icono={productoActual.icon} nombre={productoActual.name} size={22} color="#47D6FF" />
+          </OrbeGlossy>
 
           <View style={styles.headerTitleCol}>
             <View style={styles.headerBadgesRow}>
@@ -304,30 +305,28 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
 
           <View style={styles.headerActionBtns}>
             {onEditProduct && (
-              <TouchableOpacity
+              <OrbeGlossy
+                tamano={36}
+                tono="violeta"
                 onPress={() => {
-                  triggerSelection();
                   onClose();
                   onEditProduct(productoActual);
                 }}
-                style={styles.iconBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityLabel="Editar producto"
               >
-                <MaterialIcons name="edit" size={18} color="#94A3B8" />
-              </TouchableOpacity>
+                <MaterialIcons name="edit" size={17} color="#FFFFFF" />
+              </OrbeGlossy>
             )}
-            <TouchableOpacity
-              onPress={() => {
-                triggerSelection();
-                onClose();
-              }}
-              style={styles.iconBtn}
+            <OrbeGlossy
+              tamano={36}
+              tono="obsidiana"
+              onPress={onClose}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityLabel="Cerrar modal"
             >
-              <MaterialIcons name="close" size={18} color="#94A3B8" />
-            </TouchableOpacity>
+              <MaterialIcons name="close" size={18} color="#DCE6EC" />
+            </OrbeGlossy>
           </View>
         </View>
 
@@ -897,6 +896,7 @@ const ContenidoModalDetalleProducto: React.FC<PropiedadesContenidoModalDetallePr
           onClose={handleCerrarSubModal}
           onSuccess={handleCerrarSubModal}
           producto={productoActual}
+          cuentas={accounts}
         />
       )}
 
@@ -980,16 +980,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#223037',
     gap: 12,
   },
-  productIconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 210, 255, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.28)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   headerTitleCol: {
     flex: 1,
     gap: 5,
@@ -1025,16 +1015,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#182226',
-    borderWidth: 1,
-    borderColor: '#223037',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scrollArea: {
     flexShrink: 1,

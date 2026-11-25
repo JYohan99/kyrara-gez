@@ -363,7 +363,5 @@ export function obtenerResumenPeriodo(startDate?: number, endDate?: number): {
 
 // Alias compatibles
 export const createTransaction = crearMovimiento;
-export const getTransactions = obtenerMovimientos;
 export const deleteTransaction = eliminarMovimiento;
 export const updateTransaction = actualizarMovimiento;
-export const getPeriodSummary = obtenerResumenPeriodo;

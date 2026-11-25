@@ -8,7 +8,10 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { TIPOGRAFIA as TYPOGRAPHY } from '@/compartido/tema';
+import { TarjetaVidrio } from '@/compartido/componentes/TarjetaVidrio';
+import { OrbeGlossy } from '@/compartido/componentes/OrbeGlossy';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
 import { Producto } from '@/datos/tipos';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
@@ -76,7 +79,7 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
   };
 
   return (
-    <View style={styles.cardContainer}>
+    <TarjetaVidrio variant="surface" style={styles.cardContainer}>
       <TouchableOpacity
         style={styles.cardTouchable}
         onPress={handleCardPress}
@@ -86,9 +89,9 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
       >
         {/* FILA 1: Icono del Producto, Nombre, SKU, Subtítulo y Botón Más Opciones */}
         <View style={styles.headerRow}>
-          <View style={styles.productIconBox}>
-            <IconoProducto icono={product.icon} nombre={product.name} size={20} color="#00D2FF" />
-          </View>
+          <OrbeGlossy tamano={44} tono="obsidiana">
+            <IconoProducto icono={product.icon} nombre={product.name} size={20} color="#47D6FF" />
+          </OrbeGlossy>
 
           <View style={styles.headerInfoCol}>
             <View style={styles.titleWrap}>
@@ -232,10 +235,9 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
 
           {/* Acciones Rápidas Directas en la Ficha */}
           <View style={styles.quickActionsRow}>
-            {/* Botón Vender (rápido con icono point-of-sale asociado a Venta) */}
+            {/* Botón Vender (cápsula glossy 3D) */}
             {(currentStock > 0 || isService) && (
               <TouchableOpacity
-                style={styles.btnQuickSale}
                 onPress={() => {
                   triggerSelection();
                   if (onQuickSale) {
@@ -247,15 +249,29 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                 activeOpacity={0.8}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <MaterialIcons name="point-of-sale" size={14} color="#57F5AB" />
-                <Text style={styles.btnQuickSaleText}>Vender</Text>
+                <LinearGradient
+                  colors={['#57F5AB', '#1EA96A', '#0B4D30']}
+                  locations={[0, 0.55, 1]}
+                  start={{ x: 0.2, y: 0 }}
+                  end={{ x: 0.8, y: 1 }}
+                  style={styles.btnQuickSaleGlossy}
+                >
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.45)', 'rgba(255, 255, 255, 0.04)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    pointerEvents="none"
+                    style={styles.btnGlossOverlay}
+                  />
+                  <MaterialIcons name="point-of-sale" size={14} color="#FFFFFF" />
+                  <Text style={styles.btnQuickSaleTextGlossy}>Vender</Text>
+                </LinearGradient>
               </TouchableOpacity>
             )}
 
-            {/* Botón Añadir Stock / Reponer (solo para productos físicos con stock) */}
+            {/* Botón Añadir Stock / Reponer (orbe o cápsula glossy 3D) */}
             {!isService && (
               <TouchableOpacity
-                style={isOutOfStock || isLowStock ? styles.btnQuickRestock : styles.btnQuickAdd}
                 onPress={() => {
                   triggerSelection();
                   if (onQuickPurchase) {
@@ -267,12 +283,31 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
                 activeOpacity={0.8}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <MaterialIcons
-                  name={isOutOfStock ? 'add-shopping-cart' : 'add'}
-                  size={isOutOfStock ? 14 : 16}
-                  color={isOutOfStock ? '#34D399' : '#FFFFFF'}
-                />
-                {isOutOfStock && <Text style={styles.btnQuickRestockText}>Reponer</Text>}
+                <LinearGradient
+                  colors={
+                    isOutOfStock || isLowStock
+                      ? ['#5CE0FF', '#00A8CC', '#00566A']
+                      : ['#2D3D45', '#182226', '#0D1316']
+                  }
+                  locations={[0, 0.55, 1]}
+                  start={{ x: 0.2, y: 0 }}
+                  end={{ x: 0.8, y: 1 }}
+                  style={isOutOfStock ? styles.btnQuickRestockGlossy : styles.btnQuickAddGlossy}
+                >
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.4)', 'rgba(255, 255, 255, 0.03)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    pointerEvents="none"
+                    style={styles.btnGlossOverlay}
+                  />
+                  <MaterialIcons
+                    name={isOutOfStock ? 'add-shopping-cart' : 'add'}
+                    size={isOutOfStock ? 14 : 16}
+                    color="#FFFFFF"
+                  />
+                  {isOutOfStock && <Text style={styles.btnQuickRestockTextGlossy}>Reponer</Text>}
+                </LinearGradient>
               </TouchableOpacity>
             )}
           </View>
@@ -400,22 +435,14 @@ export const TarjetaProducto: React.FC<PropiedadesTarjetaProducto> = ({
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </View>
+    </TarjetaVidrio>
   );
 };
 
 const styles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: '#182226',
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#223037',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 4,
-    overflow: 'hidden',
+    padding: 0,
     marginBottom: 10,
   },
   cardTouchable: {
@@ -427,15 +454,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  productIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 210, 255, 0.12)',
+  btnQuickSaleGlossy: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6.5,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(0, 210, 255, 0.28)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    overflow: 'hidden',
+  },
+  btnQuickSaleTextGlossy: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  btnQuickRestockGlossy: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6.5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    overflow: 'hidden',
+  },
+  btnQuickRestockTextGlossy: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  btnQuickAddGlossy: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(165, 231, 255, 0.28)',
+    overflow: 'hidden',
+  },
+  btnGlossOverlay: {
+    position: 'absolute',
+    top: 1,
+    left: 4,
+    right: 4,
+    height: '45%',
+    borderRadius: 999,
   },
   headerInfoCol: {
     flex: 1,
@@ -466,11 +533,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.3,
-  },
-  productSubtitle: {
-    color: '#94A3B8',
-    fontSize: 12,
-    lineHeight: 16,
   },
   btnMore: {
     width: 32,
@@ -635,51 +697,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-  },
-  btnQuickSale: {
-    height: 32,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    backgroundColor: 'rgba(87, 245, 171, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(87, 245, 171, 0.28)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  btnQuickSaleText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#57F5AB',
-  },
-  btnQuickAdd: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: '#8A4FFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#8A4FFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  btnQuickRestock: {
-    height: 32,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.35)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  btnQuickRestockText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#34D399',
   },
   modalOverlay: {
     flex: 1,

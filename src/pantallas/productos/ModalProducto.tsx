@@ -20,6 +20,8 @@ import {
   formatearMoneda as formatCurrency,
 } from '@/compartido/utilidades/moneda';
 import { BotonBrillante } from '@/compartido/componentes/BotonBrillante';
+import { EncabezadoModal } from '@/compartido/componentes/EncabezadoModal';
+import { SelectorSegmentado } from '@/compartido/componentes/SelectorSegmentado';
 import {
   gatillarExito as triggerSuccess,
   gatillarError as triggerError,
@@ -215,27 +217,26 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
         onPress={onClose}
       />
       <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerTitleGroup}>
-            <View style={styles.headerIconBadge}>
-              <MaterialIcons name="inventory-2" size={20} color={COLORS.secondary} />
-            </View>
-            <Text style={[styles.headerTitle, TYPOGRAPHY.titularPequeno]}>
-              {productoParaEditar ? 'Editar producto' : 'Nuevo producto'}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => {
-              triggerSelection();
-              onClose();
-            }}
-            style={styles.closeBtn}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <MaterialIcons name="close" size={20} color={COLORS.onSurfaceVariant} />
-          </TouchableOpacity>
-        </View>
+        {/* Header glossy 3D */}
+        <EncabezadoModal
+          titulo={productoParaEditar ? 'Editar producto' : 'Nuevo producto'}
+          subtitulo={
+            tipoProducto === 'SERVICIO'
+              ? 'Configura formatos y tarifas de servicio'
+              : tipoProducto === 'ARTESANIA'
+                ? 'Define materiales, inversión y precio'
+                : 'Agrega stock, precios y unidad de venta'
+          }
+          icono={
+            tipoProducto === 'SERVICIO'
+              ? 'design-services'
+              : tipoProducto === 'ARTESANIA'
+                ? 'palette'
+                : 'inventory-2'
+          }
+          tono="cian"
+          onCerrar={onClose}
+        />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -282,95 +283,28 @@ const ContenidoModalProducto: React.FC<PropiedadesContenidoModalProducto> = ({
             <Text style={[styles.tipoProductoLabel, TYPOGRAPHY.etiquetaMayusculas]}>
               Tipo de Registro
             </Text>
-            <View style={styles.tipoProductoRow}>
-              <TouchableOpacity
-                style={[
-                  styles.tipoProductoBtn,
-                  tipoProducto === 'PRODUCTO' && styles.tipoProductoBtnActive,
-                ]}
-                onPress={() => {
-                  triggerSelection();
-                  setTipoProducto('PRODUCTO');
-                  if (unidadVenta === 'Servicio') {
-                    setUnidadVenta('Unidad');
-                  }
-                }}
-                activeOpacity={0.8}
-              >
-                <MaterialIcons
-                  name="inventory-2"
-                  size={15}
-                  color={tipoProducto === 'PRODUCTO' ? '#06120D' : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.tipoProductoBtnText,
-                    tipoProducto === 'PRODUCTO' && styles.tipoProductoBtnTextActive,
-                  ]}
-                >
-                  Producto
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.tipoProductoBtn,
-                  tipoProducto === 'SERVICIO' && styles.tipoProductoBtnActive,
-                ]}
-                onPress={() => {
-                  triggerSelection();
-                  setTipoProducto('SERVICIO');
+            <SelectorSegmentado<TipoProducto>
+              opciones={[
+                { valor: 'PRODUCTO', etiqueta: 'Producto', icono: 'inventory-2', tonoActivo: 'cian' },
+                { valor: 'SERVICIO', etiqueta: 'Servicio', icono: 'design-services', tonoActivo: 'violeta' },
+                { valor: 'ARTESANIA', etiqueta: 'Artesanía', icono: 'palette', tonoActivo: 'ingreso' },
+              ]}
+              valorSeleccionado={tipoProducto}
+              onSeleccionar={nuevoTipo => {
+                setTipoProducto(nuevoTipo);
+                if (nuevoTipo === 'SERVICIO') {
                   setUnidadVenta('Servicio');
-                }}
-                activeOpacity={0.8}
-              >
-                <MaterialIcons
-                  name="design-services"
-                  size={15}
-                  color={tipoProducto === 'SERVICIO' ? '#06120D' : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.tipoProductoBtnText,
-                    tipoProducto === 'SERVICIO' && styles.tipoProductoBtnTextActive,
-                  ]}
-                >
-                  Servicio
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.tipoProductoBtn,
-                  tipoProducto === 'ARTESANIA' && styles.tipoProductoBtnActive,
-                ]}
-                onPress={() => {
-                  triggerSelection();
-                  setTipoProducto('ARTESANIA');
+                } else {
                   if (unidadVenta === 'Servicio') {
                     setUnidadVenta('Unidad');
                   }
-                  if (icono === 'inventory-2') {
+                  if (nuevoTipo === 'ARTESANIA' && icono === 'inventory-2') {
                     setIcono('palette');
                   }
-                }}
-                activeOpacity={0.8}
-              >
-                <MaterialIcons
-                  name="palette"
-                  size={15}
-                  color={tipoProducto === 'ARTESANIA' ? '#06120D' : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.tipoProductoBtnText,
-                    tipoProducto === 'ARTESANIA' && styles.tipoProductoBtnTextActive,
-                  ]}
-                >
-                  Artesanía
-                </Text>
-              </TouchableOpacity>
-            </View>
+                }
+              }}
+              compacto
+            />
           </View>
 
           {/* Ficha de Materiales (Exclusiva para Artesanía) */}
@@ -629,59 +563,12 @@ const styles = StyleSheet.create({
   scrollArea: {
     flexShrink: 1,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  headerTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(87, 245, 171, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    color: COLORS.onSurface,
-  },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.surfaceContainerLowest,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   scrollContent: {
     paddingVertical: 16,
     gap: 16,
   },
   formGroup: {
     gap: 6,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  label: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-    letterSpacing: 0.8,
-  },
-  requiredBadge: {
-    color: COLORS.secondary,
-    fontSize: 10,
-    fontWeight: '600',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -691,9 +578,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 14,
     paddingHorizontal: 12,
-  },
-  inputIcon: {
-    marginRight: 8,
   },
   textInput: {
     flex: 1,
@@ -717,11 +601,6 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     fontSize: 11,
     letterSpacing: 0.8,
-  },
-  pricingHint: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-    lineHeight: 15,
   },
   pricingInputsRow: {
     flexDirection: 'row',
@@ -863,35 +742,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.8,
     color: COLORS.onSurfaceVariant,
-  },
-  tipoProductoRow: {
-    flexDirection: 'row',
-    gap: 8,
-    backgroundColor: '#0D1512',
-    borderRadius: 12,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  tipoProductoBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  tipoProductoBtnActive: {
-    backgroundColor: '#00D2FF',
-  },
-  tipoProductoBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.onSurfaceVariant,
-  },
-  tipoProductoBtnTextActive: {
-    color: '#06120D',
-    fontWeight: '900',
   },
 });

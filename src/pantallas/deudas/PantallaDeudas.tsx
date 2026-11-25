@@ -11,7 +11,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORES as COLORS, TIPOGRAFIA as TYPOGRAPHY, COMMON_STYLES } from '@/compartido/tema';
 import { formatearMoneda as formatCurrency } from '@/compartido/utilidades/moneda';
-import { EncabezadoSuperior, TarjetaVidrio as GlassCard, BotonFlotanteAccion, EstadoVacio, BarraBusqueda } from '@/compartido/componentes';
+import { EncabezadoSuperior, TarjetaVidrio as GlassCard, BotonFlotanteAccion, EstadoVacio, BarraBusqueda, SelectorSegmentado, ChipFiltro } from '@/compartido/componentes';
 import { gatillarSeleccion as triggerSelection } from '@/compartido/utilidades/hapticos';
 import { useDeudasBoveda } from '@/datos/hooks';
 import { Deuda, TipoDeuda, FiltroEstadoDeuda } from '@/datos/tipos';
@@ -200,61 +200,27 @@ export const PantallaDeudas: React.FC = () => {
         </GlassCard>
 
         {/* Segmented Switch: «Me deben» / «Debo» */}
-        <View style={styles.switchTabsContainer}>
-          <TouchableOpacity
-            style={[
-              styles.switchTab,
-              tipoActivo === 'RECEIVABLE' && styles.switchTabActiveReceivable,
-            ]}
-            activeOpacity={0.8}
-            onPress={() => {
-              triggerSelection();
-              setTipoActivo('RECEIVABLE');
-            }}
-          >
-            <MaterialIcons
-              name="call-received"
-              size={18}
-              color={tipoActivo === 'RECEIVABLE' ? '#0B0F10' : COLORS.cashflowIncome}
-            />
-            <Text
-              style={[
-                styles.switchTabText,
-                TYPOGRAPHY.labelCaps,
-                tipoActivo === 'RECEIVABLE' && styles.switchTabTextActive,
-              ]}
-            >
-              Me deben ({summary.countReceivablePending})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.switchTab,
-              tipoActivo === 'PAYABLE' && styles.switchTabActivePayable,
-            ]}
-            activeOpacity={0.8}
-            onPress={() => {
-              triggerSelection();
-              setTipoActivo('PAYABLE');
-            }}
-          >
-            <MaterialIcons
-              name="call-made"
-              size={18}
-              color={tipoActivo === 'PAYABLE' ? '#FFFFFF' : COLORS.cashflowExpense}
-            />
-            <Text
-              style={[
-                styles.switchTabText,
-                TYPOGRAPHY.labelCaps,
-                tipoActivo === 'PAYABLE' && styles.switchTabTextActive,
-              ]}
-            >
-              Debo ({summary.countPayablePending})
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <SelectorSegmentado<TipoDeuda>
+          opciones={[
+            {
+              valor: 'RECEIVABLE',
+              etiqueta: `Me deben (${summary.countReceivablePending})`,
+              icono: 'call-received',
+              tonoActivo: 'ingreso',
+              colorIconoInactivo: COLORS.cashflowIncome,
+            },
+            {
+              valor: 'PAYABLE',
+              etiqueta: `Debo (${summary.countPayablePending})`,
+              icono: 'call-made',
+              tonoActivo: 'gasto',
+              colorIconoInactivo: COLORS.cashflowExpense,
+            },
+          ]}
+          valorSeleccionado={tipoActivo}
+          onSeleccionar={setTipoActivo}
+          style={{ marginBottom: 14 }}
+        />
 
         {/* Buscador */}
         <BarraBusqueda
@@ -273,19 +239,14 @@ export const PantallaDeudas: React.FC = () => {
           {FILTROS_ESTADO.map(f => {
             const isSelected = filtroEstado === f.valor;
             return (
-              <TouchableOpacity
+              <ChipFiltro
                 key={f.valor}
-                style={[styles.filterChip, isSelected && styles.filterChipSelected]}
-                activeOpacity={0.7}
-                onPress={() => {
-                  triggerSelection();
-                  setFiltroEstado(f.valor);
-                }}
-              >
-                <Text style={[styles.filterChipText, isSelected && styles.filterChipTextSelected, TYPOGRAPHY.labelCaps]}>
-                  {f.label}
-                </Text>
-              </TouchableOpacity>
+                etiqueta={f.label}
+                activo={isSelected}
+                tono={f.valor === 'VENCIDAS' ? 'gasto' : f.valor === 'PAGADAS' ? 'ingreso' : 'cian'}
+                mayusculas
+                onPress={() => setFiltroEstado(f.valor)}
+              />
             );
           })}
         </ScrollView>
@@ -366,9 +327,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  mainSectionTitle: {
-    color: COLORS.onSurface,
-  },
   mainSectionSubtitle: {
     color: COLORS.onSurfaceVariant,
     marginTop: 2,
@@ -448,81 +406,9 @@ const styles = StyleSheet.create({
     color: COLORS.onSurface,
     fontSize: 13,
   },
-  switchTabsContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: 12,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: COLORS.borderGlass,
-    marginBottom: 14,
-  },
-  switchTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 9,
-    gap: 6,
-  },
-  switchTabActiveReceivable: {
-    backgroundColor: COLORS.cashflowIncome,
-  },
-  switchTabActivePayable: {
-    backgroundColor: COLORS.cashflowExpense,
-  },
-  switchTabText: {
-    color: COLORS.onSurfaceVariant,
-  },
-  switchTabTextActive: {
-    color: '#0B0F10',
-    fontWeight: '700',
-  },
-  searchBarBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0B0F10',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 12,
-    height: 44,
-    marginBottom: 12,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: COLORS.onSurface,
-  },
-  clearSearchBtn: {
-    padding: 4,
-  },
   filterChipsScroll: {
     gap: 8,
     paddingBottom: 14,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  filterChipSelected: {
-    backgroundColor: 'rgba(138, 79, 255, 0.25)',
-    borderColor: COLORS.primary,
-  },
-  filterChipText: {
-    color: COLORS.onSurfaceVariant,
-    fontSize: 10,
-  },
-  filterChipTextSelected: {
-    color: COLORS.primary,
-    fontWeight: '700',
   },
   listContainer: {
     gap: 12,

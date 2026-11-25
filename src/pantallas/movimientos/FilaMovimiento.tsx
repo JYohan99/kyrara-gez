@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { MovimientoEnriquecido } from '@/datos/tipos';
+import { OrbeGlossy } from '@/compartido/componentes/OrbeGlossy';
 import { formatearMoneda } from '@/compartido/utilidades/moneda';
 
 export interface PropiedadesFilaMovimiento {
@@ -58,11 +59,11 @@ export const FilaMovimiento: React.FC<PropiedadesFilaMovimiento> = ({
 
   const iconoInfo = resolverIcono(tx);
 
-  const fondoCaja = esTransferencia
-    ? '#2D1C1E'
+  const coloresOrbe: [string, string, string] = esTransferencia
+    ? ['#3E2F4A', '#241830', '#130C1A']
     : esGasto
-    ? '#2D1C22'
-    : '#2A1C2C';
+    ? ['#3D232A', '#241318', '#14090C']
+    : ['#1F3D34', '#11251F', '#081410'];
 
   const titulo = esTransferencia
     ? `${tx.sourceAccountName || 'Cuenta'}  >  ${tx.targetAccountName || 'Cuenta'}`
@@ -91,11 +92,9 @@ export const FilaMovimiento: React.FC<PropiedadesFilaMovimiento> = ({
       ]}
     >
       <View style={estilos.ladoIzquierdo}>
-        <View style={[estilos.cajaIcono, { backgroundColor: fondoCaja }]}>
+        <OrbeGlossy tamano={44} coloresPersonalizados={coloresOrbe}>
           {iconoInfo.tipo === 'transferencia' ? (
-            <View style={estilos.circuloTransferencia}>
-              <MaterialIcons name="swap-horiz" size={17} color="#D48E8E" />
-            </View>
+            <MaterialIcons name="swap-horiz" size={20} color="#D1BCFF" />
           ) : iconoInfo.tipo === 'emoji' ? (
             <Text style={estilos.emoji}>{iconoInfo.valor}</Text>
           ) : (
@@ -105,7 +104,7 @@ export const FilaMovimiento: React.FC<PropiedadesFilaMovimiento> = ({
               color={esIngreso ? COLOR_INGRESO : COLOR_GASTO}
             />
           )}
-        </View>
+        </OrbeGlossy>
 
         <View style={estilos.info}>
           <Text style={estilos.titulo} numberOfLines={1}>
@@ -143,22 +142,6 @@ const estilos = StyleSheet.create({
     gap: 14,
     flex: 1,
     marginRight: 12,
-  },
-  cajaIcono: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circuloTransferencia: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#D48E8E',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   emoji: {
     fontSize: 22,
